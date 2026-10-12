@@ -4,6 +4,8 @@ import { isSchoolEmail, getUniversity, normaliseEmail } from '@/config/universit
 describe('school email check', () => {
   it.each([
     'alicia.tan.2025@smu.edu.sg',
+    'alicia.tan.2025@computing.smu.edu.sg', // SMU school subdomain
+    'ben.lim.2024@business.smu.edu.sg',
     'e1234567@u.nus.edu',
     'ben001@e.ntu.edu.sg',
     'chloe_lim@mymail.sutd.edu.sg',
@@ -16,7 +18,9 @@ describe('school email check', () => {
   it.each([
     'alicia@gmail.com',
     'prof@nus.edu.sg', // staff domain, not student
-    'someone@staff.smu.edu.sg', // subdomain not on the list
+    'someone@fakesmu.edu.sg', // not a real subdomain (no dot before smu)
+    'someone@staff.nus.edu.sg', // subdomains only allowed for SMU
+    'someone@x.u.nus.edu', // subdomains only allowed for SMU
     'trick@smu.edu.sg.evil.com', // lookalike
     'smu.edu.sg', // no @
     'two@@smu.edu.sg',
@@ -34,5 +38,6 @@ describe('school email check', () => {
 
   it('identifies the university', () => {
     expect(getUniversity('e1234567@u.nus.edu')?.name).toBe('NUS')
+    expect(getUniversity('alicia@computing.smu.edu.sg')?.name).toBe('SMU')
   })
 })

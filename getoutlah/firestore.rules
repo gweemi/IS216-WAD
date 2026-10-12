@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// The database only talks to students with a VERIFIED school email.
+// So even if someone skips our sign-up form and creates an account with
+// a Gmail address directly through Firebase, they can't read or write anything.
+//
+// Keep this domain list in sync with src/config/universities.js.
+// SMU also accepts school subdomains, e.g. name@computing.smu.edu.sg.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isVerifiedStudent() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower().matches(
+          '^[^@\\s]+@(([a-z0-9-]+\\.)*smu\\.edu\\.sg|u\\.nus\\.edu|e\\.ntu\\.edu\\.sg|mymail\\.sutd\\.edu\\.sg|sit\\.singaporetech\\.edu\\.sg|suss\\.edu\\.sg)$'
+        );
+    }
+
+    match /users/{uid} {
+      allow read: if isVerifiedStudent();
+
+      // You can only create your own profile, with your own email, starting at 0 points.
+      allow create: if isVerifiedStudent()
+        && request.auth.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.points == 0;
+
+      // You can edit your own profile, but not your email, university or points.
+      allow update: if isVerifiedStudent()
+        && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data)
+             .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points']);
+
+      allow delete: if false;
+    }
+
+    // Everything else is closed until we add rules for it.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
