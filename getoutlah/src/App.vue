@@ -1,11 +1,16 @@
-<script setup></script>
+<script setup>
+import { isFirebaseConfigured } from '@/firebase'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div
+    v-if="!isFirebaseConfigured"
+    class="alert alert-warning rounded-0 mb-0 small"
+    role="alert"
+    data-testid="config-warning"
+  >
+    Firebase isn't set up yet. Copy <code>.env.example</code> to <code>.env.local</code>, add your
+    project's keys, then restart <code>pnpm dev</code>.
+  </div>
+  <RouterView />
 </template>
-
-<style scoped></style>

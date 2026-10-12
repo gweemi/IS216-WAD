@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap');
+
+/* GETOUTLAH! base styles. Bootstrap handles layout; these are the brand bits. */
+:root {
+  --go-green: #1f6b47;
+  --go-green-dark: #154d33;
+  --go-lime: #d7f36b;
+  --go-ink: #18201b;
+  --go-muted: #5d6b63;
+  --go-paper: #f6f4ee;
+  --go-line: #dcdcd2;
+  --go-radius: 14px;
+
+  --bs-body-font-family: 'Inter', system-ui, sans-serif;
+  --bs-body-color: var(--go-ink);
+  --bs-body-bg: var(--go-paper);
+  --bs-primary: var(--go-green);
+  --bs-primary-rgb: 31, 107, 71;
+  --bs-link-color: var(--go-green);
+  --bs-link-hover-color: var(--go-green-dark);
+}
+
+.font-display {
+  font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--go-green);
+  --bs-btn-border-color: var(--go-green);
+  --bs-btn-hover-bg: var(--go-green-dark);
+  --bs-btn-hover-border-color: var(--go-green-dark);
+  --bs-btn-active-bg: var(--go-green-dark);
+  --bs-btn-disabled-bg: var(--go-green);
+  --bs-btn-disabled-border-color: var(--go-green);
+  font-weight: 600;
+}
+
+.btn-outline-dark {
+  font-weight: 600;
+}
+
+.form-control,
+.form-control:focus {
+  background-color: #fff;
+}
+
+.form-control:focus {
+  border-color: var(--go-green);
+  box-shadow: 0 0 0 0.2rem rgba(31, 107, 71, 0.2);
+}
+
+.go-card {
+  background: #fff;
+  border: 1px solid var(--go-line);
+  border-radius: var(--go-radius);
+}
