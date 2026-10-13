@@ -23,12 +23,24 @@ async function onLogOut() {
 <template>
   <main class="container py-5" style="max-width: 720px">
     <div class="go-card p-4 p-md-5">
-      <p class="font-display fw-bold mb-2" style="color: var(--go-green)">GETOUTLAH!</p>
-      <h1 class="h2 font-display" data-testid="home-greeting">
-        Hi {{ profile?.displayName || auth.user?.displayName || 'there' }}
-      </h1>
+      <p class="font-display fw-bold mb-3" style="color: var(--go-green)">GETOUTLAH!</p>
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <img
+          v-if="auth.user?.photoURL"
+          :src="auth.user.photoURL"
+          alt=""
+          width="56"
+          height="56"
+          class="rounded-circle"
+          referrerpolicy="no-referrer"
+        />
+        <h1 class="h2 font-display fw-bold mb-0" data-testid="home-greeting">
+          Hi {{ profile?.displayName || auth.user?.displayName || 'there' }}
+        </h1>
+      </div>
       <p class="text-secondary mb-4" data-testid="home-university">
-        Logged in with your {{ profile?.universityName }} email ({{ auth.email }}).
+        Logged in as {{ auth.email }}
+        <span v-if="profile?.universityName"> ({{ profile.universityName }} student)</span>.
       </p>
       <p class="mb-4">Recommendations go here next.</p>
       <button class="btn btn-outline-dark" data-testid="logout" @click="onLogOut">Log out</button>

@@ -1,33 +1,50 @@
 rules_version = '2';
 
-// The database only talks to students with a VERIFIED school email.
-// So even if someone skips our sign-up form and creates an account with
-// a Gmail address directly through Firebase, they can't read or write anything.
+// Anyone signed in with Google can use the app.
+// A profile may only be tagged with a university if the person's Google email
+// really belongs to that university (so a Gmail user can't claim to be from SMU).
 //
-// Keep this domain list in sync with src/config/universities.js.
-// SMU also accepts school subdomains, e.g. name@computing.smu.edu.sg.
+// Keep the university domains in sync with src/config/universities.js.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isVerifiedStudent() {
-      return request.auth != null
-        && request.auth.token.email_verified == true
-        && request.auth.token.email.lower().matches(
-          '^[^@\\s]+@(([a-z0-9-]+\\.)*smu\\.edu\\.sg|u\\.nus\\.edu|e\\.ntu\\.edu\\.sg|mymail\\.sutd\\.edu\\.sg|sit\\.singaporetech\\.edu\\.sg|suss\\.edu\\.sg)$'
-        );
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function emailEndsWith(pattern) {
+      return request.auth.token.email_verified == true
+        && myEmail().matches('^[^@\\s]+@' + pattern + '$');
+    }
+
+    // universityId / universityName must match the signed-in email, or both be null.
+    function universityIsHonest(data) {
+      return (data.universityId == null && data.universityName == null)
+        || (data.universityId == 'smu'  && data.universityName == 'SMU'  && emailEndsWith('([a-z0-9-]+\\.)*smu\\.edu\\.sg'))
+        || (data.universityId == 'nus'  && data.universityName == 'NUS'  && emailEndsWith('u\\.nus\\.edu'))
+        || (data.universityId == 'ntu'  && data.universityName == 'NTU'  && emailEndsWith('e\\.ntu\\.edu\\.sg'))
+        || (data.universityId == 'sutd' && data.universityName == 'SUTD' && emailEndsWith('mymail\\.sutd\\.edu\\.sg'))
+        || (data.universityId == 'sit'  && data.universityName == 'SIT'  && emailEndsWith('sit\\.singaporetech\\.edu\\.sg'))
+        || (data.universityId == 'suss' && data.universityName == 'SUSS' && emailEndsWith('suss\\.edu\\.sg'));
     }
 
     match /users/{uid} {
-      allow read: if isVerifiedStudent();
+      // Signed-in users can see profiles (needed for friends and leaderboards).
+      allow read: if signedIn();
 
       // You can only create your own profile, with your own email, starting at 0 points.
-      allow create: if isVerifiedStudent()
+      allow create: if signedIn()
         && request.auth.uid == uid
         && request.resource.data.email == request.auth.token.email
-        && request.resource.data.points == 0;
+        && request.resource.data.points == 0
+        && universityIsHonest(request.resource.data);
 
       // You can edit your own profile, but not your email, university or points.
-      allow update: if isVerifiedStudent()
+      allow update: if signedIn()
         && request.auth.uid == uid
         && !request.resource.data.diff(resource.data)
              .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points']);
