@@ -1,0 +1,185 @@
+/* =============================================================
+   GetOutLah! design tokens + shared styles (from the hi-fi Figma)
+   Import once in main.js:  import './assets/gol-theme.css'
+   ============================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap');
+
+:root {
+  --gol-bg: #fff6ec;
+  --gol-ink: #221a3b;
+  --gol-muted: #8a8199;
+  --gol-purple: #6b42e3;
+  --gol-purple-dark: #4b27b8;
+  --gol-purple-soft: #ece6fb;
+  --gol-lime: #b9f04c;
+  --gol-yellow: #ffd44d;
+  --gol-gold: #f2c14e;
+  --gol-cyan: #6de4f2;
+  --gol-coral: #ff8670;
+  --gol-coral-text: #f0705a;
+  --gol-teal: #14a3b4;
+  --gol-good-zone: #eef8d9;
+  --gol-card: #ffffff;
+  --gol-card-edge: #e6dff2;
+  --gol-locked: #e8e3f0;
+  --gol-radius: 22px;
+  --gol-font: 'Nunito', system-ui, sans-serif;
+}
+
+.gol-page {
+  font-family: var(--gol-font);
+  color: var(--gol-ink);
+  background: var(--gol-bg);
+  min-height: 100%;
+}
+
+/* Small coral uppercase label above headings: "COLLECT THE CHAOS" */
+.gol-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gol-coral-text);
+  margin-bottom: 0.15rem;
+}
+
+.gol-title {
+  font-weight: 900;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.gol-section-title {
+  font-weight: 900;
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+/* White card with the soft lavender "lip" underneath */
+.gol-card {
+  background: var(--gol-card);
+  border-radius: var(--gol-radius);
+  box-shadow: 0 4px 0 var(--gol-card-edge);
+  padding: 1.1rem;
+}
+
+/* Square icon tile with the hard offset shadow */
+.gol-icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 2px solid var(--gol-ink);
+  box-shadow: 3px 3px 0 var(--gol-ink);
+  color: var(--gol-ink);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Big purple 3D button: "Do my 1-min check-in" */
+.gol-btn-primary {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 0.9rem 1rem;
+  font-family: var(--gol-font);
+  font-weight: 800;
+  font-size: 1rem;
+  color: #fff;
+  background: var(--gol-purple);
+  box-shadow: 0 4px 0 var(--gol-purple-dark);
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.gol-btn-primary:hover { filter: brightness(1.05); }
+.gol-btn-primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--gol-purple-dark); }
+.gol-btn-primary:disabled { opacity: 0.45; transform: none; box-shadow: 0 4px 0 var(--gol-purple-dark); }
+
+/* Coral pill: "Check-in due" */
+.gol-btn-coral {
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+  font-family: var(--gol-font);
+  font-weight: 800;
+  color: #fff;
+  background: var(--gol-coral);
+  box-shadow: 0 3px 0 #d9604b;
+  white-space: nowrap;
+}
+.gol-btn-coral:active { transform: translateY(2px); box-shadow: 0 1px 0 #d9604b; }
+
+/* Soft lavender pill button: "Update" */
+.gol-btn-soft {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  font-family: var(--gol-font);
+  font-weight: 800;
+  color: var(--gol-purple);
+  background: var(--gol-purple-soft);
+}
+
+/* Round white close (X) button */
+.gol-close {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  color: var(--gol-ink);
+  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(34, 26, 59, 0.08);
+  flex-shrink: 0;
+}
+
+.gol-pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.gol-pill--good { background: var(--gol-lime); color: var(--gol-ink); }
+.gol-pill--okay { background: var(--gol-cyan); color: var(--gol-ink); }
+.gol-pill--low { background: var(--gol-yellow); color: var(--gol-ink); }
+.gol-pill--support { background: var(--gol-coral); color: #fff; }
+
+/* Thin progress bar used on locked badges / levels */
+.gol-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gol-locked);
+  overflow: hidden;
+}
+.gol-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gol-coral);
+  transition: width 0.4s ease;
+}
+
+/* Purple toggle switch (works with Bootstrap's .form-switch) */
+.gol-switch.form-check-input {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+  width: 3em;
+  height: 1.6em;
+  cursor: pointer;
+  background-color: var(--gol-locked);
+  border-color: var(--gol-locked);
+}
+.gol-switch.form-check-input:checked {
+  background-color: var(--gol-purple);
+  border-color: var(--gol-purple);
+}
+.gol-switch.form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(107, 66, 227, 0.25);
+  border-color: var(--gol-purple);
+}

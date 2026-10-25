@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AuthView from '@/views/AuthView.vue'
+import BadgesView from '../views/BadgesView.vue'
+import MyFeaturesTestView from '../views/MyFeaturesTestView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,6 +23,13 @@ const router = createRouter({
       meta: { requiresLogin: true },
     },
     { path: '/:pathMatch(.*)*', redirect: '/home' },
+    { path: '/badges', name: 'badges', component: BadgesView, meta: { requiresLogin: true } },
+    {
+      path: '/test-my-features',
+      name: 'test-my-features',
+      component: MyFeaturesTestView,
+      meta: { requiresLogin: true },
+    }
   ],
 })
 
