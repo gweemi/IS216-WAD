@@ -1,6 +1,7 @@
 # Root-level local dependencies and build output
 node_modules/
 dist/
+.pnpm-store/
 
 # Local environment configuration
 .env.local
