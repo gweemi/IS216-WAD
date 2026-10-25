@@ -1,69 +1,94 @@
-# getoutlah
+# GetOutLah!
 
-This template should help get you started developing with Vue 3 in Vite.
+Vue 3 + Vite frontend for the IS216-WAD project. It uses Firebase Authentication and Cloud Firestore for accounts and user data.
 
-## Recommended IDE Setup
+## Prerequisites
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- [Node.js](https://nodejs.org/) `22.18.0` or later
+- [pnpm](https://pnpm.io/)
+- Access to the team's Firebase project
 
-## Recommended Browser Setup
+Run all commands in this directory, not in the repository root:
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+```sh
+cd getoutlah
+```
 
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## Install and run
 
 ```sh
 pnpm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 pnpm dev
 ```
 
-### Compile and Minify for Production
+Open the local URL printed by Vite (normally `http://localhost:5173`). Stop the server with <kbd>Ctrl</kbd> + <kbd>C</kbd>.
+
+## Firebase setup
+
+### 1. Create your local environment file
+
+Copy the template and fill in the Firebase web-app configuration values:
 
 ```sh
-pnpm build
+cp .env.example .env.local
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+In the Firebase console, open **Project settings** (gear icon) → **Your apps** → select the web app. Under **SDK setup and configuration**, choose **Config** and copy each value from `firebaseConfig` into `.env.local`.
 
-```sh
-pnpm test:unit
+| `.env.local` variable | Firebase `firebaseConfig` field |
+| --- | --- |
+| `VITE_FIREBASE_API_KEY` | `apiKey` |
+| `VITE_FIREBASE_AUTH_DOMAIN` | `authDomain` |
+| `VITE_FIREBASE_PROJECT_ID` | `projectId` |
+| `VITE_FIREBASE_STORAGE_BUCKET` | `storageBucket` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `messagingSenderId` |
+| `VITE_FIREBASE_APP_ID` | `appId` |
+
+Use raw values, without quotation marks or commas. For example:
+
+```env
+VITE_FIREBASE_PROJECT_ID=your-project-id
 ```
 
-### Run End-to-End Tests with [Playwright](https://playwright.dev)
+Restart `pnpm dev` after changing `.env.local`.
+
+> `.env.local` is ignored by Git. Do not commit it or paste project credentials into the repository. Values prefixed with `VITE_` are included in the browser bundle, so never put server-only secrets in this file.
+
+### 2. Configure Firebase services
+
+In the Firebase console for the same project:
+
+1. **Authentication** → **Sign-in method**: enable the **Google** provider and select a support email.
+2. **Authentication** → **Settings** → **Authorized domains**: ensure `localhost` is listed for local development. Add the production domain before deployment.
+3. **Firestore Database**: create a Cloud Firestore database if one does not exist.
+4. **Firestore Database** → **Rules**: replace the rules with the contents of [`firestore.rules`](firestore.rules), then click **Publish**.
+
+The app creates a profile at `users/{uid}` after the first successful Google login. If sign-in works but profile creation fails, verify that the Firestore rules above were published.
+
+### Deploying Firestore rules
+
+This repository does not yet include Firebase CLI deployment configuration (`firebase.json`). For now, publish [`firestore.rules`](firestore.rules) manually in the Firebase console. Do not use Firestore test mode for a deployed app.
+
+## Available commands
+
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Start the Vite development server with hot reload. |
+| `pnpm build` | Build the production bundle. |
+| `pnpm preview` | Serve the production build locally. |
+| `pnpm test:unit` | Run Vitest unit tests. |
+| `pnpm test:e2e` | Run Playwright end-to-end tests. |
+| `pnpm lint` | Run the configured linters. |
+
+Install Playwright browsers before running end-to-end tests for the first time:
 
 ```sh
-# Install browsers for the first run
 npx playwright install
-
-# When testing on CI, must build the project first
-pnpm build
-
-# Runs the end-to-end tests
-pnpm test:e2e
-# Runs the tests only on Chromium
-pnpm test:e2e --project=chromium
-# Runs the tests of a specific file
-pnpm test:e2e tests/example.spec.ts
-# Runs the tests in debug mode
-pnpm test:e2e --debug
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+For a production-style test run:
 
 ```sh
-pnpm lint
+pnpm build
+pnpm test:e2e
 ```
