@@ -15,8 +15,10 @@ provider.setCustomParameters({ prompt: 'select_account' })
  */
 export async function signInWithGoogle() {
   const { user } = await signInWithPopup(auth, provider)
-  await ensureUserProfile(user)
-  useAuthStore().setUser(user)
+  const profile = await ensureUserProfile(user)
+  const store = useAuthStore()
+  store.setUser(user)
+  store.setProfile(profile)
   return user
 }
 
