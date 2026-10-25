@@ -4,7 +4,8 @@ rules_version = '2';
 // A profile may only be tagged with a university if the person's Google email
 // really belongs to that university (so a Gmail user can't claim to be from SMU).
 //
-// Keep the university domains in sync with src/config/universities.js.
+// Keep the university domains in sync with src/config/universities.js,
+// and the questionnaire options in sync with src/config/preferences.js.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -32,6 +33,19 @@ service cloud.firestore {
         || (data.universityId == 'suss' && data.universityName == 'SUSS' && emailEndsWith('suss\\.edu\\.sg'));
     }
 
+    // Questionnaire answers must use the options in src/config/preferences.js.
+    function validPreferences(p) {
+      return p.keys().hasOnly(['interests', 'maxBudget', 'energyLevel', 'groupPreference'])
+        && p.interests is list
+        && p.interests.size() >= 1
+        && p.interests.size() <= 9
+        && p.interests.hasOnly(['outdoors', 'sports', 'arts', 'food', 'workshops',
+                                'music', 'games', 'wellness', 'volunteering'])
+        && (p.maxBudget == null || p.maxBudget in [0, 10, 20, 50])
+        && p.energyLevel in ['low', 'medium', 'high']
+        && p.groupPreference in ['solo', 'group', 'either'];
+    }
+
     match /users/{uid} {
       // Signed-in users can see profiles (needed for friends and leaderboards).
       allow read: if signedIn();
@@ -44,10 +58,13 @@ service cloud.firestore {
         && universityIsHonest(request.resource.data);
 
       // You can edit your own profile, but not your email, university or points.
+      // Questionnaire answers (preferences) must be valid.
       allow update: if signedIn()
         && request.auth.uid == uid
         && !request.resource.data.diff(resource.data)
-             .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points']);
+             .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points'])
+        && (!('preferences' in request.resource.data)
+            || validPreferences(request.resource.data.preferences));
 
       allow delete: if false;
     }
