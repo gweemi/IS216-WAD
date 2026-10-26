@@ -22,6 +22,13 @@ const router = createRouter({
       component: () => import('@/views/HomeView.vue'),
       meta: { requiresLogin: true },
     },
+    {
+      // OPENJIO!: browse, start, join and chope group activities.
+      path: '/openjio',
+      name: 'openjio',
+      component: () => import('@/views/OpenJioView.vue'),
+      meta: { requiresLogin: true },
+    },
     { path: '/:pathMatch(.*)*', redirect: '/home' },
     { path: '/badges', name: 'badges', component: BadgesView, meta: { requiresLogin: true } },
     {
