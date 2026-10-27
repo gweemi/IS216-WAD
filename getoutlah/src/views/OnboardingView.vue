@@ -26,7 +26,7 @@ async function onSubmit(answers) {
   error.value = ''
   try {
     await savePreferences(answers)
-    router.replace({ name: 'home' })
+    router.replace({ name: 'map' })
   } catch (err) {
     error.value =
       err?.code === 'permission-denied'
