@@ -14,7 +14,7 @@ async function onGoogle() {
   loading.value = true
   try {
     await signInWithGoogle()
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/home'
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/map'
     router.push(redirect)
   } catch (err) {
     if (!isCancelled(err)) error.value = friendlyError(err)

@@ -1,6 +1,7 @@
 // Checks where the router sends people, depending on whether they're logged in
 // and whether they've answered the questionnaire.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import MapView from '@/views/MapView.vue'
 
 const fakeAuth = vi.hoisted(() => ({ isLoggedIn: false, hasPreferences: false }))
 
@@ -9,7 +10,6 @@ vi.mock('@/stores/auth', () => ({
 }))
 const Stub = { template: '<div />' }
 vi.mock('@/views/AuthView.vue', () => ({ default: Stub }))
-vi.mock('@/views/HomeView.vue', () => ({ default: Stub }))
 vi.mock('@/views/OnboardingView.vue', () => ({ default: Stub }))
 
 const { default: router } = await import('@/router')
@@ -27,22 +27,43 @@ beforeEach(async () => {
 
 describe('router', () => {
   it('sends logged-out users to log in', async () => {
-    expect(await visit('/home')).toBe('auth')
+    for (const path of ['/map', '/activities', '/friends', '/badges', '/profile']) {
+      expect(await visit(path)).toBe('auth')
+    }
     expect(await visit('/onboarding')).toBe('auth')
   })
 
   it('sends new users (no answers yet) to the questionnaire', async () => {
     Object.assign(fakeAuth, { isLoggedIn: true, hasPreferences: false })
-    expect(await visit('/home')).toBe('onboarding')
+    expect(await visit('/map')).toBe('onboarding')
   })
 
-  it('lets users who answered go to home', async () => {
+  it('lets users who answered visit every app destination', async () => {
     Object.assign(fakeAuth, { isLoggedIn: true, hasPreferences: true })
-    expect(await visit('/home')).toBe('home')
+    for (const [path, name] of [
+      ['/map', 'map'],
+      ['/activities', 'activities'],
+      ['/friends', 'friends'],
+      ['/badges', 'badges'],
+      ['/profile', 'profile'],
+    ]) {
+      expect(await visit(path)).toBe(name)
+    }
   })
 
   it('does not show the questionnaire twice', async () => {
     Object.assign(fakeAuth, { isLoggedIn: true, hasPreferences: true })
-    expect(await visit('/onboarding')).toBe('home')
+    expect(await visit('/onboarding')).toBe('map')
+  })
+
+  it('redirects legacy and unknown routes to map', async () => {
+    Object.assign(fakeAuth, { isLoggedIn: true, hasPreferences: true })
+    expect(await visit('/home')).toBe('map')
+    expect(await visit('/not-a-page')).toBe('map')
+  })
+
+  it('uses the Leaflet map view for the map route', () => {
+    const mapRoute = router.getRoutes().find((route) => route.name === 'map')
+    expect(mapRoute.components.default).toBe(MapView)
   })
 })

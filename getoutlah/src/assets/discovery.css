@@ -18,6 +18,7 @@
 .act-title { font-size: 1.05rem; font-weight: 900; margin: 0 0 0.15rem; }
 .act-meta { font-size: 0.8rem; color: var(--gol-muted); font-weight: 600; }
 .act-pills { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.act-source { align-self: center; border: 1px solid var(--gol-card-edge); border-radius: 999px; color: var(--gol-muted); font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.55rem; }
 .act-save {
   position: absolute; top: 0.6rem; right: 0.6rem; width: 36px; height: 36px; border-radius: 50%;
   border: none; background: var(--gol-purple-soft); color: var(--gol-purple); font-size: 1rem;
@@ -70,6 +71,7 @@
 .det-back { font-weight: 800; color: var(--gol-purple); text-decoration: none; }
 .det-hero { height: 140px; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
 .det-emoji { font-size: 3.5rem; }
+.det-source { display: inline-block; margin-top: 0.65rem; }
 .det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0; }
 .det-cell { background: var(--gol-bg); border-radius: 14px; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
 .det-cell i { color: var(--gol-purple); margin-right: 0.3rem; }

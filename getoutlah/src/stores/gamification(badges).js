@@ -72,13 +72,13 @@ export const BADGES = [
   {
     id: 'trailblazer',
     name: 'Trailblazer',
-    desc: 'Complete 3 nature or trail activities.',
+    desc: 'Complete 3 outdoor or trail activities.',
     icon: 'bi-geo-alt',
     color: 'yellow',
     target: 3,
-    unit: 'nature activities',
+    unit: 'outdoor activities',
     bonus: 30,
-    progress: (s) => s.completed.filter((a) => a.category === 'nature').length,
+    progress: (s) => s.completed.filter((a) => a.category === 'outdoors').length,
   },
   {
     id: 'eastie-explorer',
@@ -132,10 +132,10 @@ function demoState() {
   const today = new Date()
   const ago = (weeks) => toISODate(addDays(today, -7 * weeks))
   s.completed = [
-    { id: 'demo-1', title: 'Pottery taster class', category: 'workshop', region: 'central', isOpenJio: false, hostedByMe: false, date: ago(4) },
+    { id: 'demo-1', title: 'Pottery taster class', category: 'workshops', region: 'central', isOpenJio: false, hostedByMe: false, date: ago(4) },
     { id: 'demo-2', title: 'Badminton OPENJIO', category: 'sports', region: 'east', isOpenJio: true, hostedByMe: false, date: ago(3) },
-    { id: 'demo-3', title: 'MacRitchie TreeTop Walk', category: 'nature', region: 'central', isOpenJio: false, hostedByMe: false, date: ago(2) },
-    { id: 'demo-4', title: 'East Coast picnic (hosted)', category: 'outdoor', region: 'east', isOpenJio: true, hostedByMe: true, date: ago(1) },
+    { id: 'demo-3', title: 'MacRitchie TreeTop Walk', category: 'outdoors', region: 'central', isOpenJio: false, hostedByMe: false, date: ago(2) },
+    { id: 'demo-4', title: 'East Coast picnic (hosted)', category: 'outdoors', region: 'east', isOpenJio: true, hostedByMe: true, date: ago(1) },
     { id: 'demo-5', title: 'Art jam at Jurong', category: 'arts', region: 'west', isOpenJio: false, hostedByMe: false, date: ago(0) },
   ]
   s.ledger = s.completed.map((a) => ({ date: a.date, amount: POINTS_PER_ACTIVITY, reason: a.title }))
@@ -308,7 +308,7 @@ export async function checkInToActivity(activity, userPosition = null) {
     region: activity.region,
     isOpenJio: Boolean(activity.isOpenJio),
     hostedByMe: Boolean(activity.hostedByMe),
-    energy: activity.energy || null,
+    energy: activity.energy || ({ low: 'calm', medium: 'moderate', high: 'high' }[activity.energyLevel]) || null,
     date: toISODate(new Date()),
   })
 

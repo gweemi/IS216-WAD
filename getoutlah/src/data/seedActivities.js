@@ -1,6 +1,7 @@
 import { INTERESTS } from '@/config/preferences'
-// Fallback + starter data. Admin can upload it to Firestore with activitiesStore.seedFirestore().
-// type: events | outdoor | volunteering | paid | openjio   energy: high | low   region: Central|East|West|North|South
+// The single curated fallback dataset. Admin can upload it to Firestore with
+// activitiesStore.seedFirestore(); Activities, Map, and wellbeing all read this shape.
+// `category` is one canonical interest ID. `type` is a separate filter dimension.
 export const categories = INTERESTS.map((i) => i.id)
 export const activityTypes = ['events', 'outdoor', 'volunteering', 'paid', 'openjio']
 
@@ -11,10 +12,18 @@ export const seedActivities = [
   { id: 's4', title: 'Museum Late Night', category: 'arts', type: 'events', cost: 15, durationHrs: 2, setting: 'Indoor', energyLevel: 'low', area: 'Museum', region: 'central', lat: 1.2966, lng: 103.8485, slotsLeft: null, groupFriendly: false, source: 'curated' },
   { id: 's5', title: 'Board Game Blitz', category: 'games', type: 'paid', cost: 8, durationHrs: 3, setting: 'Indoor', energyLevel: 'low', area: 'Tiong Bahru', region: 'central', lat: 1.2858, lng: 103.8325, slotsLeft: 0, groupFriendly: true, source: 'curated' },
   { id: 's6', title: 'Hawker Food Crawl', category: 'food', type: 'events', cost: 12, durationHrs: 2, setting: 'Outdoor', energyLevel: 'low', area: 'Maxwell', region: 'central', lat: 1.2803, lng: 103.8445, slotsLeft: null, groupFriendly: true, source: 'curated' },
-  { id: 's7', title: 'East Coast Park Cycle', category: 'outdoors', type: 'outdoor', cost: 10, durationHrs: 2, setting: 'Outdoor', energyLevel: 'high', area: 'East Coast Park', region: 'east', lat: 1.3010, lng: 103.9120, slotsLeft: null, groupFriendly: true, source: 'curated' },
+  { id: 's7', title: 'East Coast Park Cycle', category: 'sports', type: 'outdoor', cost: 10, durationHrs: 2, setting: 'Outdoor', energyLevel: 'high', area: 'East Coast Park', region: 'east', lat: 1.3010, lng: 103.9120, slotsLeft: null, groupFriendly: true, source: 'curated' },
   { id: 's8', title: 'Beach Clean-up', category: 'volunteering', type: 'volunteering', cost: 0, durationHrs: 3, setting: 'Outdoor', energyLevel: 'high', area: 'East Coast Park', region: 'east', lat: 1.3005, lng: 103.9100, slotsLeft: 20, groupFriendly: true, source: 'curated' },
   { id: 's9', title: 'Sunrise Yoga in the Gardens', category: 'wellness', type: 'events', cost: 0, durationHrs: 1, setting: 'Outdoor', energyLevel: 'low', area: 'Botanic Gardens', region: 'central', lat: 1.3138, lng: 103.8159, slotsLeft: null, groupFriendly: false, source: 'curated' },
   { id: 's10', title: 'Pasir Ris Mangrove Walk', category: 'outdoors', type: 'outdoor', cost: 0, durationHrs: 2, setting: 'Outdoor', energyLevel: 'low', area: 'Pasir Ris', region: 'east', lat: 1.3815, lng: 103.9520, slotsLeft: null, groupFriendly: false, source: 'curated' },
   { id: 's11', title: 'Hip-hop Dance Drop-in', category: 'sports', type: 'paid', cost: 18, durationHrs: 1, setting: 'Indoor', energyLevel: 'high', area: 'Bugis', region: 'central', lat: 1.3009, lng: 103.8559, slotsLeft: 6, groupFriendly: true, source: 'curated' },
   { id: 's12', title: 'Tampines Escape Room', category: 'games', type: 'paid', cost: 25, durationHrs: 1.5, setting: 'Indoor', energyLevel: 'low', area: 'Tampines', region: 'east', lat: 1.3526, lng: 103.9450, slotsLeft: 4, groupFriendly: true, source: 'curated' },
+  { id: 's13', title: 'Bedok Reservoir Walk', category: 'outdoors', type: 'outdoor', cost: 0, durationHrs: 1, setting: 'Outdoor', energyLevel: 'medium', area: 'Bedok Reservoir', region: 'east', lat: 1.3404, lng: 103.9246, slotsLeft: null, groupFriendly: true, source: 'curated' },
+  { id: 's14', title: 'Bouldering Intro Class', category: 'sports', type: 'paid', cost: 28, durationHrs: 1.5, setting: 'Indoor', energyLevel: 'high', area: 'Jurong East', region: 'west', lat: 1.3151, lng: 103.7649, slotsLeft: 8, groupFriendly: true, source: 'curated' },
+  { id: 's15', title: 'Food Bank Packing Session', category: 'volunteering', type: 'volunteering', cost: 0, durationHrs: 2, setting: 'Indoor', energyLevel: 'medium', area: 'Yishun', region: 'north', lat: 1.4290, lng: 103.8350, slotsLeft: 16, groupFriendly: true, source: 'curated' },
+  { id: 's16', title: 'Indie Music Night', category: 'events', type: 'events', cost: 18, durationHrs: 2, setting: 'Indoor', energyLevel: 'medium', area: 'Woodlands', region: 'north', lat: 1.4170, lng: 103.8330, slotsLeft: null, groupFriendly: true, source: 'curated' },
+  { id: 's17', title: 'Art Exhibition Weekend', category: 'arts', type: 'events', cost: 0, durationHrs: 1.5, setting: 'Indoor', energyLevel: 'low', area: 'Punggol', region: 'north-east', lat: 1.4050, lng: 103.9020, slotsLeft: null, groupFriendly: false, source: 'curated' },
+  { id: 's18', title: 'Food Festival', category: 'events', type: 'events', cost: 0, durationHrs: 2, setting: 'Outdoor', energyLevel: 'medium', area: 'Sentosa', region: 'south', lat: 1.2650, lng: 103.8220, slotsLeft: null, groupFriendly: true, source: 'curated' },
+  { id: 's19', title: 'Weekend Flea Market', category: 'events', type: 'events', cost: 0, durationHrs: 2, setting: 'Outdoor', energyLevel: 'low', area: 'Holland Village', region: 'central', lat: 1.2850, lng: 103.8330, slotsLeft: null, groupFriendly: true, source: 'curated' },
+  { id: 's20', title: 'Jurong Lake Gardens Picnic', category: 'outdoors', type: 'outdoor', cost: 0, durationHrs: 1.5, setting: 'Outdoor', energyLevel: 'low', area: 'Jurong Lake Gardens', region: 'west', lat: 1.3378, lng: 103.7283, slotsLeft: null, groupFriendly: true, source: 'curated' },
 ]

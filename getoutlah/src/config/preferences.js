@@ -7,16 +7,18 @@
 // See PREFERENCES.md for the full data format.
 
 export const INTERESTS = [
-  { id: 'outdoors', label: 'Outdoors & nature', emoji: '🌳', hint: 'Hikes, parks, beaches' },
-  { id: 'sports', label: 'Sports & fitness', emoji: '🏃', hint: 'Bouldering, runs, games' },
-  { id: 'arts', label: 'Arts & culture', emoji: '🎨', hint: 'Museums, exhibitions' },
-  { id: 'food', label: 'Food & cafés', emoji: '🍜', hint: 'Hawker trails, café hopping' },
-  { id: 'workshops', label: 'Workshops & crafts', emoji: '🏺', hint: 'Pottery, cooking, art' },
-  { id: 'music', label: 'Music & events', emoji: '🎵', hint: 'Concerts, festivals' },
-  { id: 'games', label: 'Games & chill', emoji: '🎲', hint: 'Board games, escape rooms' },
-  { id: 'wellness', label: 'Wellness', emoji: '🧘', hint: 'Yoga, meditation' },
-  { id: 'volunteering', label: 'Volunteering', emoji: '🤝', hint: 'Community events' },
+  { id: 'outdoors', label: 'Outdoors & nature', emoji: '🌳', hint: 'Hikes, parks, beaches', color: '#B8EC61', mapIcon: 'bi-tree' },
+  { id: 'sports', label: 'Sports & fitness', emoji: '🏃', hint: 'Bouldering, runs, team sports', color: '#78DDE9', mapIcon: 'bi-dumbbell' },
+  { id: 'arts', label: 'Arts & culture', emoji: '🎨', hint: 'Museums, exhibitions', color: '#FFB8D1', mapIcon: 'bi-palette' },
+  { id: 'food', label: 'Food & cafés', emoji: '🍜', hint: 'Hawker trails, café hopping', color: '#FF947B', mapIcon: 'bi-fork-knife' },
+  { id: 'workshops', label: 'Workshops & crafts', emoji: '🏺', hint: 'Pottery, cooking, art', color: '#FFC976', mapIcon: 'bi-paintbrush' },
+  { id: 'events', label: 'Events', emoji: '🎟️', hint: 'Concerts, festivals, markets, pop-ups', color: '#BD9BFF', mapIcon: 'bi-calendar-event' },
+  { id: 'games', label: 'Games & chill', emoji: '🎲', hint: 'Board games, escape rooms', color: '#FFE075', mapIcon: 'bi-controller' },
+  { id: 'wellness', label: 'Wellness', emoji: '🧘', hint: 'Yoga, meditation', color: '#6DE4F2', mapIcon: 'bi-heart-pulse' },
+  { id: 'volunteering', label: 'Volunteering', emoji: '🤝', hint: 'Community events', color: '#8EACFF', mapIcon: 'bi-heart' },
 ]
+
+export const PREFERENCES_VERSION = 2
 
 // maxBudget is the most (in SGD) someone wants to spend on one activity.
 // null means "no limit".
@@ -46,4 +48,8 @@ export const MAX_INTERESTS = INTERESTS.length
 /** Turn an interest id back into its label, e.g. 'food' → 'Food & cafés'. */
 export function interestLabel(id) {
   return INTERESTS.find((i) => i.id === id)?.label ?? id
+}
+
+export function getInterest(id) {
+  return INTERESTS.find((interest) => interest.id === id) ?? null
 }

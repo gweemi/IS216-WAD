@@ -13,7 +13,7 @@ export async function getEvents() {
     return events.map((e) => {
       const start = Date.parse(e.start?.utc), end = Date.parse(e.end?.utc)
       return {
-        id: `eb-${e.id}`, title: e.name?.text ?? 'Event', category: 'arts', type: 'events',
+        id: `eb-${e.id}`, title: e.name?.text ?? 'Event', category: 'events', type: 'events',
         cost: e.is_free ? 0 : null, durationHrs: end && start ? (end - start) / 3600000 : null,
         setting: null, energyLevel: 'low', groupFriendly: true, area: e.venue?.address?.city ?? '',
         region: null, lat: parseFloat(e.venue?.latitude) || null, lng: parseFloat(e.venue?.longitude) || null,
