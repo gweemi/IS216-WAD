@@ -24,6 +24,10 @@ const router = createRouter({
     },
     { path: '/:pathMatch(.*)*', redirect: '/home' },
     { path: '/badges', name: 'badges', component: BadgesView, meta: { requiresLogin: true } },
+
+    { path: '/activities', name: 'activities', component: () => import('@/views/ActivitiesView.vue'), meta: { requiresLogin: true } },
+    { path: '/activities/:id', name: 'activity', component: () => import('@/views/ActivityDetailView.vue'), meta: { requiresLogin: true } },
+
     {
       path: '/test-my-features',
       name: 'test-my-features',

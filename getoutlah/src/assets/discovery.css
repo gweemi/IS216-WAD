@@ -1,0 +1,91 @@
+/* Discovery & Filtering styles. Imported by the four discovery components. */
+
+/* ---- components/ActivityCard.vue ---- */
+.act-card { position: relative; list-style: none; padding: 0.8rem; }
+.act-link { display: flex; gap: 0.9rem; align-items: center; text-decoration: none; color: inherit; padding-right: 2.4rem; }
+.act-tile {
+  width: 84px; height: 84px; flex-shrink: 0; border-radius: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem;
+}
+.act-emoji { font-size: 1.6rem; line-height: 1; }
+.act-tag {
+  font-size: 0.6rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em;
+  background: #fff; color: var(--gol-ink); border: 2px solid var(--gol-ink); border-radius: 999px; padding: 0 0.4rem;
+  transform: rotate(-4deg);
+}
+.act-body { min-width: 0; }
+.act-body .gol-eyebrow { font-size: 0.65rem; }
+.act-title { font-size: 1.05rem; font-weight: 900; margin: 0 0 0.15rem; }
+.act-meta { font-size: 0.8rem; color: var(--gol-muted); font-weight: 600; }
+.act-pills { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.4rem; }
+.act-save {
+  position: absolute; top: 0.6rem; right: 0.6rem; width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: var(--gol-purple-soft); color: var(--gol-purple); font-size: 1rem;
+}
+.act-save.on { background: var(--gol-purple); color: #fff; }
+
+/* ---- components/FilterSheet.vue ---- */
+.fs-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+.fs-title { font-size: 1.5rem; }
+.fs-label { font-size: 0.85rem; font-weight: 900; margin: 1rem 0 0.45rem; }
+.fs-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+.fs-chip {
+  border: 1.5px solid var(--gol-card-edge); background: #fff; color: var(--gol-ink);
+  border-radius: 999px; padding: 0.4rem 0.95rem; font-family: var(--gol-font); font-weight: 700; font-size: 0.85rem;
+}
+.fs-chip.on { background: var(--gol-purple); border-color: var(--gol-purple); color: #fff; }
+.fs-range { flex: 1; min-width: 120px; accent-color: var(--gol-purple); }
+.fs-actions {
+  display: flex; gap: 0.6rem; margin-top: 1.4rem; position: sticky; bottom: 0; background: var(--gol-bg); padding-top: 0.4rem;
+}
+.fs-actions .gol-btn-primary { flex: 1; width: auto; }
+.fs-clear {
+  border: 1.5px solid var(--gol-card-edge); background: #fff; border-radius: 999px; padding: 0 1.4rem;
+  font-family: var(--gol-font); font-weight: 800; color: var(--gol-ink);
+}
+
+/* ---- views/ActivitiesView.vue ---- */
+.act-page { min-height: 100vh; }
+.act-search { display: flex; gap: 0.6rem; margin: 1rem 0 0.8rem; }
+.act-input {
+  flex: 1; display: flex; align-items: center; gap: 0.6rem; background: #fff;
+  border: 1.5px solid var(--gol-card-edge); border-radius: 999px; padding: 0 1rem; box-shadow: 0 3px 0 var(--gol-card-edge);
+}
+.act-input i { color: var(--gol-purple); }
+.act-input input { flex: 1; border: none; outline: none; background: transparent; padding: 0.75rem 0; font-family: var(--gol-font); font-weight: 600; color: var(--gol-ink); }
+.act-filter-btn {
+  width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--gol-purple); color: #fff;
+  box-shadow: 0 4px 0 var(--gol-purple-dark); font-size: 1.1rem;
+}
+.act-filter-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--gol-purple-dark); }
+.act-switch { display: flex; align-items: center; gap: 0.7rem; padding-left: 0; font-weight: 700; font-size: 0.9rem; }
+.act-switch .form-check-input { margin: 0; flex-shrink: 0; float: none; }
+.act-list { display: grid; gap: 0.8rem; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .act-list { grid-template-columns: 1fr 1fr; } }
+.act-count { font-size: 0.8rem; font-weight: 800; color: var(--gol-purple); }
+.act-note { font-weight: 700; color: var(--gol-muted); margin: 0.6rem 0; }
+.act-note--warn { color: var(--gol-coral-text); font-size: 0.85rem; }
+
+/* ---- views/ActivityDetailView.vue ---- */
+.det-back { font-weight: 800; color: var(--gol-purple); text-decoration: none; }
+.det-hero { height: 140px; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
+.det-emoji { font-size: 3.5rem; }
+.det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0; }
+.det-cell { background: var(--gol-bg); border-radius: 14px; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+.det-cell i { color: var(--gol-purple); margin-right: 0.3rem; }
+.det-wide { grid-column: 1 / -1; }
+.det-weather { font-weight: 600; font-size: 0.9rem; margin: 0.4rem 0; }
+.det-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+.det-actions .gol-btn-primary { flex: 1 1 100%; }
+.det-link { text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; }
+.det-msg { margin-top: 0.8rem; font-weight: 800; color: var(--gol-purple); }
+
+/* ---- resets so links/lists don't look like default browser HTML ---- */
+.act-list { list-style: none; }
+.act-card, .act-card li { list-style: none; }
+.act-link, .act-link:hover { text-decoration: none; color: inherit; }
+.act-link * { text-decoration: none; }
+.act-save, .act-filter-btn, .fs-chip, .fs-clear { cursor: pointer; }
+
+/* ---- Admin page ---- */
+.adm-help { font-size: 0.85rem; color: var(--gol-muted); font-weight: 600; }
