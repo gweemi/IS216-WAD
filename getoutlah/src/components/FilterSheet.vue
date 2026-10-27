@@ -14,9 +14,9 @@ const SETTINGS = ['Any', 'Indoor', 'Outdoor']
 const ENERGY = [['Any', 'Any'], ['low', 'Chill'], ['medium', 'Moderate'], ['high', 'High energy']]
 const TYPES = [['events', 'Events'], ['outdoor', 'Outdoor'], ['volunteering', 'Volunteering'], ['paid', 'Paid'], ['openjio', 'OpenJio!']]
 
-function toggleType(t) {
-  const list = filters.value.types
-  filters.value.types = list.includes(t) ? list.filter((x) => x !== t) : [...list, t]
+function toggle(key, v) {
+  const list = filters.value[key]
+  filters.value[key] = list.includes(v) ? list.filter((x) => x !== v) : [...list, v]
 }
 </script>
 
@@ -32,15 +32,15 @@ function toggleType(t) {
 
     <h3 class="fs-label">Category</h3>
     <div class="fs-chips">
-      <button class="fs-chip" :class="{ on: filters.category === 'All' }" @click="filters.category = 'All'">All</button>
-      <button v-for="c in categories" :key="c" class="fs-chip" :class="{ on: filters.category === c }"
-        @click="filters.category = c">{{ categoryLabel(c) }}</button>
+      <button class="fs-chip" :class="{ on: !filters.categories.length }" @click="filters.categories = []">All</button>
+      <button v-for="c in categories" :key="c" class="fs-chip" :class="{ on: filters.categories.includes(c) }"
+        @click="toggle('categories', c)">{{ categoryLabel(c) }}</button>
     </div>
 
     <h3 class="fs-label">Type</h3>
     <div class="fs-chips">
       <button v-for="[id, label] in TYPES" :key="id" class="fs-chip" :class="{ on: filters.types.includes(id) }"
-        @click="toggleType(id)">{{ label }}</button>
+        @click="toggle('types', id)">{{ label }}</button>
     </div>
 
     <h3 class="fs-label">Budget</h3>

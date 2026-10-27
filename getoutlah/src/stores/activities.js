@@ -13,7 +13,7 @@ import { distanceMeters } from '@/utils/geo'
 import { fitsWindow } from '@/utils/freeTime'
 
 const defaultFilters = () => ({
-  query: '', category: 'All', types: [],            // types: events | outdoor | volunteering | paid | openjio
+  query: '', categories: [], types: [],            // empty = all. types: events | outdoor | volunteering | paid | openjio
   maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false,
   nearMe: false, radiusKm: 5, prioritiseFreeTime: false,
 })
@@ -51,7 +51,7 @@ export const filtered = computed(() => {
   const f = filters.value, q = f.query.trim().toLowerCase()
   return allActivities.value.filter((a) =>
     (!q || `${a.title} ${a.area}`.toLowerCase().includes(q)) &&
-    (f.category === 'All' || a.category === f.category) &&
+    (f.categories.length === 0 || f.categories.includes(a.category)) &&
     (f.types.length === 0 || f.types.includes(a.type)) &&
     (f.maxCost === null || (a.cost != null && a.cost <= f.maxCost)) &&
     (f.maxHours === null || a.durationHrs == null || a.durationHrs <= f.maxHours) &&
