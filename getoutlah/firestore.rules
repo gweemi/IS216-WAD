@@ -46,6 +46,12 @@ service cloud.firestore {
         && p.groupPreference in ['solo', 'group', 'either'];
     }
 
+    match /activities/{id} {
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin';
+    }
+
     match /users/{uid} {
       // Signed-in users can see profiles (needed for friends and leaderboards).
       allow read: if signedIn();

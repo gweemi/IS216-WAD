@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AuthView from '@/views/AuthView.vue'
+import ActivitiesView from '@/views/ActivitiesView.vue'
+import ActivityDetailView from '@/views/ActivityDetailView.vue'
 import MapView from '@/views/MapView.vue'
 import BadgesView from '@/views/BadgesView.vue'
 import MyFeaturesTestView from '@/views/MyFeaturesTestView.vue'
@@ -31,8 +33,13 @@ const router = createRouter({
     {
       path: '/activities',
       name: 'activities',
-      component: RoutePlaceholderView,
-      props: { title: 'Activities', icon: 'bi-stars' },
+      component: ActivitiesView,
+      meta: appRouteMeta,
+    },
+    {
+      path: '/activities/:id',
+      name: 'activity',
+      component: ActivityDetailView,
       meta: appRouteMeta,
     },
     {
