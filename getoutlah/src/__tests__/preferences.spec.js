@@ -18,7 +18,7 @@ vi.mock('firebase/firestore', () => ({
 
 const { validatePreferences, savePreferences } = await import('@/services/preferences')
 const { useAuthStore } = await import('@/stores/auth')
-const { INTERESTS, BUDGETS, ENERGY_LEVELS, GROUP_PREFERENCES } =
+const { INTERESTS, BUDGETS, ENERGY_LEVELS, GROUP_PREFERENCES, PREFERENCES_VERSION } =
   await import('@/config/preferences')
 
 const good = {
@@ -46,6 +46,7 @@ describe('validatePreferences', () => {
   it.each([
     ['no interests', { interests: [] }],
     ['an unknown interest', { interests: ['skydiving'] }],
+    ['the retired music category', { interests: ['music'] }],
     ['a made-up budget', { maxBudget: 999 }],
     ['a missing budget', { maxBudget: undefined }],
     ['a missing energy level', { energyLevel: '' }],
@@ -97,8 +98,18 @@ describe('savePreferences', () => {
       energyLevel: 'high',
       groupPreference: 'group',
     })
+    expect(saved.calls[0].data.preferencesVersion).toBe(PREFERENCES_VERSION)
     expect(store.hasPreferences).toBe(true)
     expect(store.profile.displayName).toBe('En Min') // rest of the profile kept
+  })
+
+  it('requires users with an earlier preference version to answer onboarding again', () => {
+    const store = useAuthStore()
+    store.setProfile({ preferences: good, preferencesVersion: PREFERENCES_VERSION - 1 })
+    expect(store.hasPreferences).toBe(false)
+
+    store.setProfile({ preferences: good, preferencesVersion: PREFERENCES_VERSION })
+    expect(store.hasPreferences).toBe(true)
   })
 
   it('refuses to save incomplete answers', async () => {

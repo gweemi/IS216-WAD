@@ -88,17 +88,8 @@ import BottomSheet from '../common/BottomSheet.vue'
 import { MOODS, reflections, saveReflection, skipReflection } from '../../stores/reflections.js'
 import { game } from '../../stores/gamification(badges).js'
 import { suggestNext } from '../../utils/moodSuggestions.js'
-import { SAMPLE_ACTIVITIES } from '../../data/sampleActivities.js'
-
-const ICONS = {
-  nature: 'bi-tree',
-  sports: 'bi-dribbble',
-  workshop: 'bi-palette',
-  arts: 'bi-brush',
-  outdoor: 'bi-sun',
-  volunteering: 'bi-heart',
-  events: 'bi-calendar-event',
-}
+import { seedActivities } from '../../data/seedActivities.js'
+import { getInterest } from '../../config/preferences.js'
 
 export default {
   name: 'ReflectionSheet',
@@ -107,7 +98,7 @@ export default {
     open: { type: Boolean, default: false },
     item: { type: Object, default: null }, // pending reflection → start at step 1
     suggestFrom: { type: Object, default: null }, // saved reflection → jump to suggestions
-    activities: { type: Array, default: () => SAMPLE_ACTIVITIES }, // pass the team's real list later
+    activities: { type: Array, default: () => seedActivities },
   },
   emits: ['close', 'saved', 'pick'],
   data() {
@@ -162,7 +153,7 @@ export default {
       this.$emit('close')
     },
     iconFor(category) {
-      return ICONS[category] || 'bi-compass'
+      return getInterest(category)?.mapIcon || 'bi-compass'
     },
   },
 }

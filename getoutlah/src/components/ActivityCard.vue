@@ -1,7 +1,7 @@
 <script setup>
 import '@/assets/discovery.css'
 import { toggleSaved, isSaved } from '@/stores/activities'
-import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText } from '@/utils/activityStyle'
+import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel } from '@/utils/activityStyle'
 defineProps({ activity: Object })
 </script>
 
@@ -21,6 +21,7 @@ defineProps({ activity: Object })
         </div>
         <div class="act-pills">
           <span class="gol-pill gol-pill--okay">{{ priceText(activity) }}</span>
+          <span class="act-source">{{ sourceLabel(activity.source) }}</span>
           <span v-if="activity.slotsLeft === 0" class="gol-pill gol-pill--support">Full</span>
           <span v-else-if="activity.slotsLeft != null" class="gol-pill gol-pill--good">{{ activity.slotsLeft }} slots left</span>
         </div>

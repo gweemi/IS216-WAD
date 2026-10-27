@@ -7,12 +7,12 @@ import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import FilterButton from '@/components/common/FilterButton.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
-import { MAP_DEMO_ACTIVITIES } from '@/data/mapDemoActivities'
+import { allActivities, loadActivities } from '@/stores/activities'
 import { clearActivityClusterLayer, createActivityClusterLayer, populateActivityClusterLayer } from '@/utils/activityMapMarkers'
 
 const mapElement = ref(null)
 const searchQuery = ref('')
-const activities = ref(MAP_DEMO_ACTIVITIES)
+const activities = allActivities
 const MAX_MAP_ZOOM = 18
 let map
 let clusterLayer
@@ -21,7 +21,7 @@ function renderActivityMarkers(items) {
   if (clusterLayer) populateActivityClusterLayer(L, clusterLayer, items)
 }
 
-onMounted(() => {
+onMounted(async () => {
   map = L.map(mapElement.value, { maxZoom: MAX_MAP_ZOOM, zoomControl: false }).setView([1.3521, 103.8198], 12)
 
   L.control.zoom({ position: 'topright' }).addTo(map)
@@ -36,6 +36,7 @@ onMounted(() => {
   clusterLayer = createActivityClusterLayer(L)
   clusterLayer.addTo(map)
   renderActivityMarkers(activities.value)
+  await loadActivities()
 })
 
 watch(activities, renderActivityMarkers, { deep: true })

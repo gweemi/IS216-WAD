@@ -59,13 +59,13 @@ import ReflectionsCard from '../components/wellbeing/ReflectionsCard.vue'
 import WellbeingSettings from '../components/wellbeing/WellbeingSettings.vue'
 import { checkInToActivity, resetGamification } from '../stores/gamification(badges).js'
 import { resetReflections } from '../stores/reflections.js'
-import { SAMPLE_ACTIVITIES } from '../data/sampleActivities.js'
+import { seedActivities } from '../data/seedActivities.js'
 
 export default {
   name: 'MyFeaturesTestView',
   components: { WellbeingCard, ReflectionsCard, WellbeingSettings },
   data() {
-    return { activities: SAMPLE_ACTIVITIES, pick: SAMPLE_ACTIVITIES[0], message: '' }
+    return { activities: seedActivities, pick: seedActivities[0], message: '' }
   },
   methods: {
     async fakeCheckIn(nearby) {

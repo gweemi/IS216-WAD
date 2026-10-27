@@ -38,10 +38,10 @@ function demoState() {
   return {
     ...emptyState(),
     entries: [
-      { id: 'r1', activityId: 'demo-1', activityTitle: 'Pottery taster class', category: 'workshop', energy: 'calm', date: today(-28), mood: 3, note: 'Messy but so relaxing. Made a wonky bowl.' },
+      { id: 'r1', activityId: 'demo-1', activityTitle: 'Pottery taster class', category: 'workshops', energy: 'calm', date: today(-28), mood: 3, note: 'Messy but so relaxing. Made a wonky bowl.' },
       { id: 'r2', activityId: 'demo-2', activityTitle: 'Badminton OPENJIO', category: 'sports', energy: 'high', date: today(-21), mood: 4, note: 'Met 3 new people from SCIS!' },
-      { id: 'r3', activityId: 'demo-3', activityTitle: 'MacRitchie TreeTop Walk', category: 'nature', energy: 'moderate', date: today(-14), mood: 4, note: '' },
-      { id: 'r4', activityId: 'demo-4', activityTitle: 'East Coast picnic (hosted)', category: 'outdoor', energy: 'moderate', date: today(-7), mood: 3, note: 'Hosting was stressful at first but fun.' },
+      { id: 'r3', activityId: 'demo-3', activityTitle: 'MacRitchie TreeTop Walk', category: 'outdoors', energy: 'moderate', date: today(-14), mood: 4, note: '' },
+      { id: 'r4', activityId: 'demo-4', activityTitle: 'East Coast picnic (hosted)', category: 'outdoors', energy: 'moderate', date: today(-7), mood: 3, note: 'Hosting was stressful at first but fun.' },
       { id: 'r5', activityId: 'demo-5', activityTitle: 'Art jam at Jurong', category: 'arts', energy: 'calm', date: today(0), mood: 2, note: 'Tired after a long week.' },
     ],
   }
@@ -79,7 +79,7 @@ export function addPendingReflection(activity) {
     activityId: activity.id,
     activityTitle: activity.title,
     category: activity.category,
-    energy: activity.energy || null,
+    energy: activity.energy || ({ low: 'calm', medium: 'moderate', high: 'high' }[activity.energyLevel]) || null,
     checkedInAt: new Date().toISOString(),
   })
 }
@@ -137,7 +137,7 @@ export function latestReflection() {
   return reflections.entries.length ? reflections.entries[reflections.entries.length - 1] : null
 }
 
-// Average mood for each category the user has rated, e.g. { nature: 4, arts: 2 }
+// Average mood for each category the user has rated, e.g. { outdoors: 4, arts: 2 }
 export function moodByCategory() {
   const sums = {}
   for (const e of reflections.entries) {
@@ -151,7 +151,7 @@ export function moodByCategory() {
   return result
 }
 
-// A friendly one-liner like "You tend to feel best after nature activities"
+// A friendly one-liner like "You tend to feel best after outdoors activities"
 export function moodInsight() {
   const byCat = moodByCategory()
   const cats = Object.keys(byCat)

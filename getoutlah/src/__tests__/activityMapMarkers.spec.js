@@ -51,7 +51,7 @@ describe('activity map markers', () => {
     const { L, addLayers, clearLayers } = makeLeaflet()
     const layer = createActivityClusterLayer(L)
     const markers = populateActivityClusterLayer(L, layer, [
-      { id: 'valid', title: 'Walk', category: 'nature', cost: 0, duration: 60, lat: 1.3, lng: 103.8 },
+      { id: 'valid', title: 'Walk', category: 'outdoors', cost: 0, duration: 60, lat: 1.3, lng: 103.8 },
       { id: 'invalid', title: 'Missing place', category: 'arts', cost: 0, duration: 60, lat: null, lng: null },
     ])
 
@@ -63,7 +63,7 @@ describe('activity map markers', () => {
   it('does not unmount marker components during Leaflet cluster zoom transitions', () => {
     const { L } = makeLeaflet()
     const marker = createActivityMarker(L, {
-      title: 'Walk', category: 'nature', cost: 0, duration: 60, lat: 1.3, lng: 103.8,
+      title: 'Walk', category: 'outdoors', cost: 0, duration: 60, lat: 1.3, lng: 103.8,
     })
 
     expect(marker.__cleanupActivityMarker).toEqual(expect.any(Function))
@@ -93,7 +93,7 @@ describe('activity map markers', () => {
   it('uses neutral text for unknown price and duration', () => {
     const { L, bindPopup } = makeLeaflet()
     createActivityMarker(L, {
-      title: 'Demo: Food festival', category: 'food', cost: null, duration: null, lat: 1.28, lng: 103.85,
+      title: 'Demo: Food festival', category: 'events', cost: null, duration: null, lat: 1.28, lng: 103.85,
     })
 
     expect(bindPopup).toHaveBeenCalledWith(expect.stringContaining('Price TBC · Duration TBC'))

@@ -4,6 +4,7 @@ import { markRaw } from 'vue'
 import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '@/firebase'
+import { PREFERENCES_VERSION } from '@/config/preferences'
 
 let readyPromise = null
 
@@ -18,7 +19,8 @@ export const useAuthStore = defineStore('auth', {
     email: (state) => state.user?.email ?? '',
     isLoggedIn: (state) => Boolean(state.user),
     /** Has this user finished the new-user questionnaire? */
-    hasPreferences: (state) => Boolean(state.profile?.preferences),
+    hasPreferences: (state) =>
+      Boolean(state.profile?.preferences) && state.profile?.preferencesVersion === PREFERENCES_VERSION,
     /** The questionnaire answers, or null. See PREFERENCES.md. */
     preferences: (state) => state.profile?.preferences ?? null,
   },

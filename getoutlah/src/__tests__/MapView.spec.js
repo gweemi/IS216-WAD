@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import MapView from '@/views/MapView.vue'
 
 const leafletMocks = vi.hoisted(() => ({
   addLayers: vi.fn(),
@@ -12,6 +11,30 @@ const leafletMocks = vi.hoisted(() => ({
   remove: vi.fn(),
   setView: vi.fn(),
   zoomControlAddTo: vi.fn(),
+}))
+
+const activityMocks = vi.hoisted(() => ({
+  items: [
+    {
+      id: 'shared-1',
+      title: 'Shared walk',
+      category: 'outdoors',
+      cost: 0,
+      durationHrs: 1,
+      lat: 1.3,
+      lng: 103.8,
+    },
+    {
+      id: 'shared-2',
+      title: 'Shared event',
+      category: 'events',
+      cost: 10,
+      durationHrs: 2,
+      lat: 1.32,
+      lng: 103.82,
+    },
+  ],
+  loadActivities: vi.fn(),
 }))
 
 vi.mock('leaflet', () => ({
@@ -32,6 +55,16 @@ vi.mock('leaflet', () => ({
 }))
 
 vi.mock('leaflet.markercluster', () => ({}))
+vi.mock('@/stores/activities', async () => {
+  const { ref } = await import('vue')
+
+  return {
+    allActivities: ref(activityMocks.items),
+    loadActivities: activityMocks.loadActivities,
+  }
+})
+
+const { default: MapView } = await import('@/views/MapView.vue')
 
 describe('MapView', () => {
   beforeEach(() => {
@@ -49,12 +82,13 @@ describe('MapView', () => {
     )
   })
 
-  it('adds the map demo activities to one cluster layer', () => {
+  it('adds shared activity-store records to one cluster layer', () => {
     mount(MapView)
 
     expect(leafletMocks.clusterAddTo).toHaveBeenCalledTimes(1)
     expect(leafletMocks.zoomControlAddTo).toHaveBeenCalledTimes(1)
     expect(leafletMocks.addLayers).toHaveBeenCalledWith(expect.any(Array))
-    expect(leafletMocks.marker).toHaveBeenCalledTimes(20)
+    expect(leafletMocks.marker).toHaveBeenCalledTimes(activityMocks.items.length)
+    expect(activityMocks.loadActivities).toHaveBeenCalledTimes(1)
   })
 })

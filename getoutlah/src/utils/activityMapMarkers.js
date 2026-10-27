@@ -55,7 +55,7 @@ export function createActivityMarker(L, activity) {
     <section class="gol-activity-popup">
       <strong>${escapeHtml(activity.title)}</strong>
       <span>${escapeHtml(category.label)}</span>
-      <span>${escapeHtml(formatCost(activity.cost))} · ${escapeHtml(formatDuration(activity.duration))}</span>
+      <span>${escapeHtml(formatCost(activity.cost))} · ${escapeHtml(formatDuration(activity.duration ?? (activity.durationHrs ? activity.durationHrs * 60 : null)))}</span>
     </section>
   `)
   return marker

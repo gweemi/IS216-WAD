@@ -7,17 +7,17 @@
 
 // If an activity has no energy level, guess it from its category
 const ENERGY_BY_CATEGORY = {
-  workshop: 'calm',
+  workshops: 'calm',
   arts: 'calm',
-  nature: 'moderate',
-  outdoor: 'moderate',
+  outdoors: 'moderate',
   volunteering: 'moderate',
   events: 'moderate',
   sports: 'high',
 }
 
 export function energyOf(activity) {
-  return activity.energy || ENERGY_BY_CATEGORY[activity.category] || 'moderate'
+  const fromActivityPage = { low: 'calm', medium: 'moderate', high: 'high' }
+  return activity.energy || fromActivityPage[activity.energyLevel] || ENERGY_BY_CATEGORY[activity.category] || 'moderate'
 }
 
 // What each mood leans towards
@@ -49,7 +49,7 @@ const MOOD_PLANS = {
   },
 }
 
-// Average mood per category from past reflections, e.g. { nature: 3.5 }
+// Average mood per category from past reflections, e.g. { outdoors: 3.5 }
 function favouriteCategories(moodHistory) {
   const sums = {}
   for (const r of moodHistory || []) {
@@ -112,7 +112,7 @@ export function suggestNext({ mood, lastActivity = null, activities = [], doneId
         score += 2
         reasons.unshift(`Something new: you haven't tried ${a.category} yet`)
       }
-      if (plan.tryNew && a.isOpenJio) {
+      if (plan.tryNew && (a.isOpenJio || a.type === 'openjio')) {
         score += 1
         reasons.push('Others are going')
       }
@@ -122,7 +122,8 @@ export function suggestNext({ mood, lastActivity = null, activities = [], doneId
         score += 1
         reasons.push('Free')
       }
-      if (mood <= 2 && a.duration && a.duration <= 90) score += 1
+      const durationMinutes = a.duration ?? (a.durationHrs ? a.durationHrs * 60 : null)
+      if (mood <= 2 && durationMinutes && durationMinutes <= 90) score += 1
 
       // Don't suggest the same category again when they felt drained/meh
       if (mood <= 2 && lastActivity && a.category === lastActivity.category) score -= 2

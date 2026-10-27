@@ -7,7 +7,7 @@ import { friendsWhoDid } from '@/stores/ports'
 import { checkInToActivity } from '@/stores/gamification(badges).js'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
-import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText } from '@/utils/activityStyle'
+import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel } from '@/utils/activityStyle'
 
 const route = useRoute()
 const { request } = useGeolocation()
@@ -46,6 +46,7 @@ const doCheckIn = () => run(async () => {
           </div>
           <div class="gol-eyebrow mt-3">{{ categoryLabel(activity.category) }}</div>
           <h1 class="gol-title">{{ activity.title }}</h1>
+          <span class="act-source det-source">{{ sourceLabel(activity.source) }}</span>
         </div>
 
         <!-- Right: facts + actions -->

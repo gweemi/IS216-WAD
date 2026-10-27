@@ -50,7 +50,7 @@ interestLabel('food') // 'Food & cafés'
 | `arts` | Arts & culture |
 | `food` | Food & cafés |
 | `workshops` | Workshops & crafts |
-| `music` | Music & events |
+| `events` | Events |
 | `games` | Games & chill |
 | `wellness` | Wellness |
 | `volunteering` | Volunteering |

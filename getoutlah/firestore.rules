@@ -40,7 +40,7 @@ service cloud.firestore {
         && p.interests.size() >= 1
         && p.interests.size() <= 9
         && p.interests.hasOnly(['outdoors', 'sports', 'arts', 'food', 'workshops',
-                                'music', 'games', 'wellness', 'volunteering'])
+                                'events', 'games', 'wellness', 'volunteering'])
         && (p.maxBudget == null || p.maxBudget in [0, 10, 20, 50])
         && p.energyLevel in ['low', 'medium', 'high']
         && p.groupPreference in ['solo', 'group', 'either'];
@@ -69,8 +69,10 @@ service cloud.firestore {
         && request.auth.uid == uid
         && !request.resource.data.diff(resource.data)
              .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points'])
-        && (!('preferences' in request.resource.data)
-            || validPreferences(request.resource.data.preferences));
+        && (!request.resource.data.diff(resource.data)
+              .affectedKeys().hasAny(['preferences', 'preferencesVersion'])
+            || (validPreferences(request.resource.data.preferences)
+                && request.resource.data.preferencesVersion == 2));
 
       allow delete: if false;
     }

@@ -9,6 +9,7 @@ import {
   GROUP_PREFERENCES,
   MIN_INTERESTS,
   MAX_INTERESTS,
+  PREFERENCES_VERSION,
 } from '@/config/preferences'
 
 const ids = (list) => list.map((o) => o.id)
@@ -53,8 +54,9 @@ export async function savePreferences(prefs) {
   }
   await updateDoc(doc(db, 'users', auth.user.uid), {
     preferences,
+    preferencesVersion: PREFERENCES_VERSION,
     preferencesUpdatedAt: serverTimestamp(),
   })
-  auth.setProfile({ ...auth.profile, preferences })
+  auth.setProfile({ ...auth.profile, preferences, preferencesVersion: PREFERENCES_VERSION })
   return preferences
 }

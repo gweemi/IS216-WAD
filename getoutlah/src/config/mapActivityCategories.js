@@ -1,13 +1,9 @@
-export const MAP_ACTIVITY_CATEGORIES = {
-  music: { label: 'Music & Shows', color: '#BD9BFF', icon: 'bi-music-note-beamed' },
-  arts: { label: 'Arts & Culture', color: '#FFB8D1', icon: 'bi-palette' },
-  workshops: { label: 'Workshops & Learning', color: '#FFC976', icon: 'bi-paintbrush' },
-  nature: { label: 'Nature & Outdoors', color: '#B8EC61', icon: 'bi-tree' },
-  sports: { label: 'Sports & Fitness', color: '#78DDE9', icon: 'bi-dumbbell' },
-  food: { label: 'Food & Drink', color: '#FF947B', icon: 'bi-fork-knife' },
-  festivals: { label: 'Festivals & Markets', color: '#FFE075', icon: 'bi-shop' },
-  community: { label: 'Community & Volunteering', color: '#8EACFF', icon: 'bi-heart' },
-}
+import { INTERESTS } from '@/config/preferences'
+
+// Map presentation deliberately derives from the onboarding taxonomy.
+export const MAP_ACTIVITY_CATEGORIES = Object.fromEntries(
+  INTERESTS.map(({ id, label, color, mapIcon }) => [id, { label, color, icon: mapIcon }]),
+)
 
 export const MAP_ACTIVITY_CATEGORY_FALLBACK = {
   label: 'Activity',
