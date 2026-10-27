@@ -80,68 +80,12 @@
 .det-link { text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; }
 .det-msg { margin-top: 0.8rem; font-weight: 800; color: var(--gol-purple); }
 
-/* ---- Activity grid: 1 card on mobile, 4 across on laptop ---- */
-.act-list {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: 1fr;               /* mobile: 1 card per row */
-}
+/* ---- resets so links/lists don't look like default browser HTML ---- */
+.act-list { list-style: none; }
+.act-card, .act-card li { list-style: none; }
+.act-link, .act-link:hover { text-decoration: none; color: inherit; }
+.act-link * { text-decoration: none; }
+.act-save, .act-filter-btn, .fs-chip, .fs-clear { cursor: pointer; }
 
-@media (min-width: 992px) {                 /* laptop: 4 cards per row */
-  .act-list { grid-template-columns: repeat(3, 1fr); }
-
-  /* With 4 across each card is narrow, so stack the tile above the text */
-  .act-link {
-    flex-direction: column;
-    align-items: stretch;
-    padding-right: 0;
-  }
-  .act-tile {
-    width: 100%;
-    height: 120px;
-  }
-  .act-save {
-    top: 1.1rem;
-    right: 1.1rem;
-    background: #fff;                       /* stays readable on top of the coloured tile */
-  }
-  .act-save.on { background: var(--gol-purple); }
-}
-
-/* ---- Detail page: stacked on mobile, two columns on laptop ---- */
-.det-wrap { max-width: 1100px; }
-.det-layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-.det-side .det-grid { margin-top: 0; }
-
-@media (min-width: 992px) {
-  .det-layout { grid-template-columns: 1.1fr 1fr; align-items: start; gap: 1.5rem; }
-  .det-hero { height: 320px; }
-  .det-emoji { font-size: 5rem; }
-  .det-main .gol-title { font-size: 2.4rem; }
-  .det-actions .gol-btn-primary { flex: 1 1 100%; }
-}
-
-/* Phones: big thumb-friendly buttons */
-@media (max-width: 575px) {
-  .det-actions > * { flex: 1 1 100%; text-align: center; padding-top: 0.8rem; padding-bottom: 0.8rem; }
-}
-
-
-/* ---- Filter sheet: wider on laptop, groups side by side ---- */
-@media (min-width: 992px) {
-  body .gol-sheet:has(.fs-head) { max-width: 760px; }
-
-  /* Put each label + chips pair into a 2-column layout */
-  body .gol-sheet:has(.fs-head) {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 2rem;
-    align-content: start;
-  }
-  .fs-head, .fs-actions { grid-column: 1 / -1; }
-}
-
-/* Phones: slightly larger chips so they are easy to tap */
-@media (max-width: 575px) {
-  .fs-chip { padding: 0.5rem 1rem; }
-}
+/* ---- Admin page ---- */
+.adm-help { font-size: 0.85rem; color: var(--gol-muted); font-weight: 600; }
