@@ -5,7 +5,7 @@ vi.stubGlobal('fetch', fetchMock)
 vi.stubEnv('VITE_EVENTBRITE_TOKEN', 'test-token')
 vi.stubEnv('VITE_EVENTBRITE_ORG_ID', 'test-org')
 
-const { getEvents } = await import('@/services/eventbrite')
+const { getEvents } = await import('@/services/api/eventbrite')
 const { sourceLabel } = await import('@/utils/activityStyle')
 
 describe('Eventbrite activity normalization', () => {
