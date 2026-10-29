@@ -82,9 +82,9 @@ service cloud.firestore {
     function validJio(d) {
       return d.title is string && d.title.size() >= 1 && d.title.size() <= 60
         && d.category in ['outdoors', 'sports', 'arts', 'food', 'workshops',
-                          'music', 'games', 'wellness', 'volunteering']
+                          'events', 'games', 'wellness', 'volunteering']
         && d.location is string && d.location.size() >= 1 && d.location.size() <= 80
-        && d.region in ['central', 'north', 'north-east', 'east', 'west']
+        && d.region in ['central', 'north', 'north-east', 'east', 'west', 'south']
         && d.description is string && d.description.size() <= 300
         && d.startAt is timestamp
         && d.durationMins is int && d.durationMins >= 15 && d.durationMins <= 720
@@ -94,7 +94,18 @@ service cloud.firestore {
         && d.status in ['open', 'cancelled']
         && d.participants is list && d.participants.size() <= d.capacity
         && d.participants.size() == d.participants.toSet().size() // no duplicates
-        && d.waitlist is list && d.waitlist.size() <= 200;
+        && d.waitlist is list && d.waitlist.size() <= 200
+        // friends-only jios list who is invited (older jios may not have the field)
+        && (!('invited' in d) || (d.invited is list && d.invited.size() <= 50));
+    }
+
+    // Public jios: anyone. Friends-only: only people the host invited
+    // (or who are already in it).
+    function mayJoin(jio, uid) {
+      return jio.visibility == 'public'
+        || jio.get('invited', []).hasAny([uid])
+        || jio.participants.hasAny([uid])
+        || jio.waitlist.hasAny([uid]);
     }
 
     // Join, chope or leave: you may only add or remove yourself.
@@ -107,6 +118,7 @@ service cloud.firestore {
       let beforeEveryone = before.participants.toSet().union(before.waitlist.toSet());
       return after.diff(before).affectedKeys().hasOnly(['participants', 'waitlist'])
         && before.status == 'open'
+        && mayJoin(before, me)
         && after.participants.hasAny([before.hostId])
         // only you (or someone from the queue) can be added to the going list
         && after.participants.toSet().difference(beforeEveryone).hasOnly([me])
@@ -120,19 +132,23 @@ service cloud.firestore {
     }
 
     match /openjios/{jioId} {
-      // Signed-in users can read jios. "Friends only" is filtered in the app.
+      // Signed-in users can read jios. "Friends only" is filtered in the app
+      // (only the host, invited friends and people in it see it).
       allow read: if signedIn();
 
       // You can only host as yourself, and start as the only person going.
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['title', 'category', 'description', 'location',
              'region', 'lat', 'lng', 'startAt', 'durationMins', 'cost', 'capacity', 'visibility',
-             'hostId', 'hostName', 'participants', 'waitlist', 'status', 'createdAt'])
+             'hostId', 'hostName', 'participants', 'waitlist', 'invited', 'status', 'createdAt'])
         && request.resource.data.hostId == request.auth.uid
         && request.resource.data.hostName is string
         && request.resource.data.participants == [request.auth.uid]
         && request.resource.data.waitlist == []
         && request.resource.data.status == 'open'
+        && request.resource.data.invited is list
+        && ((request.resource.data.visibility == 'friends' && request.resource.data.invited.size() >= 1)
+            || (request.resource.data.visibility == 'public' && request.resource.data.invited.size() == 0))
         && request.resource.data.startAt > request.time
         && request.resource.data.createdAt == request.time
         && validJio(request.resource.data);

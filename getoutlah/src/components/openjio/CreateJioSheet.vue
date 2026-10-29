@@ -2,7 +2,9 @@
   "Start an OPENJIO" form, inside the team's BottomSheet.
   Usage:
     <CreateJioSheet :open="showCreate" @close="showCreate = false" @created="onCreated" />
-  It checks the form with validateJio() and saves with createJio().
+  Optional :prefill fills in the form, e.g. from an activity or a free time slot:
+    :prefill="{ title: 'Pottery jam', location: 'Bras Basah', startAt: new Date(...) }"
+  See OPENJIO.md for the fields.
 -->
 <template>
   <BottomSheet :open="open" label="Start an OPENJIO" @close="$emit('close')">
@@ -108,6 +110,23 @@
         <p class="hint mb-0">{{ VISIBILITY.find((v) => v.id === form.visibility).hint }}</p>
       </fieldset>
 
+      <fieldset v-if="form.visibility === 'friends'" class="field" data-testid="jio-invite-list">
+        <span>Invite friends ({{ form.invited.length }})</span>
+        <p v-if="friendsLoading" class="hint mt-0">Loading your friends…</p>
+        <p v-else-if="!friends.length" class="hint mt-0">
+          You haven't added any friends yet. Add some on the Friends page, or make this jio public.
+        </p>
+        <div v-else class="friend-list">
+          <label v-for="f in friends" :key="f.uid" class="friend" :class="{ picked: form.invited.includes(f.uid) }">
+            <input v-model="form.invited" type="checkbox" :value="f.uid" class="visually-hidden" />
+            <img v-if="f.photoURL" :src="f.photoURL" alt="" referrerpolicy="no-referrer" />
+            <span v-else class="initial">{{ f.displayName[0] }}</span>
+            {{ f.displayName }}
+            <i class="bi ms-auto" :class="form.invited.includes(f.uid) ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+          </label>
+        </div>
+      </fieldset>
+
       <label class="field">
         <span>Details (optional)</span>
         <textarea
@@ -132,11 +151,19 @@
 import BottomSheet from '@/components/common/BottomSheet.vue'
 import { INTERESTS } from '@/config/preferences'
 import { VISIBILITY, REGIONS, LIMITS, validateJio } from '@/utils/openjio'
-import { createJio, friendlyJioError } from '@/services/openjio'
+import { createJio, getProfiles, friendlyJioError } from '@/services/openjio'
+import { useAuthStore } from '@/stores/auth'
 
 // 'YYYY-MM-DD' in the user's own time zone
 function isoDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// Tomorrow at 3pm
+function defaultStart() {
+  const d = new Date(Date.now() + 86400000)
+  d.setHours(15, 0, 0, 0)
+  return d
 }
 
 function blankForm() {
@@ -148,6 +175,7 @@ function blankForm() {
     cost: 0,
     capacity: 6,
     visibility: 'public',
+    invited: [], // friends' uids, for friends-only jios
     description: '',
   }
 }
@@ -157,22 +185,33 @@ export default {
   components: { BottomSheet },
   props: {
     open: { type: Boolean, default: false },
+    prefill: { type: Object, default: null },
   },
   emits: ['close', 'created'],
   data() {
-    const tomorrow = new Date(Date.now() + 86400000)
     return {
       INTERESTS,
       VISIBILITY,
       REGIONS,
       LIMITS,
       form: blankForm(),
-      date: isoDate(tomorrow),
-      time: '15:00',
+      date: '',
+      time: '',
       hours: 2,
       saving: false,
       error: '',
+      friends: [], // [{ uid, displayName, photoURL }]
+      friendsLoading: false,
     }
+  },
+  watch: {
+    // Start fresh (plus any prefill) every time the sheet opens
+    open: {
+      immediate: true,
+      handler(isOpen) {
+        if (isOpen) this.fillForm()
+      },
+    },
   },
   computed: {
     today() {
@@ -188,6 +227,42 @@ export default {
     },
   },
   methods: {
+    fillForm() {
+      const p = this.prefill ?? {}
+      const form = blankForm()
+      for (const key of Object.keys(form)) {
+        if (p[key] !== undefined && p[key] !== null) {
+          form[key] = Array.isArray(p[key]) ? [...p[key]] : p[key]
+        }
+      }
+      // Only keep a category the form knows about
+      if (!INTERESTS.some((i) => i.id === form.category)) form.category = ''
+      this.form = form
+
+      const start = p.startAt instanceof Date ? p.startAt : defaultStart()
+      this.date = isoDate(start)
+      this.time = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`
+      this.hours = p.durationMins ? p.durationMins / 60 : 2
+      this.error = ''
+      this.loadFriends()
+    },
+
+    async loadFriends() {
+      const friendIds = useAuthStore().profile?.friendIds ?? []
+      if (!friendIds.length) {
+        this.friends = []
+        return
+      }
+      this.friendsLoading = true
+      try {
+        this.friends = await getProfiles(friendIds)
+      } catch {
+        this.friends = []
+      } finally {
+        this.friendsLoading = false
+      }
+    },
+
     async onSubmit() {
       this.error = validateJio(this.jio)[0] ?? ''
       if (this.error) return
@@ -196,7 +271,6 @@ export default {
       try {
         const id = await createJio(this.jio)
         this.$emit('created', id)
-        this.form = blankForm() // ready for the next one
       } catch (err) {
         this.error = friendlyJioError(err)
       } finally {
@@ -246,5 +320,31 @@ export default {
   color: var(--gol-muted);
 }
 .visibility-toggle button.active { background: #fff; color: var(--gol-purple); }
+.friend-list { display: grid; gap: 0.4rem; max-height: 220px; overflow-y: auto; }
+.friend {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #fff;
+  border: 2px solid var(--gol-card-edge);
+  border-radius: 14px;
+  padding: 0.45rem 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.friend.picked { border-color: var(--gol-purple); color: var(--gol-purple); }
+.friend img,
+.friend .initial {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+.friend .initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gol-purple-soft);
+  color: var(--gol-purple);
+}
 .error { color: #b4382f; font-weight: 800; margin-bottom: 0.5rem; }
 </style>

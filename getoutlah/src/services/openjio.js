@@ -6,6 +6,7 @@
 import {
   collection,
   doc,
+  getDoc,
   addDoc,
   updateDoc,
   onSnapshot,
@@ -43,6 +44,7 @@ export function fromDoc(snap) {
     startAt: d.startAt?.toDate?.() ?? new Date(d.startAt),
     participants: d.participants ?? [],
     waitlist: d.waitlist ?? [],
+    invited: d.invited ?? [],
   }
 }
 
@@ -70,6 +72,7 @@ export async function createJio(form) {
     cost: form.cost,
     capacity: form.capacity,
     visibility: form.visibility,
+    invited: form.visibility === 'friends' ? [...new Set(form.invited)] : [],
     hostId: uid,
     hostName: auth.profile?.displayName || auth.user.displayName || 'A GetOutLah! user',
     participants: [uid],
@@ -119,10 +122,51 @@ export const chopeJio = (jioId) => changeSpots(jioId, applyChope)
 export const leaveJio = (jioId) => changeSpots(jioId, applyLeave)
 export const leaveQueue = (jioId) => changeSpots(jioId, applyLeaveQueue)
 
+/**
+ * Names and photos for a list of user ids, e.g. the user's friends for the
+ * invite list. Users we can't find are skipped.
+ */
+export async function getProfiles(uids) {
+  const snaps = await Promise.all(uids.map((uid) => getDoc(doc(db, 'users', uid))))
+  return snaps
+    .filter((snap) => snap.exists())
+    .map((snap) => ({
+      uid: snap.id,
+      displayName: snap.data().displayName || 'GetOutLah! user',
+      photoURL: snap.data().photoURL ?? null,
+    }))
+}
+
 /** Host only: cancel the jio. Everyone still sees it, marked as cancelled. */
 export async function cancelJio(jioId) {
   currentUser()
   await updateDoc(doc(db, 'openjios', jioId), { status: 'cancelled' })
+}
+
+// What each JioCard button does, and what we tell the user afterwards
+const ACTIONS = {
+  join: { run: joinJio, done: "You're in! See you there." },
+  chope: { run: chopeJio, done: "Choped! If a spot opens up, it's yours." },
+  leave: { run: leaveJio, done: 'You left the jio.', confirm: 'Leave this jio?' },
+  leaveQueue: { run: leaveQueue, done: 'You left the queue.' },
+  cancel: {
+    run: cancelJio,
+    done: 'Jio cancelled. Everyone will see it is off.',
+    confirm: 'Cancel this jio for everyone?',
+  },
+}
+
+/**
+ * Runs a JioCard button ('join', 'chope', 'leave', 'leaveQueue', 'cancel').
+ * Asks first for leave/cancel. Returns the message to show, or null if the
+ * user changed their mind. Any page that shows JioCards can use this:
+ *   <JioCard ... @action="(a) => runJioAction(a, jio.id)" />
+ */
+export async function runJioAction(action, jioId) {
+  const a = ACTIONS[action]
+  if (a.confirm && !window.confirm(a.confirm)) return null
+  await a.run(jioId)
+  return a.done
 }
 
 /** Turn Firebase errors into messages a student would understand. */

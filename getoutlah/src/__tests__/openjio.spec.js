@@ -1,5 +1,9 @@
 // Checks the OPENJIO! rules: creating, joining, choping and leaving.
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import process from 'node:process'
+import { INTERESTS } from '@/config/preferences'
 import {
   validateJio,
   statusOf,
@@ -7,12 +11,15 @@ import {
   myRole,
   queuePosition,
   canSee,
+  isInvited,
   applyJoin,
   applyChope,
   applyLeave,
   applyLeaveQueue,
   statusLabel,
   toActivity,
+  prefillFromActivity,
+  REGIONS,
 } from '@/utils/openjio'
 
 const NOW = new Date('2026-11-02T10:00:00')
@@ -58,6 +65,10 @@ describe('validateJio', () => {
     expect(validateJio(goodForm, NOW)).toEqual([])
   })
 
+  it('accepts a friends-only jio with invited friends', () => {
+    expect(validateJio({ ...goodForm, visibility: 'friends', invited: ['f1'] }, NOW)).toEqual([])
+  })
+
   it.each([
     ['no name', { title: '   ' }],
     ['a name that is too long', { title: 'x'.repeat(61) }],
@@ -72,6 +83,7 @@ describe('validateJio', () => {
     ['too many spots', { capacity: 51 }],
     ['half a spot', { capacity: 2.5 }],
     ['an unknown visibility', { visibility: 'secret' }],
+    ['a friends-only jio with nobody invited', { visibility: 'friends', invited: [] }],
   ])('rejects %s', (_, change) => {
     expect(validateJio({ ...goodForm, ...change }, NOW).length).toBeGreaterThan(0)
   })
@@ -161,26 +173,69 @@ describe('leaving', () => {
   })
 })
 
-describe('who can see a jio', () => {
-  const friendsOnly = makeJio({ visibility: 'friends' })
+describe('who can see and join a jio', () => {
+  const friendsOnly = makeJio({ visibility: 'friends', invited: ['friend'] })
 
   it('shows public jios to everyone', () => {
-    expect(canSee(makeJio(), 'stranger', [])).toBe(true)
+    expect(canSee(makeJio(), 'stranger')).toBe(true)
   })
 
-  it("shows friends-only jios to the host's friends", () => {
-    expect(canSee(friendsOnly, 'friend', ['host'])).toBe(true)
-    expect(canSee(friendsOnly, 'stranger', ['someone-else'])).toBe(false)
+  it('shows friends-only jios only to invited friends and the host', () => {
+    expect(canSee(friendsOnly, 'friend')).toBe(true)
+    expect(isInvited(friendsOnly, 'friend')).toBe(true)
+    expect(canSee(friendsOnly, 'host')).toBe(true)
+    expect(canSee(friendsOnly, 'stranger')).toBe(false)
   })
 
   it('always shows a jio to people already in it', () => {
-    expect(canSee({ ...friendsOnly, participants: ['host', 'a'] }, 'a', [])).toBe(true)
+    expect(canSee({ ...friendsOnly, participants: ['host', 'a'] }, 'a')).toBe(true)
+  })
+
+  it('lets invited friends join, but not strangers', () => {
+    expect(applyJoin(friendsOnly, 'friend', NOW).participants).toEqual(['host', 'friend'])
+    expect(() => applyJoin(friendsOnly, 'stranger', NOW)).toThrow(/invited friends only/)
   })
 })
 
-describe('toActivity', () => {
-  it('matches the activity shape used by check-ins and badges', () => {
-    const a = toActivity(makeJio(), 'host')
-    expect(a).toMatchObject({ id: 'jio-j1', category: 'sports', isOpenJio: true, hostedByMe: true })
+describe('fitting in with the Activities page', () => {
+  it('turns a jio into an activity like the curated ones', () => {
+    const a = toActivity(makeJio({ participants: ['host', 'a'] }), 'host')
+    expect(a).toMatchObject({
+      id: 'jio-j1',
+      jioId: 'j1',
+      type: 'openjio',
+      source: 'openjio',
+      category: 'sports',
+      area: 'SMU Sports Hall',
+      durationHrs: 2,
+      slotsLeft: 1,
+      startsAt: TOMORROW.getTime(),
+      hostedByMe: true,
+    })
+  })
+
+  it('fills in the create form from an activity', () => {
+    const p = prefillFromActivity({
+      title: 'Neon Pottery Jam', category: 'workshops', area: 'Bras Basah', region: 'central', cost: 45, durationHrs: 2,
+    })
+    expect(p).toMatchObject({ title: 'Neon Pottery Jam', location: 'Bras Basah', cost: 45, durationMins: 120 })
+  })
+})
+
+describe('the options match firestore.rules', () => {
+  // If the categories or regions change, the database must allow the new ones too.
+  const rules = readFileSync(resolve(process.cwd(), 'firestore.rules'), 'utf8')
+  const listAfter = (marker) => {
+    const start = rules.indexOf(marker)
+    const inside = rules.slice(rules.indexOf('[', start) + 1, rules.indexOf(']', start))
+    return inside.split(',').map((x) => x.trim().replace(/'/g, ''))
+  }
+
+  it('allows exactly the categories in the questionnaire', () => {
+    expect(listAfter('d.category in')).toEqual(INTERESTS.map((i) => i.id))
+  })
+
+  it('allows exactly the regions in the form', () => {
+    expect(listAfter('d.region in')).toEqual(REGIONS)
   })
 })
