@@ -18,7 +18,10 @@ async function mountAt(path) {
       },
       { path: '/activities', name: 'activities', component: { template: '<div>Activities</div>' } },
       { path: '/friends', name: 'friends', component: { template: '<div>Friends</div>' } },
-      { path: '/badges', name: 'badges', component: { template: '<div>Badges</div>' } },
+      {
+        path: '/badges', name: 'badges', component: { template: '<div>Badges</div>' },
+        meta: { requiresLogin: true, appNavigation: true },
+      },
       { path: '/profile', name: 'profile', component: { template: '<div>Profile</div>' } },
     ],
   })
@@ -38,5 +41,11 @@ describe('App shell', () => {
 
     expect(wrapper.find('[data-testid="app-navigation"]').exists()).toBe(true)
     expect(wrapper.get('.app-content').classes()).toContain('app-content--map-layout')
+  })
+
+  it('shows navigation on the badges route', async () => {
+    const wrapper = await mountAt('/badges')
+
+    expect(wrapper.find('[data-testid="app-navigation"]').exists()).toBe(true)
   })
 })

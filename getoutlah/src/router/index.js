@@ -64,7 +64,6 @@ const router = createRouter({
       meta: appRouteMeta,
     },
     { path: '/:pathMatch(.*)*', redirect: '/home' },
-    { path: '/badges', name: 'badges', component: BadgesView, meta: { requiresLogin: true } },
     {
       path: '/test-my-features',
       name: 'test-my-features',
