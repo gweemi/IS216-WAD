@@ -57,6 +57,13 @@ const router = createRouter({
       meta: appRouteMeta,
     },
     {
+      // Admin only: sync Eventbrite events into Firestore. The page itself checks the role.
+      path: '/admin/activities',
+      name: 'admin-activities',
+      component: () => import('@/views/AdminActivitiesView.vue'),
+      meta: { requiresLogin: true },
+    },
+    {
       path: '/test-my-features',
       name: 'test-my-features',
       component: MyFeaturesTestView,
