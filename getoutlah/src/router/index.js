@@ -63,8 +63,13 @@ const router = createRouter({
       component: () => import('@/views/OpenJioView.vue'),
       meta: appRouteMeta,
     },
-    { path: '/:pathMatch(.*)*', redirect: '/home' },
-    { path: '/badges', name: 'badges', component: BadgesView, meta: { requiresLogin: true } },
+    {
+      // Admin only: sync Eventbrite events into Firestore. The page itself checks the role.
+      path: '/admin/activities',
+      name: 'admin-activities',
+      component: () => import('@/views/AdminActivitiesView.vue'),
+      meta: { requiresLogin: true },
+    },
     {
       path: '/test-my-features',
       name: 'test-my-features',

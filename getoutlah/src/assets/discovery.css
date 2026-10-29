@@ -69,7 +69,13 @@
 
 /* ---- views/ActivityDetailView.vue ---- */
 .det-back { font-weight: 800; color: var(--gol-purple); text-decoration: none; }
-.det-hero { height: 140px; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
+.det-layout { display: grid; gap: 1rem; }   /* space between the picture card and the details card */
+/* Same 16:9 shape on every screen; capped so it doesn't become a long strip on laptop */
+.det-hero {
+  width: 100%; max-width: 640px; aspect-ratio: 16 / 9; margin-inline: auto; overflow: hidden;
+  border-radius: 18px; display: flex; align-items: center; justify-content: center;
+}
+.det-hero img { width: 100%; height: 100%; object-fit: cover; }   /* real photos crop instead of stretching */
 .det-emoji { font-size: 3.5rem; }
 .det-source { display: inline-block; margin-top: 0.65rem; }
 .det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0; }
