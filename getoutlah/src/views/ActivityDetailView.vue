@@ -8,6 +8,9 @@ import { checkInToActivity } from '@/stores/gamification(badges).js'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel } from '@/utils/activityStyle'
+import JioActionButton from '@/components/openjio/JioActionButton.vue'
+import StartJioButton from '@/components/openjio/StartJioButton.vue'
+import { prefillFromActivity } from '@/utils/openjio'
 
 const route = useRoute()
 const { request } = useGeolocation()
@@ -67,6 +70,8 @@ const doCheckIn = () => run(async () => {
             <i class="bi bi-people"></i> Friends who have done this: {{ friendsDid.map((f) => f.name).join(', ') }}
           </p>
 
+          <JioActionButton v-if="activity.type === 'openjio'" :jio-id="activity.jioId" class="mt-3" />
+
           <div class="det-actions">
             <button v-if="activity.lat != null" class="gol-btn-primary" @click="doCheckIn">Check in</button>
             <button class="gol-btn-soft" @click="toggleSaved(activity.id)">
@@ -75,6 +80,8 @@ const doCheckIn = () => run(async () => {
             <a v-if="directions" :href="directions" target="_blank" rel="noopener" class="gol-btn-soft det-link">
               <i class="bi bi-signpost-split"></i> Get directions
             </a>
+            <StartJioButton v-if="activity.type !== 'openjio'" label="OpenJio this" variant="soft"
+              :prefill="prefillFromActivity(activity)" />
           </div>
           <p v-if="message" class="det-msg">{{ message }}</p>
         </div>

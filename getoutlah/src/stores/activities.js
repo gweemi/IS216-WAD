@@ -11,6 +11,8 @@ import { getForecasts, nearestForecast, isRainy } from '@/services/api/weather'
 import { getTrails } from '@/services/api/nparks'
 import { distanceMeters } from '@/utils/geo'
 import { fitsWindow } from '@/utils/freeTime'
+import { useOpenJioStore } from '@/stores/openjio'
+import { toActivity } from '@/utils/openjio'
 
 const defaultFilters = () => ({
   query: '', categories: [], types: [],            // empty = all. types: events | outdoor | volunteering | paid | openjio
@@ -32,6 +34,7 @@ export const setLocation = (coords) => { userCoords.value = coords }
 export async function loadActivities() {
   if (loadingActivities.value || baseActivities.value.length) return
   loadingActivities.value = true
+  useOpenJioStore().start() // live public OpenJio!s (see allActivities)
   let curated = []
   if (isFirebaseConfigured) try { curated = (await getDocs(collection(db, 'activities'))).docs.map((d) => ({ id: d.id, ...d.data() })) } catch (e) { sourceErrors.value.firestore = e.message }
   if (!curated.length) curated = seedActivities
@@ -43,7 +46,10 @@ export async function loadActivities() {
 }
 
 // Everything you can do: curated + events + upcoming OpenJio!s shown as activities.
-export const allActivities = computed(() => [...baseActivities.value])
+export const allActivities = computed(() => {
+  const jios = useOpenJioStore()
+  return [...baseActivities.value, ...jios.publicUpcoming.map((j) => toActivity(j, jios.uid))]
+})
 export const activityById = (id) => allActivities.value.find((a) => a.id === id)
 
 // Each line: "this filter is off, OR the activity matches it".
