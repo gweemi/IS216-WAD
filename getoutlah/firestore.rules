@@ -146,9 +146,10 @@ service cloud.firestore {
         && request.resource.data.participants == [request.auth.uid]
         && request.resource.data.waitlist == []
         && request.resource.data.status == 'open'
-        && request.resource.data.invited is list
-        && ((request.resource.data.visibility == 'friends' && request.resource.data.invited.size() >= 1)
-            || (request.resource.data.visibility == 'public' && request.resource.data.invited.size() == 0))
+        && ((request.resource.data.visibility == 'public'
+              && request.resource.data.get('invited', []).size() == 0)
+            || (request.resource.data.visibility == 'friends'
+              && request.resource.data.get('invited', []).size() >= 1))
         && request.resource.data.startAt > request.time
         && request.resource.data.createdAt == request.time
         && validJio(request.resource.data);
@@ -157,17 +158,4 @@ service cloud.firestore {
       // Anyone else can only join, chope or leave.
       allow update: if signedIn() && validJio(request.resource.data) && (
         (resource.data.hostId == request.auth.uid
-          && !request.resource.data.diff(resource.data).affectedKeys()
-               .hasAny(['hostId', 'hostName', 'participants', 'waitlist', 'createdAt']))
-        || fairSpotChange()
-      );
-
-      allow delete: if signedIn() && resource.data.hostId == request.auth.uid;
-    }
-
-    // Everything else is closed until we add rules for it.
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
-}
+          && !request.resource.data.diff(resource.data).a
