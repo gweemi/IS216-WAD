@@ -1,3 +1,14 @@
+// Hooks other features use to read Friends data.
 import { ref } from 'vue'
-export const freeWindows = ref([])                    // Friends teammate fills this later
-export async function friendsWhoDid() { return [] }   // needs check-ins saved in Firestore
+import { friendList } from './friends'
+
+// My upcoming free-time windows [{ start, end }] in ms.
+// Kept up to date by src/services/friends.js; the Activities free-time filter reads it.
+export const freeWindows = ref([])
+
+// Friends who checked in to this activity: [{ uid, name }]
+export async function friendsWhoDid(activityId) {
+  return friendList.value
+    .filter((f) => f.checkedIn.includes(String(activityId)))
+    .map((f) => ({ uid: f.uid, name: f.name }))
+}

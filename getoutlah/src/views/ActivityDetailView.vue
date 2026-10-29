@@ -4,6 +4,8 @@ import { ref, computed, watchEffect, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { activityById, weatherAt, toggleSaved, isSaved, loadActivities } from '@/stores/activities'
 import { friendsWhoDid } from '@/stores/ports'
+import { recordCheckIn } from '@/services/friends'
+import InviteFriendsSheet from '@/components/friends/InviteFriendsSheet.vue'
 import { checkInToActivity } from '@/stores/gamification(badges).js'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
@@ -11,7 +13,7 @@ import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, 
 
 const route = useRoute()
 const { request } = useGeolocation()
-const message = ref(''), friendsDid = ref([])
+const message = ref(''), friendsDid = ref([]), showInvite = ref(false)
 const BADGE_ENERGY = { low: 'calm', medium: 'moderate', high: 'high' } 
 
 onMounted(loadActivities)
@@ -30,6 +32,7 @@ const doCheckIn = () => run(async () => {
     energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openjio', hostedByMe: !!a.hostedByMe,
   }, await request())
   if (!r.ok) throw new Error(r.message)
+  recordCheckIn(a.id).catch(() => {}) // lets friends see "Friends who have done this"
 }, 'Checked in!')
 </script>
 
@@ -72,6 +75,9 @@ const doCheckIn = () => run(async () => {
             <button class="gol-btn-soft" @click="toggleSaved(activity.id)">
               <i class="bi" :class="saved ? 'bi-bookmark-fill' : 'bi-bookmark'"></i> {{ saved ? 'Saved' : 'Save' }}
             </button>
+            <button class="gol-btn-soft" data-testid="invite-friends" @click="showInvite = true">
+              <i class="bi bi-person-plus"></i> Invite friends
+            </button>
             <a v-if="directions" :href="directions" target="_blank" rel="noopener" class="gol-btn-soft det-link">
               <i class="bi bi-signpost-split"></i> Get directions
             </a>
@@ -80,6 +86,12 @@ const doCheckIn = () => run(async () => {
         </div>
       </div>
       <p v-else class="mt-4 fw-bold">Activity not found (or still loading).</p>
+      <InviteFriendsSheet
+        :open="showInvite"
+        :activity="activity"
+        @close="showInvite = false"
+        @sent="(n) => (message = `Invite sent to ${n} friend${n > 1 ? 's' : ''}!`)"
+      />
     </div>
   </div>
 </template>

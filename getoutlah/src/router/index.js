@@ -7,7 +7,6 @@ import MapView from '@/views/MapView.vue'
 import BadgesView from '@/views/BadgesView.vue'
 import MyFeaturesTestView from '@/views/MyFeaturesTestView.vue'
 import ProfileView from '@/views/ProfileView.vue'
-import RoutePlaceholderView from '@/views/RoutePlaceholderView.vue'
 
 const appRouteMeta = { requiresLogin: true, appNavigation: true }
 
@@ -45,8 +44,13 @@ const router = createRouter({
     {
       path: '/friends',
       name: 'friends',
-      component: RoutePlaceholderView,
-      props: { title: 'Friends', icon: 'bi-people' },
+      component: () => import('@/views/FriendsView.vue'),
+      meta: appRouteMeta,
+    },
+    {
+      path: '/notifications',
+      name: 'notifications',
+      component: () => import('@/views/NotificationsView.vue'),
       meta: appRouteMeta,
     },
     { path: '/badges', name: 'badges', component: BadgesView, meta: appRouteMeta },
