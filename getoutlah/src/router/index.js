@@ -57,6 +57,13 @@ const router = createRouter({
       meta: appRouteMeta,
     },
     {
+      // OPENJIO!: browse, start, join and chope group activities.
+      path: '/openjio',
+      name: 'openjio',
+      component: () => import('@/views/OpenJioView.vue'),
+      meta: appRouteMeta,
+    },
+    {
       // Admin only: sync Eventbrite events into Firestore. The page itself checks the role.
       path: '/admin/activities',
       name: 'admin-activities',

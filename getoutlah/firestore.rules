@@ -79,6 +79,78 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- OPENJIO! (see OPENJIO.md) ----------
+    // Keep these limits in sync with validateJio() in src/utils/openjio.js.
+    function validJio(d) {
+      return d.title is string && d.title.size() >= 1 && d.title.size() <= 60
+        && d.category in ['outdoors', 'sports', 'arts', 'food', 'workshops',
+                          'events', 'games', 'wellness', 'volunteering']
+        && d.location is string && d.location.size() >= 1 && d.location.size() <= 80
+        && d.region in ['central', 'north', 'north-east', 'east', 'west']
+        && d.description is string && d.description.size() <= 300
+        && d.startAt is timestamp
+        && d.durationMins is int && d.durationMins >= 15 && d.durationMins <= 720
+        && d.cost is number && d.cost >= 0 && d.cost <= 500
+        && d.capacity is int && d.capacity >= 2 && d.capacity <= 50
+        && d.visibility in ['public', 'friends']
+        && d.status in ['open', 'cancelled']
+        && d.participants is list && d.participants.size() <= d.capacity
+        && d.participants.size() == d.participants.toSet().size() // no duplicates
+        && d.waitlist is list && d.waitlist.size() <= 200;
+    }
+
+    // Join, chope or leave: you may only add or remove yourself.
+    // The one exception: when you leave, the first person in the queue
+    // moves into your spot.
+    function fairSpotChange() {
+      let me = request.auth.uid;
+      let before = resource.data;
+      let after = request.resource.data;
+      let beforeEveryone = before.participants.toSet().union(before.waitlist.toSet());
+      return after.diff(before).affectedKeys().hasOnly(['participants', 'waitlist'])
+        && before.status == 'open'
+        && after.participants.hasAny([before.hostId])
+        // only you (or someone from the queue) can be added to the going list
+        && after.participants.toSet().difference(beforeEveryone).hasOnly([me])
+        // only you can be added to the queue
+        && after.waitlist.toSet().difference(before.waitlist.toSet()).hasOnly([me])
+        // only you can be removed from the going list
+        && before.participants.toSet().difference(after.participants.toSet()).hasOnly([me])
+        // only you can leave the queue, unless the person moved up into a spot
+        && before.waitlist.toSet().difference(after.waitlist.toSet())
+             .difference(after.participants.toSet()).hasOnly([me]);
+    }
+
+    match /openjios/{jioId} {
+      // Signed-in users can read jios. "Friends only" is filtered in the app.
+      allow read: if signedIn();
+
+      // You can only host as yourself, and start as the only person going.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['title', 'category', 'description', 'location',
+             'region', 'lat', 'lng', 'startAt', 'durationMins', 'cost', 'capacity', 'visibility',
+             'hostId', 'hostName', 'participants', 'waitlist', 'status', 'createdAt'])
+        && request.resource.data.hostId == request.auth.uid
+        && request.resource.data.hostName is string
+        && request.resource.data.participants == [request.auth.uid]
+        && request.resource.data.waitlist == []
+        && request.resource.data.status == 'open'
+        && request.resource.data.startAt > request.time
+        && request.resource.data.createdAt == request.time
+        && validJio(request.resource.data);
+
+      // The host can edit or cancel their jio (but not who is going).
+      // Anyone else can only join, chope or leave.
+      allow update: if signedIn() && validJio(request.resource.data) && (
+        (resource.data.hostId == request.auth.uid
+          && !request.resource.data.diff(resource.data).affectedKeys()
+               .hasAny(['hostId', 'hostName', 'participants', 'waitlist', 'createdAt']))
+        || fairSpotChange()
+      );
+
+      allow delete: if signedIn() && resource.data.hostId == request.auth.uid;
+    }
+
     // Everything else is closed until we add rules for it.
     match /{document=**} {
       allow read, write: if false;
