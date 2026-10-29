@@ -1,4 +1,5 @@
 # Copies live Eventbrite events into Firestore "activities" every day.
+# The organisers to sync are managed on the app's /admin/activities page.
 # Needs two repository secrets (Settings > Secrets and variables > Actions):
 #   EVENTBRITE_TOKEN          Eventbrite private token
 #   FIREBASE_SERVICE_ACCOUNT  the whole JSON key from Firebase > Project settings > Service accounts
@@ -30,5 +31,3 @@ jobs:
         env:
           EVENTBRITE_TOKEN: ${{ secrets.EVENTBRITE_TOKEN }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          # Public organiser ids, same list as .env.example
-          EVENTBRITE_ORGANIZER_IDS: 18480976563,121304643898,26202793543,115820118091,121730758969,110303953351,34519717313,7654330861,67918342533,121381255451

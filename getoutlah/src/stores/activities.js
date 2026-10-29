@@ -6,7 +6,6 @@ import { useAuthStore } from '@/stores/auth'
 import { game } from '@/stores/gamification(badges).js'
 import { freeWindows } from './ports'
 import { seedActivities } from '@/data/seedActivities'
-import { getEvents } from '@/services/api/eventbrite'
 import { getForecasts, nearestForecast, isRainy } from '@/services/api/weather'
 import { getTrails } from '@/services/api/nparks'
 import { distanceMeters } from '@/utils/geo'
@@ -21,7 +20,7 @@ const defaultFilters = () => ({
 export const filters = ref(defaultFilters())
 export const resetFilters = () => { filters.value = defaultFilters() }
 
-const baseActivities = ref([])   // curated + Eventbrite
+const baseActivities = ref([])   // curated (admin-picked) + Eventbrite, both from Firestore
 export const forecasts = ref([])
 export const trails = ref({ type: 'FeatureCollection', features: [] })
 export const userCoords = ref(null)
@@ -32,19 +31,41 @@ export const setLocation = (coords) => { userCoords.value = coords }
 export async function loadActivities() {
   if (loadingActivities.value || baseActivities.value.length) return
   loadingActivities.value = true
-  let curated = []
-  if (isFirebaseConfigured) try { curated = (await getDocs(collection(db, 'activities'))).docs.map((d) => ({ id: d.id, ...d.data() })) } catch (e) { sourceErrors.value.firestore = e.message }
-  if (!curated.length) curated = seedActivities
-  const [events, weather, trail] = await Promise.allSettled([getEvents(), getForecasts(), getTrails()])
-  baseActivities.value = [...curated, ...(events.status === 'fulfilled' ? events.value : [])]
+  // Admin-picked (source 'curated') and Eventbrite (source 'eventbrite') activities both live in Firestore
+  // "activities", so they show together. The built-in list only stands in when Firestore can't be reached.
+  let stored = null
+  if (isFirebaseConfigured) try { stored = (await getDocs(collection(db, 'activities'))).docs.map((d) => ({ id: d.id, ...d.data() })) } catch (e) { sourceErrors.value.firestore = e.message }
+  const [weather, trail] = await Promise.allSettled([getForecasts(), getTrails()])
+  baseActivities.value = stored ?? seedActivities
   if (weather.status === 'fulfilled') forecasts.value = weather.value; else sourceErrors.value.weather = weather.reason.message
   if (trail.status === 'fulfilled') trails.value = trail.value; else sourceErrors.value.nparks = trail.reason.message
   loadingActivities.value = false
 }
 
+// After an admin adds, edits or removes something, so every page shows the change.
+export function reloadActivities() {
+  baseActivities.value = []
+  return loadActivities()
+}
+
 // Everything you can do: curated + events + upcoming OpenJio!s shown as activities.
 export const allActivities = computed(() => [...baseActivities.value])
 export const activityById = (id) => allActivities.value.find((a) => a.id === id)
+
+// Repeats of one event (an Eventbrite series, or the same title at the same place) are shown as ONE card.
+const repeatKey = (a) => (a.seriesId ? `series:${a.seriesId}` : `${(a.title ?? '').trim().toLowerCase()}|${a.area ?? ''}`)
+// Every upcoming date of an activity, soonest first. Just [activity] if it doesn't repeat.
+export const datesOf = (activity, list = allActivities.value, now = Date.now()) => {
+  const key = repeatKey(activity)
+  return list
+    .filter((b) => b.id === activity.id || (repeatKey(b) === key && (b.startsAt == null || b.startsAt >= now)))
+    .sort((x, y) => (x.startsAt ?? Infinity) - (y.startsAt ?? Infinity))
+}
+// Keeps the first (best-ranked) date of each repeating event and drops the rest.
+export const oneCardPerEvent = (list) => {
+  const seen = new Set()
+  return list.filter((a) => !seen.has(repeatKey(a)) && seen.add(repeatKey(a)))
+}
 
 // Each line: "this filter is off, OR the activity matches it".
 export const filtered = computed(() => {
@@ -87,7 +108,7 @@ export const recommended = computed(() => {
     if (userCoords.value && a.lat != null) s += Math.max(0, 2 - distanceMeters(userCoords.value, a) / 5000)
     return s
   }
-  return [...filtered.value].map((a) => ({ a, s: score(a) })).sort((x, y) => y.s - x.s).map((x) => x.a)
+  return oneCardPerEvent([...filtered.value].map((a) => ({ a, s: score(a) })).sort((x, y) => y.s - x.s).map((x) => x.a))
 })
 
 // Admin: copy the starter dataset into Firestore.

@@ -46,10 +46,33 @@ service cloud.firestore {
         && p.groupPreference in ['solo', 'group', 'either'];
     }
 
+    // Admins are made by hand in the Firebase console (users/{uid}.role == 'admin').
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin';
+    }
+
+    // Activities are curated (admin-picked) or synced from Eventbrite. The daily GitHub Action
+    // writes with the Admin SDK, which skips these rules. Keep in sync with src/utils/curated.js.
+    function validActivity(d) {
+      return d.title is string && d.title.size() >= 1 && d.title.size() <= 120
+        && d.source in ['curated', 'eventbrite']
+        && (d.get('cost', null) == null || (d.cost is number && d.cost >= 0))
+        && (d.source != 'curated' || (
+              d.category in ['outdoors', 'sports', 'arts', 'food', 'workshops',
+                             'events', 'games', 'wellness', 'volunteering']
+              && d.lat is number && d.lng is number));
+    }
+
     match /activities/{id} {
       allow read: if signedIn();
-      allow write: if signedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin';
+      allow create, update: if isAdmin() && validActivity(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // App settings only admins use, e.g. config/eventbrite = the organisers we sync.
+    match /config/{id} {
+      allow read, write: if isAdmin();
     }
 
     match /users/{uid} {

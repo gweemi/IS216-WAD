@@ -2,12 +2,12 @@
 import '@/assets/discovery.css'
 import { ref, computed, watchEffect, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { activityById, weatherAt, toggleSaved, isSaved, loadActivities } from '@/stores/activities'
+import { activityById, datesOf, weatherAt, toggleSaved, isSaved, loadActivities } from '@/stores/activities'
 import { friendsWhoDid } from '@/stores/ports'
 import { checkInToActivity } from '@/stores/gamification(badges).js'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
-import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel } from '@/utils/activityStyle'
+import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, bookingLink } from '@/utils/activityStyle'
 
 const route = useRoute()
 const { request } = useGeolocation()
@@ -18,6 +18,10 @@ onMounted(loadActivities)
 const activity = computed(() => activityById(route.params.id))
 const weather = computed(() => (activity.value ? weatherAt(activity.value) : null))
 const directions = computed(() => (activity.value?.lat != null ? directionsUrl(activity.value.lat, activity.value.lng) : null))
+const dates = computed(() => (activity.value ? datesOf(activity.value) : []))
+const booking = computed(() => bookingLink(activity.value))
+const heroImage = computed(() => activity.value?.imageLargeUrl ?? activity.value?.imageUrl ?? null)
+const brokenImage = ref(null)   // a picture that didn't load: show the emoji instead
 const saved = computed(() => (activity.value ? isSaved(activity.value.id) : false))
 
 watchEffect(async () => { if (activity.value) friendsDid.value = await friendsWhoDid(activity.value.id) })
@@ -42,7 +46,8 @@ const doCheckIn = () => run(async () => {
         <!-- Left: picture + title -->
         <div class="gol-card det-main">
           <div class="det-hero" :style="{ background: categoryColor(activity.category), color: tileTextColor(activity.category) }">
-            <span class="det-emoji">{{ categoryEmoji(activity.category) }}</span>
+            <img v-if="heroImage && heroImage !== brokenImage" :src="heroImage" alt="" @error="brokenImage = heroImage" />
+            <span v-else class="det-emoji">{{ categoryEmoji(activity.category) }}</span>
           </div>
           <div class="gol-eyebrow mt-3">{{ categoryLabel(activity.category) }}</div>
           <h1 class="gol-title">{{ activity.title }}</h1>
@@ -56,7 +61,21 @@ const doCheckIn = () => run(async () => {
             <div class="det-cell"><i class="bi bi-tag"></i> {{ priceText(activity) }}</div>
             <div class="det-cell"><i class="bi bi-clock"></i> {{ activity.durationHrs ?? '?' }} hr<template v-if="activity.setting"> · {{ activity.setting }}</template></div>
             <div v-if="activity.slotsLeft != null" class="det-cell"><i class="bi bi-person-plus"></i> {{ activity.slotsLeft }} slots left</div>
-            <div v-if="activity.startsAt" class="det-cell det-wide"><i class="bi bi-calendar-event"></i> {{ new Date(activity.startsAt).toLocaleString() }}</div>
+            <div v-if="activity.startsAt && dates.length <= 1" class="det-cell det-wide"><i class="bi bi-calendar-event"></i> {{ whenText(activity.startsAt) }}</div>
+          </div>
+
+          <!-- Repeating event: every upcoming date. Picking one switches the page to that date. -->
+          <div v-if="dates.length > 1" class="det-dates">
+            <h2 class="det-dates-title"><i class="bi bi-calendar-event"></i> {{ dates.length }} dates</h2>
+            <ul>
+              <li v-for="d in dates" :key="d.id">
+                <router-link :to="`/activities/${d.id}`" class="det-date" :class="{ on: d.id === activity.id }"
+                  :aria-current="d.id === activity.id ? 'true' : undefined">
+                  {{ whenText(d.startsAt) }}
+                  <span v-if="d.slotsLeft != null" class="det-date-slots">{{ d.slotsLeft === 0 ? 'Full' : `${d.slotsLeft} left` }}</span>
+                </router-link>
+              </li>
+            </ul>
           </div>
 
           <p v-if="weather" class="det-weather">
@@ -68,6 +87,10 @@ const doCheckIn = () => run(async () => {
           </p>
 
           <div class="det-actions">
+            <!-- Sign-up happens on Eventbrite (or the activity's own site), in a new tab. -->
+            <a v-if="booking" :href="booking.href" target="_blank" rel="noopener" class="gol-btn-primary det-link det-book">
+              <i class="bi bi-ticket-perforated"></i> {{ booking.label }} <i class="bi bi-box-arrow-up-right"></i>
+            </a>
             <button v-if="activity.lat != null" class="gol-btn-primary" @click="doCheckIn">Check in</button>
             <button class="gol-btn-soft" @click="toggleSaved(activity.id)">
               <i class="bi" :class="saved ? 'bi-bookmark-fill' : 'bi-bookmark'"></i> {{ saved ? 'Saved' : 'Save' }}
