@@ -61,16 +61,14 @@ service cloud.firestore {
         && request.auth.uid == uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.points == 0
-        && !('role' in request.resource.data)   // nobody can sign up as admin
         && universityIsHonest(request.resource.data);
 
-      // You can edit your own profile, but not your email, university, points or role.
-      // Admins are made by hand in the Firebase console.
+      // You can edit your own profile, but not your email, university or points.
       // Questionnaire answers (preferences) must be valid.
       allow update: if signedIn()
         && request.auth.uid == uid
         && !request.resource.data.diff(resource.data)
-             .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points', 'role'])
+             .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points'])
         && (!request.resource.data.diff(resource.data)
               .affectedKeys().hasAny(['preferences', 'preferencesVersion'])
             || (validPreferences(request.resource.data.preferences)
