@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { activityById, datesOf, weatherAt, toggleSaved, isSaved, loadActivities } from '@/stores/activities'
 import { friendsWhoDid } from '@/stores/ports'
 import { checkInToActivity } from '@/stores/gamification(badges).js'
+import { isPlanned, togglePlan, removePlan } from '@/stores/plans'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, bookingLink } from '@/utils/activityStyle'
@@ -23,6 +24,7 @@ const booking = computed(() => bookingLink(activity.value))
 const heroImage = computed(() => activity.value?.imageLargeUrl ?? activity.value?.imageUrl ?? null)
 const brokenImage = ref(null)   // a picture that didn't load: show the emoji instead
 const saved = computed(() => (activity.value ? isSaved(activity.value.id) : false))
+const planned = computed(() => (activity.value ? isPlanned(activity.value.id) : false))   // "My plans" on Profile
 
 watchEffect(async () => { if (activity.value) friendsDid.value = await friendsWhoDid(activity.value.id) })
 
@@ -34,7 +36,9 @@ const doCheckIn = () => run(async () => {
     energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openjio', hostedByMe: !!a.hostedByMe,
   }, await request())
   if (!r.ok) throw new Error(r.message)
+  await removePlan(a.id).catch(() => {})   // done: moves from "My plans" to "Completed" on Profile
 }, 'Checked in!')
+const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'Removed from your plans.' : 'Added to My plans on your Profile.')
 </script>
 
 <template>
@@ -92,6 +96,9 @@ const doCheckIn = () => run(async () => {
               <i class="bi bi-ticket-perforated"></i> {{ booking.label }} <i class="bi bi-box-arrow-up-right"></i>
             </a>
             <button v-if="activity.lat != null" class="gol-btn-primary" @click="doCheckIn">Check in</button>
+            <button class="gol-btn-soft" :aria-pressed="planned" @click="doJoin">
+              <i class="bi" :class="planned ? 'bi-calendar-check-fill' : 'bi-calendar-plus'"></i> {{ planned ? 'Joined' : 'Join' }}
+            </button>
             <button class="gol-btn-soft" @click="toggleSaved(activity.id)">
               <i class="bi" :class="saved ? 'bi-bookmark-fill' : 'bi-bookmark'"></i> {{ saved ? 'Saved' : 'Save' }}
             </button>
