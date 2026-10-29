@@ -5,13 +5,15 @@
 import { collection, getDocs, writeBatch, doc } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { useAuthStore } from '@/stores/auth'
-import { fetchEvents, planActivityWrites, parseOrganizerIds } from '@/utils/eventbriteMap'
+import { fetchEvents, planActivityWrites } from '@/utils/eventbriteMap'
+import { getOrganisers } from './organisers'
 
-// token + organiserIds ("123, 456, 789") can be typed on the admin page, so the key never has to be baked into the website.
-export async function syncEventbriteToFirestore({ token, organizerIds } = {}) {
+// The token is typed on the admin page, so it never has to be baked into the website.
+export async function syncEventbriteToFirestore({ token } = {}) {
   if (useAuthStore().profile?.role !== 'admin') throw new Error('Admins only')
-  const ids = parseOrganizerIds(organizerIds || import.meta.env.VITE_EVENTBRITE_ORGANIZER_IDS)
-  if (!token || !ids.length) throw new Error('Enter the Eventbrite token and at least one organiser id first.')
+  if (!token) throw new Error('Enter the Eventbrite token first.')
+  const ids = (await getOrganisers()).map((o) => o.id)
+  if (!ids.length) throw new Error('Add at least one organiser first.')
 
   const { events, failures } = await fetchEvents(token, ids)
   const existing = new Set((await getDocs(collection(db, 'activities'))).docs.map((d) => d.id))

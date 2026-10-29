@@ -1,27 +1,31 @@
 /* Discovery & Filtering styles. Imported by the four discovery components. */
 
 /* ---- components/ActivityCard.vue ---- */
-.act-card { position: relative; list-style: none; padding: 0.8rem; }
-.act-link { display: flex; gap: 0.9rem; align-items: center; text-decoration: none; color: inherit; padding-right: 2.4rem; }
+/* Vertical card: wide picture on top, details below. Same height as its neighbours in the row. */
+.gol-card.act-card { position: relative; list-style: none; padding: 0; overflow: hidden; display: flex; }
+.act-link { display: flex; flex-direction: column; flex: 1; text-decoration: none; color: inherit; }
 .act-tile {
-  width: 84px; height: 84px; flex-shrink: 0; border-radius: 18px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem;
+  width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem;
 }
-.act-emoji { font-size: 1.6rem; line-height: 1; }
+.act-emoji { font-size: 2.6rem; line-height: 1; }
+.act-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.act-img + .act-tag { position: absolute; left: 0.6rem; bottom: 0.6rem; }   /* category tag sits on top of the photo */
 .act-tag {
   font-size: 0.6rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em;
   background: #fff; color: var(--gol-ink); border: 2px solid var(--gol-ink); border-radius: 999px; padding: 0 0.4rem;
   transform: rotate(-4deg);
 }
-.act-body { min-width: 0; }
-.act-body .gol-eyebrow { font-size: 0.65rem; }
-.act-title { font-size: 1.05rem; font-weight: 900; margin: 0 0 0.15rem; }
+.act-body { min-width: 0; flex: 1; padding: 0.9rem 1rem 1.1rem; }
+.act-body .gol-eyebrow { font-size: 0.7rem; }
+.act-title { font-size: 1.15rem; font-weight: 900; margin: 0.1rem 0 0.25rem; }
 .act-meta { font-size: 0.8rem; color: var(--gol-muted); font-weight: 600; }
+.act-more-dates { color: var(--gol-purple); font-weight: 800; margin-left: 0.25rem; }
 .act-pills { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.4rem; }
 .act-source { align-self: center; border: 1px solid var(--gol-card-edge); border-radius: 999px; color: var(--gol-muted); font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.55rem; }
 .act-save {
-  position: absolute; top: 0.6rem; right: 0.6rem; width: 36px; height: 36px; border-radius: 50%;
-  border: none; background: var(--gol-purple-soft); color: var(--gol-purple); font-size: 1rem;
+  position: absolute; top: 0.7rem; right: 0.7rem; width: 38px; height: 38px; border-radius: 50%;
+  border: none; background: #fff; color: var(--gol-purple); font-size: 1rem;
 }
 .act-save.on { background: var(--gol-purple); color: #fff; }
 
@@ -61,8 +65,8 @@
 .act-filter-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--gol-purple-dark); }
 .act-switch { display: flex; align-items: center; gap: 0.7rem; padding-left: 0; font-weight: 700; font-size: 0.9rem; }
 .act-switch .form-check-input { margin: 0; flex-shrink: 0; float: none; }
-.act-list { display: grid; gap: 0.8rem; grid-template-columns: 1fr; }
-@media (min-width: 640px) { .act-list { grid-template-columns: 1fr 1fr; } }
+/* As many 260px+ columns as fit: 1 on phones, 2 on tablets, 3-4 on laptops */
+.act-list { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .act-count { font-size: 0.8rem; font-weight: 800; color: var(--gol-purple); }
 .act-note { font-weight: 700; color: var(--gol-muted); margin: 0.6rem 0; }
 .act-note--warn { color: var(--gol-coral-text); font-size: 0.85rem; }
@@ -82,10 +86,21 @@
 .det-cell { background: var(--gol-bg); border-radius: 14px; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
 .det-cell i { color: var(--gol-purple); margin-right: 0.3rem; }
 .det-wide { grid-column: 1 / -1; }
+.det-dates { margin: 0 0 1rem; }
+.det-dates-title { font-size: 0.95rem; font-weight: 900; margin: 0 0 0.5rem; }
+.det-dates-title i { color: var(--gol-purple); margin-right: 0.3rem; }
+.det-dates ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; max-height: 260px; overflow-y: auto; }
+.det-date {
+  display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0.8rem; border-radius: 12px;
+  background: var(--gol-bg); color: var(--gol-ink); font-weight: 700; font-size: 0.85rem; text-decoration: none;
+}
+.det-date.on { background: var(--gol-purple); color: #fff; }
+.det-date-slots { font-weight: 800; opacity: 0.8; }
 .det-weather { font-weight: 600; font-size: 0.9rem; margin: 0.4rem 0; }
 .det-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
 .det-actions .gol-btn-primary { flex: 1 1 100%; }
 .det-link { text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; }
+.det-book { justify-content: center; }
 .det-msg { margin-top: 0.8rem; font-weight: 800; color: var(--gol-purple); }
 
 /* ---- resets so links/lists don't look like default browser HTML ---- */
@@ -97,3 +112,39 @@
 
 /* ---- Admin page ---- */
 .adm-help { font-size: 0.85rem; color: var(--gol-muted); font-weight: 600; }
+.adm-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.8rem; }
+.adm-tab { padding: 0.45rem 0.95rem; border-radius: 999px; font-weight: 800; font-size: 0.85rem; text-decoration: none; color: var(--gol-muted); background: var(--gol-purple-soft); }
+.adm-tab.router-link-active { color: var(--gol-ink); background: var(--gol-yellow); }
+
+/* ---- views/AdminActivitiesView.vue: organiser list ---- */
+.adm-orgs { list-style: none; padding: 0; margin: 0.8rem 0; display: grid; gap: 0.4rem; }
+.adm-org { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.55rem 0.8rem; border-radius: 12px; background: var(--gol-bg); }
+.adm-org-text { display: flex; flex-direction: column; min-width: 0; }
+.adm-org-name { font-weight: 800; overflow-wrap: anywhere; }
+.adm-org-id { font-size: 0.75rem; font-weight: 600; color: var(--gol-muted); font-variant-numeric: tabular-nums; }
+.adm-remove { flex-shrink: 0; border: none; border-radius: 999px; padding: 0.35rem 0.8rem; font-weight: 800; font-size: 0.8rem; background: transparent; color: var(--gol-coral-text); cursor: pointer; }
+.adm-remove.sure { background: var(--gol-coral); color: #fff; }
+.adm-add { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.adm-add .form-control { flex: 1 1 200px; }
+
+/* ---- components/admin/CuratedActivities.vue ---- */
+.adm-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.adm-row-actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
+.adm-edit { border: none; border-radius: 999px; padding: 0.35rem 0.8rem; font-weight: 800; font-size: 0.8rem; background: transparent; color: var(--gol-purple); cursor: pointer; }
+.adm-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 0.7rem; margin: 0.8rem 0 1rem; padding: 1rem; border-radius: 16px; background: var(--gol-bg); }
+.adm-form-title { grid-column: 1 / -1; font-size: 1rem; font-weight: 900; margin: 0; }
+.adm-field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 800; color: var(--gol-ink); }
+.adm-wide { grid-column: 1 / -1; }
+.adm-check { flex-direction: row; align-items: center; gap: 0.5rem; align-self: end; padding-bottom: 0.5rem; }
+.adm-check .form-check-input { margin: 0; float: none; }
+.adm-place { display: flex; gap: 0.5rem; }
+.adm-places { list-style: none; padding: 0; margin: 0.3rem 0 0; display: grid; gap: 0.3rem; }
+.adm-place-pick { width: 100%; text-align: left; display: flex; flex-direction: column; border: 1px solid var(--gol-card-edge); border-radius: 10px; background: var(--gol-card); padding: 0.45rem 0.7rem; cursor: pointer; }
+.adm-place-pick span { font-weight: 600; font-size: 0.75rem; color: var(--gol-muted); }
+.adm-coords { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.adm-coords label { display: flex; flex-direction: column; gap: 0.25rem; }
+.adm-problems { margin: 0; padding-left: 1.1rem; color: var(--gol-coral-text); font-weight: 700; font-size: 0.85rem; }
+.adm-form-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.adm-starter { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.6rem; }
+.adm-sync-msg { margin: 0.6rem 0 0; font-weight: 800; font-size: 0.85rem; color: var(--gol-purple); }
+.adm-sync-msg.failed { color: #d93025; }   /* red: sync failed, e.g. no token */

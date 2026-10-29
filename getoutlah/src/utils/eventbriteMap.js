@@ -1,6 +1,21 @@
 // Turns raw Eventbrite events into OUR activities. No Firebase and no browser-only code, so both the
 // admin page (src/services/api/eventbriteSync.js) and the scheduled GitHub Action (scripts/sync-eventbrite.mjs) use it.
 
+// Starting list of organisers to sync. Admins change the real list on /admin/activities
+// (saved in Firestore config/eventbrite); this is only used until they do.
+export const DEFAULT_ORGANISERS = [
+  { id: '18480976563', name: 'MarketWise ASIA' },
+  { id: '121304643898', name: 'WELOVESUPERMOM' },
+  { id: '26202793543', name: 'Affordable Art Fair Singapore' },
+  { id: '115820118091', name: 'Vamp Productions' },
+  { id: '121730758969', name: 'Atomic Events Global' },
+  { id: '110303953351', name: 'Toy Space' },
+  { id: '34519717313', name: 'Singapore Clay Festival' },
+  { id: '7654330861', name: 'INSEAD' },
+  { id: '67918342533', name: 'Tanglin Trust School' },
+  { id: '121381255451', name: 'Singapore Catalysis Society' },
+]
+
 // Titles matching this are skipped (business events aren't what students look for). Edit freely.
 export const EXCLUDE = /conference|summit|forum|webinar|seminar|symposium|trimester|networking|b2b/i
 
@@ -41,6 +56,12 @@ export function fromEventbrite(e) {
     durationHrs: start && end ? Math.round(((end - start) / 3600000) * 10) / 10 : null,
     area: e.venue?.name ?? e.venue?.address?.city ?? '',
     lat, lng, startsAt: start || null, url: e.url ?? null,
+    // The event's picture, straight from Eventbrite's image server. The links are signed, so we can't resize them:
+    // imageUrl is their small crop (450x200) for cards, imageLargeUrl the full picture for the activity page.
+    imageUrl: e.logo?.url ?? null,
+    imageLargeUrl: e.logo?.original?.url ?? null,
+    seriesId: e.series_id ?? null,         // repeating events share this, so the app can show them as one card
+    organiserId: e.organizer_id ?? null,   // so removing an organiser can also remove their events
   }
 }
 
@@ -53,16 +74,17 @@ export function defaultsFor(title, lat, lng) {
   }
 }
 
-export const parseOrganizerIds = (text = '') => text.split(/[\s,]+/).filter(Boolean)
-
 // Lists the public live events of ONE organiser (any organiser id works, you don't need to own it).
-export async function fetchOrganizerEvents(token, organizer) {
+export async function fetchOrganiserEvents(token, organiser) {
   const out = []
   let continuation = ''
   for (let page = 0; page < 10; page++) {   // safety cap: 10 pages per organiser
-    const url = `https://www.eventbriteapi.com/v3/organizers/${organizer}/events/?status=live&expand=venue${continuation ? `&continuation=${continuation}` : ''}`
+    const url = `https://www.eventbriteapi.com/v3/organizers/${organiser}/events/?status=live&expand=venue${continuation ? `&continuation=${continuation}` : ''}`
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    if (!res.ok) throw new Error(`organiser ${organizer}: Eventbrite said ${res.status}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))   // e.g. { error: 'NOT_AUTHORIZED', error_description: '...' }
+      throw new Error(`organiser ${organiser}: Eventbrite said ${res.status}${err.error_description ? ` (${err.error_description})` : ''}`)
+    }
     const body = await res.json()
     out.push(...(body.events ?? []))
     if (!body.pagination?.has_more_items) break
@@ -72,10 +94,10 @@ export async function fetchOrganizerEvents(token, organizer) {
 }
 
 // Events of all organisers, without duplicates. One failing organiser doesn't stop the others.
-export async function fetchEvents(token, organizerIds) {
+export async function fetchEvents(token, organiserIds) {
   const byId = new Map(), failures = []
-  for (const organizer of organizerIds) {
-    try { (await fetchOrganizerEvents(token, organizer)).forEach((e) => byId.set(e.id, e)) }
+  for (const organiser of organiserIds) {
+    try { (await fetchOrganiserEvents(token, organiser)).forEach((e) => byId.set(e.id, e)) }
     catch (e) { failures.push(e.message) }
   }
   if (!byId.size && failures.length) throw new Error(failures.join('; '))

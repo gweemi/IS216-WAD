@@ -1,7 +1,7 @@
 <script setup>
 import '@/assets/discovery.css'
 import BottomSheet from '@/components/common/BottomSheet.vue'
-import { filters, filtered, resetFilters } from '@/stores/activities'
+import { filters, recommended, resetFilters } from '@/stores/activities'
 import { categories } from '@/data/seedActivities'
 import { categoryLabel } from '@/utils/activityStyle'
 // Works with v-if="open" OR :open="open" (the Map page can use either).
@@ -84,7 +84,7 @@ function toggle(key, v) {
 
     <div class="fs-actions">
       <button class="fs-clear" @click="resetFilters">Clear</button>
-      <button class="gol-btn-primary" @click="emit('close')">Show {{ filtered.length }} activities</button>
+      <button class="gol-btn-primary" @click="emit('close')">Show {{ recommended.length }} activities</button>
     </div>
   </BottomSheet>
 </template>
