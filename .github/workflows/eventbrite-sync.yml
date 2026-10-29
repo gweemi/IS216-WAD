@@ -1,0 +1,34 @@
+# Copies live Eventbrite events into Firestore "activities" every day.
+# Needs two repository secrets (Settings > Secrets and variables > Actions):
+#   EVENTBRITE_TOKEN          Eventbrite private token
+#   FIREBASE_SERVICE_ACCOUNT  the whole JSON key from Firebase > Project settings > Service accounts
+name: Eventbrite sync
+
+on:
+  schedule:
+    - cron: '0 22 * * *'   # 22:00 UTC = 6am Singapore time
+  workflow_dispatch:        # adds a "Run workflow" button on the Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: getoutlah
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: getoutlah/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/sync-eventbrite.mjs
+        env:
+          EVENTBRITE_TOKEN: ${{ secrets.EVENTBRITE_TOKEN }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          # Public organiser ids, same list as .env.example
+          EVENTBRITE_ORGANIZER_IDS: 18480976563,121304643898,26202793543,115820118091,121730758969,110303953351,34519717313,7654330861,67918342533,121381255451
