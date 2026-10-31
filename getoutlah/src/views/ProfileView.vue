@@ -8,6 +8,9 @@
                                      + OPENJIOs you host, go to or queue for (stores/openjio.js)
     - My wellbeing                -> WHO-5 check-in, gives points (components/wellbeing)
     - Activity moods              -> emoji rating per completed activity (stores/activityMoods.js)
+    - My reflections              -> private notes after activities (components/wellbeing/ReflectionsCard)
+    - Study-break mode            -> pauses the weekly streak (Badges page, setStudyBreak)
+    - Admin button                -> only for users with role 'admin', goes to /admin/activities
   See PROFILE.md for how the pieces connect.
 -->
 <script setup>
@@ -17,7 +20,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useOpenJioStore } from '@/stores/openjio'
 import { ensureUserProfile, logOut } from '@/services/auth'
 import { activityById, loadActivities, toggleSaved } from '@/stores/activities'
-import { game, badgeList, levelInfo } from '@/stores/gamification(badges).js'
+import { game, badgeList, levelInfo, setStudyBreak, currentStreak } from '@/stores/gamification(badges).js'
 import { planIds, togglePlan } from '@/stores/plans'
 import { moodFace, moodFor } from '@/stores/activityMoods'
 import { handleFor, firstName, savedActivities, buildPlans, completedNewestFirst } from '@/utils/profile'
@@ -27,6 +30,7 @@ import EditProfileSheet from '@/components/profile/EditProfileSheet.vue'
 import ProfileListSheet from '@/components/profile/ProfileListSheet.vue'
 import ActivityMoodsCard from '@/components/profile/ActivityMoodsCard.vue'
 import WellbeingCard from '@/components/wellbeing/WellbeingCard.vue'
+import ReflectionsCard from '@/components/wellbeing/ReflectionsCard.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -55,6 +59,13 @@ const badges = computed(() => badgeList())
 const badgesEarned = computed(() => badges.value.filter((b) => b.earned).length)
 const friendsCount = computed(() => auth.profile?.friendIds?.length ?? 0)
 const completedCount = computed(() => game.completed.length)
+
+// ---------- Study-break mode (pauses the streak on the Badges page) ----------
+const studyBreak = computed(() => game.studyBreak.active)
+const streak = computed(() => currentStreak())
+function onStudyBreak(e) {
+  setStudyBreak(e.target.checked)
+}
 
 // ---------- Lists ----------
 const shortDate = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -148,9 +159,15 @@ async function onLogOut() {
 <template>
   <main class="gol-page">
     <div class="container py-3 py-md-4 page-inner">
-      <header class="mb-3">
-        <p class="gol-eyebrow">Your corner</p>
-        <h1 class="gol-title" data-testid="profile-greeting">Looking good, {{ firstName(displayName) }}</h1>
+      <header class="d-flex justify-content-between align-items-end gap-2 mb-3">
+        <div class="min-w-0">
+          <p class="gol-eyebrow">Your corner</p>
+          <h1 class="gol-title" data-testid="profile-greeting">Looking good, {{ firstName(displayName) }}</h1>
+        </div>
+        <!-- Only admins see this (users/{uid}.role == 'admin'). Firestore rules are the real lock. -->
+        <router-link v-if="auth.isAdmin" to="/admin/activities" class="admin-btn" data-testid="admin-link">
+          <i class="bi bi-shield-lock-fill"></i> Admin
+        </router-link>
       </header>
 
       <div class="row g-3">
@@ -211,7 +228,37 @@ async function onLogOut() {
         <!-- Right: how you're doing -->
         <div class="col-12 col-lg-7 d-grid gap-3 align-content-start">
           <WellbeingCard />
+
+          <!-- Study-break mode: pause the streak during exams (shared with the Badges page) -->
+          <section class="gol-card study-card" :class="{ on: studyBreak }" data-testid="study-break">
+            <div class="d-flex align-items-center gap-3">
+              <span class="gol-icon-tile study-tile"><i class="bi" :class="studyBreak ? 'bi-pause-fill' : 'bi-book'"></i></span>
+              <label for="profileStudyBreak" class="flex-grow-1 min-w-0 mb-0">
+                <span class="d-block card-title">Study-break mode</span>
+                <span class="d-block card-sub">
+                  {{ studyBreak
+                    ? `Streak paused for ${streak} week${streak === 1 ? '' : 's'}. It's safe. Good luck for exams!`
+                    : 'Exams coming? Pause your weekly streak so it doesn’t break.' }}
+                </span>
+              </label>
+              <span class="form-check form-switch m-0">
+                <input
+                  id="profileStudyBreak"
+                  class="form-check-input gol-switch"
+                  type="checkbox"
+                  role="switch"
+                  :checked="studyBreak"
+                  data-testid="study-break-switch"
+                  @change="onStudyBreak"
+                />
+              </span>
+            </div>
+            <router-link to="/badges" class="streak-link"><i class="bi bi-trophy"></i> See my streak and badges <i class="bi bi-arrow-right"></i></router-link>
+          </section>
+
           <ActivityMoodsCard />
+          <!-- Private notes after activities (Ashley's reflections) -->
+          <ReflectionsCard />
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-1">
             <span class="signed-in">Logged in as {{ auth.email }}</span>
             <button class="gol-btn-soft logout" data-testid="logout" @click="onLogOut">
@@ -364,6 +411,43 @@ async function onLogOut() {
 .tile .gol-icon-tile { margin-bottom: 0.5rem; }
 .tile-title { font-weight: 900; font-size: 0.95rem; }
 .tile-count { font-weight: 700; font-size: 0.75rem; color: var(--gol-muted); }
+
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: #fff;
+  background: var(--gol-ink);
+  box-shadow: 0 3px 0 #000;
+}
+.admin-btn:hover { color: var(--gol-lime); }
+.admin-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #000; }
+
+.study-card { transition: background 0.3s; }
+.study-card.on { background: #f3efff; }
+.study-tile { background: var(--gol-yellow); transition: transform 0.3s; }
+.study-card.on .study-tile { background: var(--gol-purple-soft); transform: rotate(-8deg); }
+.card-title { font-weight: 900; font-size: 1rem; }
+.card-sub { font-size: 0.78rem; font-weight: 600; color: var(--gol-muted); line-height: 1.3; }
+.study-card label { cursor: pointer; }
+.streak-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--gol-purple);
+  text-decoration: none;
+}
+.streak-link:hover .bi-arrow-right { transform: translateX(3px); }
+.streak-link .bi-arrow-right { transition: transform 0.15s; }
 
 .signed-in { font-size: 0.8rem; font-weight: 700; color: var(--gol-muted); word-break: break-all; }
 .logout { color: var(--gol-coral-text); background: #ffe9e4; }

@@ -18,6 +18,7 @@ vi.mock('@/stores/auth', async () => {
       plans: ['a2'],
     },
     preferences: null,
+    isAdmin: false,
     setProfile(p) {
       this.profile = p
     },
@@ -84,6 +85,30 @@ describe('ProfileView', () => {
     const w = mountPage()
     await w.find('[data-testid="stat-completed"]').trigger('click')
     expect(w.text()).toContain('MacRitchie TreeTop Walk')
+  })
+
+  it('shows the Admin button only to admins', async () => {
+    const w = mountPage()
+    expect(w.find('[data-testid="admin-link"]').exists()).toBe(false)
+    authStore.value.isAdmin = true
+    await w.vm.$nextTick()
+    expect(w.find('[data-testid="admin-link"]').exists()).toBe(true)
+    authStore.value.isAdmin = false
+  })
+
+  it('turns study-break mode on and off', async () => {
+    const { game } = await import('@/stores/gamification(badges).js')
+    const w = mountPage()
+    const sw = w.find('[data-testid="study-break-switch"]')
+    await sw.setValue(true)
+    expect(game.studyBreak.active).toBe(true)
+    expect(w.find('[data-testid="study-break"]').text()).toContain('paused')
+    await sw.setValue(false)
+    expect(game.studyBreak.active).toBe(false)
+  })
+
+  it('has the private reflections section', () => {
+    expect(mountPage().text()).toContain('My reflections')
   })
 
   it('logs out', async () => {
