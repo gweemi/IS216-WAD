@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { syncEventbriteToFirestore } from '@/services/api/eventbriteSync'
+import { syncEventbriteToFirestore, getLastDailySync } from '@/services/api/eventbriteSync'
 import { getOrganisers, addOrganiser, removeOrganiser } from '@/services/api/organisers'
 import { reloadActivities } from '@/stores/activities'
 import CuratedActivities from '@/components/admin/CuratedActivities.vue'
@@ -30,12 +30,16 @@ onMounted(loadOrganisers)   // the router only lets admins in
 
 // Sync has its own message, shown right under its button (red when it failed).
 const syncMessage = ref(''), syncFailed = ref(false)
+const lastDailySync = ref(null)
+onMounted(async () => { lastDailySync.value = await getLastDailySync() })
+const syncTime = (ms) => new Date(ms).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Singapore' })
+
 async function sync() {
   busy.value = true; syncMessage.value = ''; syncFailed.value = false
   try {
     const r = await syncEventbriteToFirestore({ token: token.value.trim() })
     await reloadActivities()   // so the rest of the app shows the synced events without a page refresh
-    syncMessage.value = `Done: ${r.added} added, ${r.updated} updated, ${r.skipped} skipped.` + (r.failures.length ? ` Problems: ${r.failures.join('; ')}` : '')
+    syncMessage.value = `Done: ${r.added} added, ${r.updated} updated, ${r.skipped} skipped, ${r.removed} removed.` + (r.failures.length ? ` Problems: ${r.failures.join('; ')}` : '')
   } catch (e) {
     syncFailed.value = true
     syncMessage.value = e.message ?? String(e)
@@ -65,7 +69,7 @@ function remove(o) {
   <div>
     <div class="gol-card mt-3">
       <h2 class="gol-section-title">Eventbrite organisers</h2>
-      <p class="adm-help">We sync the live events of these organisers. Removing one also deletes their upcoming events from the app.</p>
+      <p class="adm-help">Eventbrite no longer supports direct api for public events. To add events via eventbrite, add the organiser's public id, then sync with your private token.</p>
 
       <p v-if="loadError" class="act-note act-note--warn">{{ loadError }}</p>
       <ul v-else class="adm-orgs">
@@ -92,6 +96,7 @@ function remove(o) {
       <h2 class="gol-section-title">Sync from Eventbrite</h2>
       <p class="adm-help">This already runs every morning at 6am. Use it to sync right now.
         Safe to run again: it won't overwrite category or energy edits.</p>
+      <p class="adm-help" data-testid="last-daily-sync">Last daily sync: {{ lastDailySync ? syncTime(lastDailySync) : 'none recorded yet' }}</p>
       <input id="adm-token" v-model="token" class="form-control mb-3" type="password" placeholder="Eventbrite private token" autocomplete="off" />
       <button class="gol-btn-primary" :disabled="busy" @click="sync">{{ busy ? 'Working…' : 'Sync now' }}</button>
       <p v-if="syncMessage" class="adm-sync-msg" :class="{ failed: syncFailed }" role="status">{{ syncMessage }}</p>

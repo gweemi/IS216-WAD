@@ -5,7 +5,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { allActivities, loadActivities, reloadActivities, sourceErrors, seedFirestore } from '@/stores/activities'
 import { saveCurated, removeCurated } from '@/services/api/curated'
 import { searchPlaces } from '@/services/api/onemap'
-import { emptyCurated, toCuratedActivity, CURATED_TYPES, ENERGY_LEVELS } from '@/utils/curated'
+import { emptyCurated, toCuratedActivity, CURATED_TYPES, ENERGY_LEVELS, CURATED_DESCRIPTION_MAX } from '@/utils/curated'
 import { seedActivities } from '@/data/seedActivities'
 import { INTERESTS } from '@/config/preferences'
 import { categoryLabel, priceText } from '@/utils/activityStyle'
@@ -27,7 +27,7 @@ async function run(fn, done) {
 }
 
 function openForm(activity) {
-  Object.assign(form, emptyCurated(), activity ? { ...activity, url: activity.url ?? '' } : {})
+  Object.assign(form, emptyCurated(), activity ? { ...activity, url: activity.url ?? '', description: activity.description ?? '' } : {})
   editingId.value = activity?.id ?? null
   problems.value = []; places.value = []; placeQuery.value = ''; placeError.value = ''
   formOpen.value = true
@@ -87,6 +87,11 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
       <label class="adm-field adm-wide">Title
         <input id="cur-title" v-model="form.title" class="form-control" maxlength="80" required />
       </label>
+      <label class="adm-field adm-wide">Description
+        <textarea id="cur-description" v-model="form.description" class="form-control" rows="4"
+          :maxlength="CURATED_DESCRIPTION_MAX" placeholder="What is it, and why would a student like it?" required></textarea>
+        <span class="adm-help">{{ form.description.length }}/{{ CURATED_DESCRIPTION_MAX }}</span>
+      </label>
       <label class="adm-field">Category
         <select id="cur-category" v-model="form.category" class="form-select">
           <option v-for="i in INTERESTS" :key="i.id" :value="i.id">{{ i.label }}</option>
@@ -112,9 +117,6 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
         <select id="cur-energy" v-model="form.energyLevel" class="form-select">
           <option v-for="[id, label] in ENERGY_LEVELS" :key="id" :value="id">{{ label }}</option>
         </select>
-      </label>
-      <label class="adm-field">Slots left
-        <input id="cur-slots" v-model="form.slotsLeft" class="form-control" type="number" min="0" step="1" placeholder="Empty = no limit" />
       </label>
       <label class="adm-field adm-check">
         <input id="cur-group" v-model="form.groupFriendly" class="form-check-input" type="checkbox" /> Good for groups

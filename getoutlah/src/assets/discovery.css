@@ -2,7 +2,12 @@
 
 /* ---- components/ActivityCard.vue ---- */
 /* Vertical card: wide picture on top, details below. Same height as its neighbours in the row. */
-.gol-card.act-card { position: relative; list-style: none; padding: 0; overflow: hidden; display: flex; }
+.gol-card.act-card { position: relative; list-style: none; padding: 0; overflow: hidden; display: flex; transition: transform 0.15s, box-shadow 0.15s; }
+/* Hover lifts the card; pressing pushes it down. :has() so pressing the save button doesn't press the whole card. */
+@media (hover: hover) {
+  .gol-card.act-card:hover { transform: translateY(-3px); box-shadow: 0 7px 0 var(--gol-card-edge); }
+}
+.gol-card.act-card:has(.act-link:active) { transform: translateY(3px); box-shadow: 0 1px 0 var(--gol-card-edge); }
 .act-link { display: flex; flex-direction: column; flex: 1; text-decoration: none; color: inherit; }
 .act-tile {
   width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; position: relative; overflow: hidden;
@@ -10,11 +15,12 @@
 }
 .act-emoji { font-size: 2.6rem; line-height: 1; }
 .act-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.act-img + .act-tag { position: absolute; left: 0.6rem; bottom: 0.6rem; }   /* category tag sits on top of the photo */
-.act-tag {
-  font-size: 0.6rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em;
-  background: #fff; color: var(--gol-ink); border: 2px solid var(--gol-ink); border-radius: 999px; padding: 0 0.4rem;
-  transform: rotate(-4deg);
+.act-tag {   /* category tab hugging the card's top-left corner; outline = the category's map colour */
+  position: absolute; top: 0; left: 0; z-index: 1;
+  font-size: 0.7rem; font-weight: 900; white-space: nowrap;
+  background: #fff; color: var(--gol-ink); padding: 0.35rem 0.9rem 0.35rem 0.8rem;
+  border: 0 solid var(--tag-color); border-width: 0 2.5px 2.5px 0;   /* top and left sit on the card's edge */
+  border-bottom-right-radius: 1rem;   /* less than the tab height, so the right edge runs straight, then curves left */
 }
 .act-body { min-width: 0; flex: 1; padding: 0.9rem 1rem 1.1rem; }
 .act-body .gol-eyebrow { font-size: 0.7rem; }
@@ -37,8 +43,13 @@
 .fs-chip {
   border: 1.5px solid var(--gol-card-edge); background: #fff; color: var(--gol-ink);
   border-radius: 999px; padding: 0.4rem 0.95rem; font-family: var(--gol-font); font-weight: 700; font-size: 0.85rem;
+  transition: background 0.15s, border-color 0.15s;
 }
 .fs-chip.on { background: var(--gol-purple); border-color: var(--gol-purple); color: #fff; }
+@media (hover: hover) {
+  .fs-chip:hover { background: var(--gol-purple-soft); border-color: var(--gol-purple); }
+  .fs-chip.on:hover { background: var(--gol-purple-dark); border-color: var(--gol-purple-dark); }
+}
 .fs-range { flex: 1; min-width: 120px; accent-color: var(--gol-purple); }
 .fs-actions {
   display: flex; gap: 0.6rem; margin-top: 1.4rem; position: sticky; bottom: 0; background: var(--gol-bg); padding-top: 0.4rem;
@@ -60,9 +71,21 @@
 .act-input input { flex: 1; border: none; outline: none; background: transparent; padding: 0.75rem 0; font-family: var(--gol-font); font-weight: 600; color: var(--gol-ink); }
 .act-filter-btn {
   width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--gol-purple); color: #fff;
-  box-shadow: 0 4px 0 var(--gol-purple-dark); font-size: 1.1rem;
+  box-shadow: 0 4px 0 var(--gol-purple-dark); font-size: 1.1rem; transition: transform 0.15s, box-shadow 0.15s;
+}
+@media (hover: hover) {
+  .act-filter-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--gol-purple-dark); }
+  .act-active-pill:hover { background: var(--gol-purple); color: #fff; }
 }
 .act-filter-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--gol-purple-dark); }
+/* Filters in use, under the search box. Press one to remove it. */
+.act-active { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
+.act-active-pill {
+  display: inline-flex; align-items: center; gap: 0.35rem; border: none; border-radius: 999px; padding: 0.3rem 0.75rem;
+  background: var(--gol-purple-soft); color: var(--gol-purple); font-family: var(--gol-font); font-weight: 800; font-size: 0.8rem;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.act-active-pill i { font-size: 0.65rem; }
 .act-switch { display: flex; align-items: center; gap: 0.7rem; padding-left: 0; font-weight: 700; font-size: 0.9rem; }
 .act-switch .form-check-input { margin: 0; flex-shrink: 0; float: none; }
 /* As many 260px+ columns as fit: 1 on phones, 2 on tablets, 3-4 on laptops */
@@ -82,6 +105,9 @@
 .det-hero img { width: 100%; height: 100%; object-fit: cover; }   /* real photos crop instead of stretching */
 .det-emoji { font-size: 3.5rem; }
 .det-source { display: inline-block; margin-top: 0.65rem; }
+.det-about { margin-top: 1.2rem; }
+.det-description { white-space: pre-line; line-height: 1.55; margin: 0; }   /* keeps the description's line breaks */
+.det-more { border: none; background: none; padding: 0; margin-top: 0.4rem; font-weight: 800; color: var(--gol-purple); cursor: pointer; }
 .det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0; }
 .det-cell { background: var(--gol-bg); border-radius: 14px; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
 .det-cell i { color: var(--gol-purple); margin-right: 0.3rem; }

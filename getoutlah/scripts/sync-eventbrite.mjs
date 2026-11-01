@@ -23,9 +23,9 @@ const saved = config.exists ? config.data().organisers ?? config.data().organize
 const ids = (saved ?? DEFAULT_ORGANISERS).map((o) => o.id)
 if (!ids.length) { console.log('No organisers on the list, nothing to sync.'); process.exit(0) }
 
-const { events, failures } = await fetchEvents(token, ids)
-const existing = new Set((await db.collection('activities').listDocuments()).map((d) => d.id))
-const { writes, added, updated, skipped } = planActivityWrites(events, existing)
+const { events, failures, failedOrganisers } = await fetchEvents(token, ids)
+const existing = new Map((await db.collection('activities').get()).docs.map((d) => [d.id, d.data()]))
+const { writes, deletes, added, updated, skipped, removed } = planActivityWrites(events, existing, Date.now(), failedOrganisers)
 
 if (!dryRun) {
   for (let i = 0; i < writes.length; i += 500) {   // a Firestore batch holds up to 500 writes
@@ -33,7 +33,14 @@ if (!dryRun) {
     writes.slice(i, i + 500).forEach((w) => batch.set(db.collection('activities').doc(w.id), w.data, { merge: w.merge }))
     await batch.commit()
   }
+  for (let i = 0; i < deletes.length; i += 500) {   // ended or taken off Eventbrite
+    const batch = db.batch()
+    deletes.slice(i, i + 500).forEach((id) => batch.delete(db.collection('activities').doc(id)))
+    await batch.commit()
+  }
+  // Shown on the admin page. Its own doc because saving organisers overwrites config/eventbrite.
+  await db.collection('config').doc('eventbriteSync').set({ lastDailySyncAt: Date.now() })
 }
 
-console.log(`${dryRun ? '[dry run] ' : ''}${events.length} events: ${added} added, ${updated} updated, ${skipped} skipped.`)
+console.log(`${dryRun ? '[dry run] ' : ''}${events.length} events: ${added} added, ${updated} updated, ${skipped} skipped, ${removed} removed.`)
 if (failures.length) console.warn(`Some organisers failed: ${failures.join('; ')}`)

@@ -11,6 +11,8 @@ describe('curated activity dataset', () => {
       expect(categoryIds).toContain(activity.category)
       expect(activity.source).toBe('curated')
       expect(activity).not.toHaveProperty('tags')
+      expect(activity.description.length).toBeGreaterThan(0)
+      expect(activity.description.length).toBeLessThanOrEqual(1000)   // the curated limit in firestore.rules
       expect(Number.isFinite(activity.lat)).toBe(true)
       expect(Number.isFinite(activity.lng)).toBe(true)
     }
