@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import MapView from '@/views/MapView.vue'
 
-const fakeAuth = vi.hoisted(() => ({ isLoggedIn: false, hasPreferences: false }))
+const fakeAuth = vi.hoisted(() => ({ isLoggedIn: false, hasPreferences: false, isAdmin: false }))
 
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => ({ ...fakeAuth, init: async () => {} }),
@@ -21,7 +21,7 @@ async function visit(path) {
 
 beforeEach(async () => {
   // start every test from the log-in page, logged out
-  Object.assign(fakeAuth, { isLoggedIn: false, hasPreferences: false })
+  Object.assign(fakeAuth, { isLoggedIn: false, hasPreferences: false, isAdmin: false })
   await router.replace('/auth')
 })
 
@@ -60,6 +60,18 @@ describe('router', () => {
     Object.assign(fakeAuth, { isLoggedIn: true, hasPreferences: true })
     expect(await visit('/home')).toBe('map')
     expect(await visit('/not-a-page')).toBe('map')
+  })
+
+  it('keeps non-admins out of the admin page', async () => {
+    Object.assign(fakeAuth, { isLoggedIn: true, hasPreferences: true, isAdmin: false })
+    expect(await visit('/admin')).toBe('map')
+    expect(await visit('/admin/reports')).toBe('map')
+  })
+
+  it('opens the admin page on the activities tab for admins', async () => {
+    Object.assign(fakeAuth, { isLoggedIn: true, hasPreferences: true, isAdmin: true })
+    expect(await visit('/admin')).toBe('admin-activities')
+    expect(await visit('/admin/reports')).toBe('admin-reports')
   })
 
   it('uses the Leaflet map view for the map route', () => {

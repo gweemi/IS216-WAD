@@ -1,7 +1,8 @@
 <script setup>
 import '@/assets/discovery.css'
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { filters, recommended, loadingActivities, sourceErrors, setLocation, loadActivities } from '@/stores/activities'
+import { activeFilterPills } from '@/utils/activeFilters'
 import { useGeolocation } from '@/composables/useGeolocation'
 import ActivityCard from '@/components/ActivityCard.vue'
 import FilterSheet from '@/components/FilterSheet.vue'
@@ -10,6 +11,7 @@ import OpenJioPanel from '@/components/openjio/OpenJioPanel.vue'
 const { request } = useGeolocation()
 const filtersOpen = ref(false)
 const view = ref('all') // 'all' = everything, 'openjio' = start a jio, invites, my jios
+const activePills = computed(() => activeFilterPills(filters.value))
 
 onMounted(async () => {
   loadActivities()
@@ -41,6 +43,12 @@ onMounted(async () => {
         </div>
         <button class="act-filter-btn" aria-label="Filters" @click="filtersOpen = true">
           <i class="bi bi-sliders"></i>
+        </button>
+      </div>
+
+      <div v-if="activePills.length" class="act-active" data-testid="active-filters">
+        <button v-for="p in activePills" :key="p.id" class="act-active-pill" :aria-label="`Remove filter: ${p.label}`" @click="p.remove()">
+          {{ p.label }} <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
       </div>
 

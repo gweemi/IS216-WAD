@@ -68,11 +68,26 @@ const router = createRouter({
       meta: appRouteMeta,
     },
     {
-      // Admin only: sync Eventbrite events into Firestore. The page itself checks the role.
-      path: '/admin/activities',
-      name: 'admin-activities',
-      component: () => import('@/views/AdminActivitiesView.vue'),
-      meta: { requiresLogin: true },
+      // Admin only. One page with a tab per tool; add new tools as children here.
+      // Firestore rules are the real lock, this only keeps non-admins off the page.
+      path: '/admin',
+      component: () => import('@/views/AdminView.vue'),
+      meta: { ...appRouteMeta, requiresAdmin: true },
+      children: [
+        { path: '', name: 'admin', redirect: { name: 'admin-activities' } },
+        {
+          // Eventbrite organisers + sync, and curated activities.
+          path: 'activities',
+          name: 'admin-activities',
+          component: () => import('@/views/AdminActivitiesView.vue'),
+        },
+        {
+          // Reported OpenJios waiting for an admin to restore or remove them.
+          path: 'reports',
+          name: 'admin-reports',
+          component: () => import('@/views/AdminReportsView.vue'),
+        },
+      ],
     },
     {
       path: '/test-my-features',
@@ -100,6 +115,9 @@ router.beforeEach(async (to) => {
   }
   // ...and only see it once.
   if (to.name === 'onboarding' && auth.hasPreferences) return { name: 'map' }
+
+  // Admin pages: everyone else goes back to the map.
+  if (to.meta.requiresAdmin && !auth.isAdmin) return { name: 'map' }
 
   // Log-in page: skip it if already logged in.
   if (to.meta.guestOnly && auth.isLoggedIn) return { name: 'map' }

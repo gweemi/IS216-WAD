@@ -52,16 +52,18 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin';
     }
 
-    // Activities are curated or synced from Eventbrite. Keep the allowed
-    // categories in sync with src/config/preferences.js.
+    // Activities are curated (admin-picked) or synced from Eventbrite. The daily GitHub Action
+    // writes with the Admin SDK, which skips these rules. Keep in sync with src/utils/curated.js.
     function validActivity(d) {
       return d.title is string && d.title.size() >= 1 && d.title.size() <= 120
         && d.source in ['curated', 'eventbrite']
         && (d.get('cost', null) == null || (d.cost is number && d.cost >= 0))
+        && (d.get('description', null) == null || (d.description is string && d.description.size() <= 5000))
         && (d.source != 'curated' || (
               d.category in ['outdoors', 'sports', 'arts', 'food', 'workshops',
                              'events', 'games', 'wellness', 'volunteering']
-              && d.lat is number && d.lng is number));
+              && d.lat is number && d.lng is number
+              && (d.get('description', null) == null || d.description.size() <= 1000)));
     }
 
     match /activities/{id} {
@@ -70,7 +72,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // App settings only admins use, e.g. config/eventbrite for organiser IDs.
+    // App settings only admins use, e.g. config/eventbrite = the organisers we sync.
     match /config/{id} {
       allow read, write: if isAdmin();
     }
