@@ -6,9 +6,11 @@ import { activeFilterPills } from '@/utils/activeFilters'
 import { useGeolocation } from '@/composables/useGeolocation'
 import ActivityCard from '@/components/ActivityCard.vue'
 import FilterSheet from '@/components/FilterSheet.vue'
+import OpenJioPanel from '@/components/openjio/OpenJioPanel.vue'
 
 const { request } = useGeolocation()
 const filtersOpen = ref(false)
+const view = ref('all') // 'all' = everything, 'openjio' = start a jio, invites, my jios
 const activePills = computed(() => activeFilterPills(filters.value))
 
 onMounted(async () => {
@@ -22,6 +24,17 @@ onMounted(async () => {
     <div class="container py-4 col-lg-12">
       <!-- <div class="gol-eyebrow">Term break mode</div> -->
       <h1 class="gol-title">Where we going?</h1>
+
+      <div class="act-views" role="tablist" aria-label="Activities or OpenJio">
+        <button type="button" role="tab" :aria-selected="view === 'all'" :class="{ on: view === 'all' }"
+          data-testid="view-all" @click="view = 'all'">All activities</button>
+        <button type="button" role="tab" :aria-selected="view === 'openjio'" :class="{ on: view === 'openjio' }"
+          data-testid="view-openjio" @click="view = 'openjio'">OpenJio!</button>
+      </div>
+
+      <OpenJioPanel v-if="view === 'openjio'" class="mt-3" />
+
+      <template v-else>
 
       <div class="act-search">
         <div class="act-input">
@@ -60,8 +73,29 @@ onMounted(async () => {
       <p v-if="!loadingActivities && !recommended.length" class="act-note">
         Nothing matches those filters. Try clearing a few.
       </p>
+      </template>
     </div>
 
     <FilterSheet :open="filtersOpen" @close="filtersOpen = false" />
   </div>
 </template>
+
+<style scoped>
+.act-views {
+  display: inline-flex;
+  margin-top: 0.9rem;
+  padding: 0.3rem;
+  border-radius: 999px;
+  background: var(--gol-locked);
+}
+.act-views button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem;
+  background: transparent;
+  color: var(--gol-muted);
+  font-family: var(--gol-font);
+  font-weight: 900;
+}
+.act-views button.on { background: #fff; color: var(--gol-purple); }
+</style>

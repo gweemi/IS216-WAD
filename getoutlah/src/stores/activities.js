@@ -10,6 +10,8 @@ import { getForecasts, nearestForecast, isRainy } from '@/services/api/weather'
 import { getTrails } from '@/services/api/nparks'
 import { distanceMeters } from '@/utils/geo'
 import { fitsWindow } from '@/utils/freeTime'
+import { useOpenJioStore } from '@/stores/openjio'
+import { toActivity } from '@/utils/openjio'
 import { fitsHours } from '@/utils/activityStyle'
 
 const defaultFilters = () => ({
@@ -32,12 +34,24 @@ export const setLocation = (coords) => { userCoords.value = coords }
 export async function loadActivities() {
   if (loadingActivities.value || baseActivities.value.length) return
   loadingActivities.value = true
-  // Admin-picked (source 'curated') and Eventbrite (source 'eventbrite') activities both live in Firestore
-  // "activities", so they show together. The built-in list only stands in when Firestore can't be reached.
+
+
+  
+  useOpenJioStore().start() // live public OpenJios (see allActivities)
+
+  // Admin-picked (source 'curated') and Eventbrite (source 'eventbrite') activities both live in Firestore.
+  // The built-in list only stands in when Firestore can't be reached.
   let stored = null
-  if (isFirebaseConfigured) try { stored = (await getDocs(collection(db, 'activities'))).docs.map((d) => ({ id: d.id, ...d.data() })) } catch (e) { sourceErrors.value.firestore = e.message }
+  if (isFirebaseConfigured) try {
+    stored = (await getDocs(collection(db, 'activities'))).docs.map((d) => ({ id: d.id, ...d.data() }))
+  } catch (e) {
+    sourceErrors.value.firestore = e.message
+  }
+
   const [weather, trail] = await Promise.allSettled([getForecasts(), getTrails()])
   baseActivities.value = stored ?? seedActivities
+  
+
   if (weather.status === 'fulfilled') forecasts.value = weather.value; else sourceErrors.value.weather = weather.reason.message
   if (trail.status === 'fulfilled') trails.value = trail.value; else sourceErrors.value.nparks = trail.reason.message
   loadingActivities.value = false
@@ -50,7 +64,10 @@ export function reloadActivities() {
 }
 
 // Everything you can do: curated + events + upcoming OpenJio!s shown as activities.
-export const allActivities = computed(() => [...baseActivities.value])
+export const allActivities = computed(() => {
+  const jios = useOpenJioStore()
+  return [...baseActivities.value, ...jios.publicUpcoming.map((j) => toActivity(j, jios.uid))]
+})
 export const activityById = (id) => allActivities.value.find((a) => a.id === id)
 
 // Repeats of one event (an Eventbrite series, or the same title at the same place) are shown as ONE card.

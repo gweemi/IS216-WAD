@@ -4,15 +4,20 @@ import { ref, computed, watch, watchEffect, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { activityById, datesOf, weatherAt, toggleSaved, isSaved, loadActivities } from '@/stores/activities'
 import { friendsWhoDid } from '@/stores/ports'
+import { recordCheckIn } from '@/services/friends'
+import InviteFriendsSheet from '@/components/friends/InviteFriendsSheet.vue'
 import { checkInToActivity } from '@/stores/gamification(badges).js'
 import { isPlanned, togglePlan, removePlan } from '@/stores/plans'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, bookingLink, durationText } from '@/utils/activityStyle'
+import JioActionButton from '@/components/openjio/JioActionButton.vue'
+import StartJioButton from '@/components/openjio/StartJioButton.vue'
+import { prefillFromActivity } from '@/utils/openjio'
 
 const route = useRoute()
 const { request } = useGeolocation()
-const message = ref(''), friendsDid = ref([])
+const message = ref(''), friendsDid = ref([]), showInvite = ref(false)
 const BADGE_ENERGY = { low: 'calm', medium: 'moderate', high: 'high' } 
 
 onMounted(loadActivities)
@@ -48,7 +53,8 @@ const doCheckIn = () => run(async () => {
     energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openjio', hostedByMe: !!a.hostedByMe,
   }, await request())
   if (!r.ok) throw new Error(r.message)
-  await removePlan(a.id).catch(() => {})   // done: moves from "My plans" to "Completed" on Profile
+  await removePlan(a.id).catch(() => {})   // moves the activity from My plans to Completed
+  recordCheckIn(a.id).catch(() => {})      // lets friends see “Friends who have done this”
 }, 'Checked in!')
 const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'Removed from your plans.' : 'Added to My plans on your Profile.')
 </script>
@@ -111,6 +117,8 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
             <i class="bi bi-people"></i> Friends who have done this: {{ friendsDid.map((f) => f.name).join(', ') }}
           </p>
 
+          <JioActionButton v-if="activity.type === 'openjio'" :jio-id="activity.jioId" class="mt-3" />
+
           <div class="det-actions">
             <!-- Sign-up happens on Eventbrite (or the activity's own site), in a new tab. -->
             <a v-if="booking" :href="booking.href" target="_blank" rel="noopener" class="gol-btn-primary det-link det-book">
@@ -123,14 +131,25 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
             <button class="gol-btn-soft" @click="toggleSaved(activity.id)">
               <i class="bi" :class="saved ? 'bi-bookmark-fill' : 'bi-bookmark'"></i> {{ saved ? 'Saved' : 'Save' }}
             </button>
+            <button class="gol-btn-soft" data-testid="invite-friends" @click="showInvite = true">
+              <i class="bi bi-person-plus"></i> Invite friends
+            </button>
             <a v-if="directions" :href="directions" target="_blank" rel="noopener" class="gol-btn-soft det-link">
               <i class="bi bi-signpost-split"></i> Get directions
             </a>
+            <StartJioButton v-if="activity.type !== 'openjio'" label="OpenJio this" variant="soft"
+              :prefill="prefillFromActivity(activity)" />
           </div>
           <p v-if="message" class="det-msg">{{ message }}</p>
         </div>
       </div>
       <p v-else class="mt-4 fw-bold">Activity not found (or still loading).</p>
+      <InviteFriendsSheet
+        :open="showInvite"
+        :activity="activity"
+        @close="showInvite = false"
+        @sent="(n) => (message = `Invite sent to ${n} friend${n > 1 ? 's' : ''}!`)"
+      />
     </div>
   </div>
 </template>

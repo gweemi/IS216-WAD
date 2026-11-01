@@ -9,10 +9,10 @@ import { INTERESTS } from '@/config/preferences'
 
 export const VISIBILITY = [
   { id: 'public', label: 'Public', hint: 'Anyone on GetOutLah! can join' },
-  { id: 'friends', label: 'Friends only', hint: 'Only your friends can see it' },
+  { id: 'friends', label: 'Friends only', hint: 'Only the friends you invite can see it' },
 ]
 
-export const REGIONS = ['central', 'north', 'north-east', 'east', 'west']
+export const REGIONS = ['central', 'north', 'north-east', 'east', 'west', 'south']
 
 export const LIMITS = {
   titleMax: 60,
@@ -21,6 +21,7 @@ export const LIMITS = {
   minCapacity: 2, // the host plus at least one other person
   maxCapacity: 50,
   maxCost: 500,
+  maxInvites: 50,
 }
 
 // ---------- Checking the create form ----------
@@ -66,6 +67,12 @@ export function validateJio(form, now = new Date()) {
 
   if (!VISIBILITY.some((v) => v.id === form?.visibility)) problems.push('Choose who can see it.')
 
+  if (form?.visibility === 'friends') {
+    const invited = form.invited ?? []
+    if (!invited.length) problems.push('Invite at least one friend.')
+    else if (invited.length > LIMITS.maxInvites) problems.push('Too many friends invited.')
+  }
+
   if ((form?.description ?? '').length > LIMITS.descriptionMax) {
     problems.push(`Keep the description under ${LIMITS.descriptionMax} characters.`)
   }
@@ -95,18 +102,19 @@ export function myRole(jio, uid) {
   return 'none'
 }
 
+/** Did the host invite this user to a friends-only jio? */
+export const isInvited = (jio, uid) => (jio.invited ?? []).includes(uid)
+
 /** 1 = next in line. 0 = not in the queue. */
 export const queuePosition = (jio, uid) => jio.waitlist.indexOf(uid) + 1
 
 /**
- * Can this user see the jio in their list?
- * Public: everyone. Friends only: the host's friends, plus anyone already in it.
- * friendIds = the viewer's friends (from the Friends feature).
+ * Can this user see the jio?
+ * Public: everyone. Friends only: the host, invited friends, and anyone already in it.
  */
-export function canSee(jio, uid, friendIds = []) {
+export function canSee(jio, uid) {
   if (jio.visibility === 'public') return true
-  if (myRole(jio, uid) !== 'none') return true
-  return friendIds.includes(jio.hostId)
+  return myRole(jio, uid) !== 'none' || isInvited(jio, uid)
 }
 
 // ---------- Changing a jio ----------
@@ -114,7 +122,8 @@ export function canSee(jio, uid, friendIds = []) {
 // the new { participants, waitlist }. If the change isn't allowed, it throws
 // an Error with a message we can show the user.
 
-function mustBeActive(jio, now) {
+function mustBeActive(jio, uid, now) {
+  if (!canSee(jio, uid)) throw new Error('This jio is for invited friends only.')
   const status = statusOf(jio, now)
   if (status === 'cancelled') throw new Error('This jio was cancelled by the host.')
   if (status === 'ended') throw new Error('This jio has already ended.')
@@ -123,7 +132,7 @@ function mustBeActive(jio, now) {
 
 /** Join a jio that still has space. */
 export function applyJoin(jio, uid, now = new Date()) {
-  const status = mustBeActive(jio, now)
+  const status = mustBeActive(jio, uid, now)
   if (jio.participants.includes(uid)) throw new Error("You're already going.")
   if (status === 'full') throw new Error('Someone got the last spot first. You can chope the next one.')
   return {
@@ -134,7 +143,7 @@ export function applyJoin(jio, uid, now = new Date()) {
 
 /** Chope: join the queue for a full jio. */
 export function applyChope(jio, uid, now = new Date()) {
-  const status = mustBeActive(jio, now)
+  const status = mustBeActive(jio, uid, now)
   if (jio.participants.includes(uid)) throw new Error("You're already going.")
   if (jio.waitlist.includes(uid)) throw new Error("You're already in the queue.")
   if (status !== 'full') throw new Error('There are spots left, so you can join straight away.')
@@ -189,20 +198,46 @@ export function whenText(jio) {
 }
 
 /**
- * The jio in the same shape as src/data/sampleActivities.js, so the map,
- * check-ins and badges can use OPENJIOs like any other activity.
+ * The jio in the same shape as the activities in src/data/seedActivities.js,
+ * so the Activities list, activity details, map, check-ins and badges can
+ * treat OPENJIOs like any other activity.
  */
 export function toActivity(jio, uid) {
   return {
     id: `jio-${jio.id}`,
+    jioId: jio.id,
     title: jio.title,
     category: jio.category,
-    region: jio.region,
+    type: 'openjio',
+    source: 'openjio',
     cost: jio.cost,
-    duration: jio.durationMins,
+    durationHrs: jio.durationMins / 60,
+    setting: null,
+    energyLevel: null,
+    area: jio.location,
+    region: jio.region,
     lat: jio.lat ?? null,
     lng: jio.lng ?? null,
-    isOpenJio: true,
+    slotsLeft: slotsLeft(jio),
+    groupFriendly: true,
+    startsAt: jio.startAt.getTime(),
     hostedByMe: jio.hostId === uid,
+  }
+}
+
+/**
+ * Starting values for the create form from an activity on the Activities page
+ * (curated, Eventbrite, etc.), for an "OpenJio this" button.
+ * Pass the result to <StartJioButton :prefill="..."> or <CreateJioSheet :prefill="...">.
+ */
+export function prefillFromActivity(activity) {
+  return {
+    title: activity.title,
+    category: activity.category,
+    location: activity.area ?? activity.location ?? '',
+    region: REGIONS.includes(activity.region) ? activity.region : undefined,
+    cost: typeof activity.cost === 'number' ? activity.cost : undefined,
+    durationMins: activity.durationHrs ? Math.round(activity.durationHrs * 60) : undefined,
+    startAt: activity.startsAt ? new Date(activity.startsAt) : undefined,
   }
 }

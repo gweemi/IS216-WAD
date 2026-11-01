@@ -1,10 +1,7 @@
 <!--
-  One OPENJIO in the list. Shows the details and the right button for this user:
-    not in it + spots left → Join      not in it + full → Chope next spot
-    going → Leave                       queued → Leave queue
-    host → Cancel jio
-  The card doesn't talk to Firebase itself. It emits `action` with the
-  button's name and OpenJioView.vue does the work.
+  One OPENJIO: details, who's going, and the right button for this user
+  (JioActionButton does join / chope / leave / cancel).
+    <JioCard :jio="jio" :uid="uid" />
 -->
 <template>
   <article
@@ -12,8 +9,8 @@
     :class="{ 'is-greyed': greyed, 'is-cancelled': status === 'cancelled' }"
     data-testid="jio-card"
   >
-    <div class="jio-art" :style="{ background: colour }">
-      <span class="jio-emoji" aria-hidden="true">{{ emoji }}</span>
+    <div class="jio-art" :style="{ background: categoryColor(jio.category) }">
+      <span class="jio-emoji" aria-hidden="true">{{ categoryEmoji(jio.category) }}</span>
       <span class="jio-status" :class="'jio-status--' + status" data-testid="jio-status">
         {{ statusLabel(jio) }}
       </span>
@@ -41,6 +38,9 @@
         <span v-else-if="role === 'queued'" class="gol-pill tag-queued" data-testid="queue-position">
           Choped · #{{ queuePosition(jio, uid) }} in line
         </span>
+        <span v-else-if="invited" class="gol-pill tag-invited" data-testid="jio-invited">
+          <i class="bi bi-envelope-heart"></i> {{ jio.hostName }} invited you
+        </span>
         <span v-else class="jio-host">Hosted by {{ jio.hostName }}</span>
         <span class="jio-going ms-auto">
           <i class="bi bi-people"></i> {{ jio.participants.length }}/{{ jio.capacity }} going
@@ -51,53 +51,31 @@
         If someone drops out, the spot goes to you automatically.
       </p>
 
-      <div v-if="button" class="mt-3">
-        <button
-          type="button"
-          :class="button.style"
-          :disabled="busy"
-          data-testid="jio-action"
-          @click="$emit('action', button.action)"
-        >
-          {{ busy ? 'One sec…' : button.label }}
-        </button>
-      </div>
+      <JioActionButton :jio="jio" :uid="uid" class="mt-3" />
     </div>
   </article>
 </template>
 
 <script>
-import { INTERESTS } from '@/config/preferences'
+import JioActionButton from '@/components/openjio/JioActionButton.vue'
+import { categoryColor, categoryEmoji } from '@/utils/activityStyle'
 import {
   statusOf,
   statusLabel,
   myRole,
+  isInvited,
   queuePosition,
   priceText,
   whenText,
 } from '@/utils/openjio'
 
-// One colour per category, from the Figma palette
-const COLOURS = {
-  outdoors: 'var(--gol-lime)',
-  sports: 'var(--gol-coral)',
-  arts: 'var(--gol-cyan)',
-  food: 'var(--gol-yellow)',
-  workshops: 'var(--gol-purple)',
-  music: 'var(--gol-cyan)',
-  games: 'var(--gol-yellow)',
-  wellness: 'var(--gol-lime)',
-  volunteering: 'var(--gol-coral)',
-}
-
 export default {
   name: 'JioCard',
+  components: { JioActionButton },
   props: {
     jio: { type: Object, required: true },
     uid: { type: String, required: true },
-    busy: { type: Boolean, default: false },
   },
-  emits: ['action'],
   computed: {
     status() {
       return statusOf(this.jio)
@@ -105,26 +83,14 @@ export default {
     role() {
       return myRole(this.jio, this.uid)
     },
+    invited() {
+      return isInvited(this.jio, this.uid)
+    },
     greyed() {
       return this.status === 'full' && this.role === 'none'
     },
-    colour() {
-      return COLOURS[this.jio.category] ?? 'var(--gol-purple-soft)'
-    },
-    emoji() {
-      return INTERESTS.find((i) => i.id === this.jio.category)?.emoji ?? '✨'
-    },
-    // Which button to show, if any
-    button() {
-      if (this.status === 'cancelled' || this.status === 'ended') return null
-      if (this.role === 'host') return { action: 'cancel', label: 'Cancel jio', style: 'gol-btn-soft w-100' }
-      if (this.role === 'going') return { action: 'leave', label: 'Leave', style: 'gol-btn-soft w-100' }
-      if (this.role === 'queued') return { action: 'leaveQueue', label: 'Leave queue', style: 'gol-btn-soft w-100' }
-      if (this.status === 'full') return { action: 'chope', label: 'Chope next spot', style: 'gol-btn-coral w-100' }
-      return { action: 'join', label: 'Join', style: 'gol-btn-primary' }
-    },
   },
-  methods: { statusLabel, queuePosition, priceText, whenText },
+  methods: { statusLabel, queuePosition, priceText, whenText, categoryColor, categoryEmoji },
 }
 </script>
 
@@ -189,5 +155,6 @@ export default {
 }
 .tag-host { background: var(--gol-purple-soft); color: var(--gol-purple); }
 .tag-queued { background: #ffe1de; color: #b4382f; }
+.tag-invited { background: var(--gol-cyan); color: var(--gol-ink); }
 .queue-note { color: #b4382f; font-weight: 700; font-size: 0.8rem; }
 </style>
