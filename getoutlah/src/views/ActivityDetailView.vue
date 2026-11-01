@@ -1,6 +1,6 @@
 <script setup>
 import '@/assets/discovery.css'
-import { ref, computed, watchEffect, onMounted } from 'vue'
+import { ref, computed, watch, watchEffect, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { activityById, datesOf, weatherAt, toggleSaved, isSaved, loadActivities } from '@/stores/activities'
 import { friendsWhoDid } from '@/stores/ports'
@@ -8,7 +8,7 @@ import { checkInToActivity } from '@/stores/gamification(badges).js'
 import { isPlanned, togglePlan, removePlan } from '@/stores/plans'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
-import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, bookingLink } from '@/utils/activityStyle'
+import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, bookingLink, durationText } from '@/utils/activityStyle'
 
 const route = useRoute()
 const { request } = useGeolocation()
@@ -23,6 +23,18 @@ const dates = computed(() => (activity.value ? datesOf(activity.value) : []))
 const booking = computed(() => bookingLink(activity.value))
 const heroImage = computed(() => activity.value?.imageLargeUrl ?? activity.value?.imageUrl ?? null)
 const brokenImage = ref(null)   // a picture that didn't load: show the emoji instead
+
+// Long descriptions (over 100 words) show the first 100 words and a "Show more" button.
+const SHORT_WORDS = 50
+const showFullDescription = ref(false)
+watch(() => route.params.id, () => { showFullDescription.value = false })   // collapse again on another activity or date
+const descriptionIsLong = computed(() => (activity.value?.description ?? '').trim().split(/\s+/).length > SHORT_WORDS)
+const shownDescription = computed(() => {
+  const text = activity.value?.description ?? ''
+  if (!descriptionIsLong.value || showFullDescription.value) return text
+  const first100 = text.match(new RegExp(`^(\\s*\\S+){${SHORT_WORDS}}`))[0]   // first 100 words, line breaks kept
+  return first100 + '…'
+})
 const saved = computed(() => (activity.value ? isSaved(activity.value.id) : false))
 const planned = computed(() => (activity.value ? isPlanned(activity.value.id) : false))   // "My plans" on Profile
 
@@ -56,6 +68,15 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
           <div class="gol-eyebrow mt-3">{{ categoryLabel(activity.category) }}</div>
           <h1 class="gol-title">{{ activity.title }}</h1>
           <span class="act-source det-source">{{ sourceLabel(activity.source) }}</span>
+          <section v-if="activity.description" class="det-about">
+            <h2 class="det-dates-title"><i class="bi bi-info-circle"></i> About</h2>
+            <p class="det-description">{{ shownDescription }}</p>
+            <button v-if="descriptionIsLong" class="det-more" :aria-expanded="showFullDescription"
+              @click="showFullDescription = !showFullDescription">
+              {{ showFullDescription ? 'Show less' : 'Show more' }}
+              <i class="bi" :class="showFullDescription ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </button>
+          </section>
         </div>
 
         <!-- Right: facts + actions -->
@@ -63,7 +84,7 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
           <div class="det-grid">
             <div class="det-cell"><i class="bi bi-geo-alt"></i> {{ activity.area || 'Singapore' }}</div>
             <div class="det-cell"><i class="bi bi-tag"></i> {{ priceText(activity) }}</div>
-            <div class="det-cell"><i class="bi bi-clock"></i> {{ activity.durationHrs ?? '?' }} hr<template v-if="activity.setting"> · {{ activity.setting }}</template></div>
+            <div class="det-cell"><i class="bi bi-clock"></i> {{ durationText(activity) }}<template v-if="activity.setting"> · {{ activity.setting }}</template></div>
             <div v-if="activity.slotsLeft != null" class="det-cell"><i class="bi bi-person-plus"></i> {{ activity.slotsLeft }} slots left</div>
             <div v-if="activity.startsAt && dates.length <= 1" class="det-cell det-wide"><i class="bi bi-calendar-event"></i> {{ whenText(activity.startsAt) }}</div>
           </div>

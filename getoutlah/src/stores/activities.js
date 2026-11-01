@@ -10,9 +10,10 @@ import { getForecasts, nearestForecast, isRainy } from '@/services/api/weather'
 import { getTrails } from '@/services/api/nparks'
 import { distanceMeters } from '@/utils/geo'
 import { fitsWindow } from '@/utils/freeTime'
+import { fitsHours } from '@/utils/activityStyle'
 
 const defaultFilters = () => ({
-  query: '', categories: [], types: [],            // empty = all. types: events | outdoor | volunteering | paid | openjio
+  query: '', categories: [], sources: [],          // empty = all. sources: curated | eventbrite ("Limited") | openjio
   maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false,
   nearMe: false, radiusKm: 5, prioritiseFreeTime: false,
 })
@@ -73,10 +74,10 @@ export const filtered = computed(() => {
   return allActivities.value.filter((a) =>
     (!q || `${a.title} ${a.area}`.toLowerCase().includes(q)) &&
     (f.categories.length === 0 || f.categories.includes(a.category)) &&
-    (f.types.length === 0 || f.types.includes(a.type)) &&
+    (f.sources.length === 0 || f.sources.includes(a.source)) &&
     (f.maxCost === null || (a.cost != null && a.cost <= f.maxCost)) &&
-    (f.maxHours === null || a.durationHrs == null || a.durationHrs <= f.maxHours) &&
-    (f.setting === 'Any' || a.setting == null || a.setting === f.setting) &&
+    (f.maxHours === null || fitsHours(a, f.maxHours)) &&
+    (f.setting === 'Any' || a.setting === f.setting) &&
     (f.energy === 'Any' || a.energyLevel == null || a.energyLevel === f.energy) &&
     (!f.onlySlots || a.slotsLeft == null || a.slotsLeft > 0) &&
     (!f.nearMe || !userCoords.value || a.lat == null || distanceMeters(userCoords.value, a) <= f.radiusKm * 1000))

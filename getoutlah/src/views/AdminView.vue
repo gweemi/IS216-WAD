@@ -12,6 +12,7 @@ const tabs = [
 <template>
   <div class="gol-page">
     <div class="container py-4" style="max-width: 640px">
+      <RouterLink :to="{ name: 'profile' }" class="det-back d-inline-block mb-3" data-testid="admin-back"><i class="bi bi-arrow-left"></i> Back to profile</RouterLink>
       <div class="gol-eyebrow">Admin</div>
       <h1 class="gol-title">Admin</h1>
 

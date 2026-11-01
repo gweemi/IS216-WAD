@@ -2,7 +2,7 @@
 import '@/assets/discovery.css'
 import { ref, computed } from 'vue'
 import { toggleSaved, isSaved, datesOf } from '@/stores/activities'
-import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText } from '@/utils/activityStyle'
+import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, durationText } from '@/utils/activityStyle'
 const props = defineProps({ activity: Object })
 const dates = computed(() => datesOf(props.activity))
 const imageBroken = ref(false)   // picture didn't load: show the emoji tile instead
@@ -14,13 +14,13 @@ const imageBroken = ref(false)   // picture didn't load: show the emoji tile ins
       <div class="act-tile" :style="{ background: categoryColor(activity.category), color: tileTextColor(activity.category) }">
         <img v-if="activity.imageUrl && !imageBroken" :src="activity.imageUrl" alt="" loading="lazy" class="act-img" @error="imageBroken = true" />
         <span v-else class="act-emoji">{{ categoryEmoji(activity.category) }}</span>
-        <span class="act-tag">{{ categoryLabel(activity.category).split(' ')[0] }}</span>
+        <span class="act-tag" :style="{ '--tag-color': categoryColor(activity.category) }">{{ categoryLabel(activity.category).split(' ')[0] }}</span>
       </div>
       <div class="act-body">
         <div class="gol-eyebrow">{{ activity.area || 'Singapore' }}</div>
         <h3 class="act-title">{{ activity.title }}</h3>
         <div class="act-meta">
-          <i class="bi bi-clock"></i> {{ activity.durationHrs ?? '?' }} hr
+          <i class="bi bi-clock"></i> {{ durationText(activity) }}
           <template v-if="activity.setting"> · {{ activity.setting }}</template>
         </div>
         <div v-if="dates[0].startsAt" class="act-meta">

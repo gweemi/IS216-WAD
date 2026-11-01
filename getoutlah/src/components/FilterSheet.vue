@@ -3,16 +3,14 @@ import '@/assets/discovery.css'
 import BottomSheet from '@/components/common/BottomSheet.vue'
 import { filters, recommended, resetFilters } from '@/stores/activities'
 import { categories } from '@/data/seedActivities'
-import { categoryLabel } from '@/utils/activityStyle'
+import { categoryLabel, sourceLabel } from '@/utils/activityStyle'
+import { BUDGETS, HOURS, ENERGY } from '@/utils/activeFilters'
 // Works with v-if="open" OR :open="open" (the Map page can use either).
 defineProps({ open: { type: Boolean, default: true } })
 const emit = defineEmits(['close'])
 
-const BUDGETS = [[null, 'Any'], [0, 'Free'], [10, 'Under $10'], [20, 'Under $20'], [50, 'Under $50']]
-const HOURS = [[null, 'Any'], [1, '1 hr or less'], [2, '2 hr or less'], [3, '3 hr or less']]
 const SETTINGS = ['Any', 'Indoor', 'Outdoor']
-const ENERGY = [['Any', 'Any'], ['low', 'Chill'], ['medium', 'Moderate'], ['high', 'High energy']]
-const TYPES = [['events', 'Events'], ['outdoor', 'Outdoor'], ['volunteering', 'Volunteering'], ['paid', 'Paid'], ['openjio', 'OpenJio!']]
+const SOURCES = ['curated', 'eventbrite', 'openjio']   // shown as Curated, Limited, OpenJio (same labels as the cards)
 
 function toggle(key, v) {
   const list = filters.value[key]
@@ -39,8 +37,8 @@ function toggle(key, v) {
 
     <h3 class="fs-label">Type</h3>
     <div class="fs-chips">
-      <button v-for="[id, label] in TYPES" :key="id" class="fs-chip" :class="{ on: filters.types.includes(id) }"
-        @click="toggle('types', id)">{{ label }}</button>
+      <button v-for="s in SOURCES" :key="s" class="fs-chip" :class="{ on: filters.sources.includes(s) }"
+        @click="toggle('sources', s)">{{ sourceLabel(s) }}</button>
     </div>
 
     <h3 class="fs-label">Budget</h3>

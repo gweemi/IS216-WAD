@@ -58,10 +58,12 @@ service cloud.firestore {
       return d.title is string && d.title.size() >= 1 && d.title.size() <= 120
         && d.source in ['curated', 'eventbrite']
         && (d.get('cost', null) == null || (d.cost is number && d.cost >= 0))
+        && (d.get('description', null) == null || (d.description is string && d.description.size() <= 5000))
         && (d.source != 'curated' || (
               d.category in ['outdoors', 'sports', 'arts', 'food', 'workshops',
                              'events', 'games', 'wellness', 'volunteering']
-              && d.lat is number && d.lng is number));
+              && d.lat is number && d.lng is number
+              && (d.get('description', null) == null || d.description.size() <= 1000)));
     }
 
     match /activities/{id} {
@@ -109,7 +111,7 @@ service cloud.firestore {
         && d.category in ['outdoors', 'sports', 'arts', 'food', 'workshops',
                           'events', 'games', 'wellness', 'volunteering']
         && d.location is string && d.location.size() >= 1 && d.location.size() <= 80
-        && d.region in ['central', 'north', 'north-east', 'east', 'west']
+        && d.region in ['central', 'north', 'north-east', 'east', 'west', 'south']
         && d.description is string && d.description.size() <= 300
         && d.startAt is timestamp
         && d.durationMins is int && d.durationMins >= 15 && d.durationMins <= 720
@@ -119,7 +121,18 @@ service cloud.firestore {
         && d.status in ['open', 'cancelled']
         && d.participants is list && d.participants.size() <= d.capacity
         && d.participants.size() == d.participants.toSet().size() // no duplicates
-        && d.waitlist is list && d.waitlist.size() <= 200;
+        && d.waitlist is list && d.waitlist.size() <= 200
+        // friends-only jios list who is invited (older jios may not have the field)
+        && (!('invited' in d) || (d.invited is list && d.invited.size() <= 50));
+    }
+
+    // Public jios: anyone. Friends-only: only people the host invited
+    // (or who are already in it).
+    function mayJoin(jio, uid) {
+      return jio.visibility == 'public'
+        || jio.get('invited', []).hasAny([uid])
+        || jio.participants.hasAny([uid])
+        || jio.waitlist.hasAny([uid]);
     }
 
     // Join, chope or leave: you may only add or remove yourself.
@@ -132,6 +145,7 @@ service cloud.firestore {
       let beforeEveryone = before.participants.toSet().union(before.waitlist.toSet());
       return after.diff(before).affectedKeys().hasOnly(['participants', 'waitlist'])
         && before.status == 'open'
+        && mayJoin(before, me)
         && after.participants.hasAny([before.hostId])
         // only you (or someone from the queue) can be added to the going list
         && after.participants.toSet().difference(beforeEveryone).hasOnly([me])
@@ -145,19 +159,24 @@ service cloud.firestore {
     }
 
     match /openjios/{jioId} {
-      // Signed-in users can read jios. "Friends only" is filtered in the app.
+      // Signed-in users can read jios. "Friends only" is filtered in the app
+      // (only the host, invited friends and people in it see it).
       allow read: if signedIn();
 
       // You can only host as yourself, and start as the only person going.
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['title', 'category', 'description', 'location',
              'region', 'lat', 'lng', 'startAt', 'durationMins', 'cost', 'capacity', 'visibility',
-             'hostId', 'hostName', 'participants', 'waitlist', 'status', 'createdAt'])
+             'hostId', 'hostName', 'participants', 'waitlist', 'invited', 'status', 'createdAt'])
         && request.resource.data.hostId == request.auth.uid
         && request.resource.data.hostName is string
         && request.resource.data.participants == [request.auth.uid]
         && request.resource.data.waitlist == []
         && request.resource.data.status == 'open'
+        && ((request.resource.data.visibility == 'public'
+              && request.resource.data.get('invited', []).size() == 0)
+            || (request.resource.data.visibility == 'friends'
+              && request.resource.data.get('invited', []).size() >= 1))
         && request.resource.data.startAt > request.time
         && request.resource.data.createdAt == request.time
         && validJio(request.resource.data);
@@ -172,6 +191,71 @@ service cloud.firestore {
       );
 
       allow delete: if signedIn() && resource.data.hostId == request.auth.uid;
+    }
+
+    // ---------- Friends & notifications ----------
+    // Same id whoever sent the request: the two uids sorted, joined with "_".
+    function pairId(a, b) {
+      return a < b ? a + '_' + b : b + '_' + a;
+    }
+    function friendshipPath(a, b) {
+      return /databases/$(database)/documents/friendships/$(pairId(a, b));
+    }
+    function areFriends(a, b) {
+      return exists(friendshipPath(a, b)) && get(friendshipPath(a, b)).data.status == 'accepted';
+    }
+
+    // friendships/{uidA_uidB}: a friend request (pending) or a friendship (accepted).
+    match /friendships/{id} {
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+
+      // Send a request: you're one of the two people, you're the requester, it starts pending.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['members', 'requestedBy', 'status', 'names', 'photos', 'createdAt'])
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && request.resource.data.members[0] < request.resource.data.members[1]
+        && request.auth.uid in request.resource.data.members
+        && id == request.resource.data.members[0] + '_' + request.resource.data.members[1]
+        && request.resource.data.requestedBy == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Accept: only the person who received the request, and only the status changes.
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.members
+        && request.auth.uid != resource.data.requestedBy
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'accepted'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt']);
+
+      // Decline, cancel or unfriend: either person.
+      allow delete: if signedIn() && request.auth.uid in resource.data.members;
+    }
+
+    // notifications/{id}: only the person it's for can read it.
+    match /notifications/{id} {
+      allow read: if signedIn() && resource.data.to == request.auth.uid;
+
+      // You can only send as yourself, to someone else.
+      // Requests need a pending request from you; everything else needs you to be friends.
+      allow create: if signedIn()
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.to is string
+        && request.resource.data.to != request.auth.uid
+        && request.resource.data.read == false
+        && (
+          (request.resource.data.type == 'friend_request'
+            && exists(friendshipPath(request.auth.uid, request.resource.data.to))
+            && get(friendshipPath(request.auth.uid, request.resource.data.to)).data.requestedBy == request.auth.uid)
+          || (request.resource.data.type in ['friend_accepted', 'activity_invite']
+            && areFriends(request.auth.uid, request.resource.data.to))
+        );
+
+      // The receiver can mark it read or delete it.
+      allow update: if signedIn()
+        && resource.data.to == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if signedIn() && resource.data.to == request.auth.uid;
     }
 
     // Everything else is closed until we add rules for it.

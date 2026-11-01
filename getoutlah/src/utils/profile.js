@@ -45,7 +45,7 @@ export function buildPlans({ planIds = [], findActivity, jios = [], uid, complet
     .map((id) => findActivity(id))
     .filter((a) => a && !done.has(a.id))
     // Dated ones drop off once they're over (3 hours if we don't know how long it runs)
-    .filter((a) => a.startsAt == null || a.startsAt + (a.durationHrs ?? 3) * 3600000 > now.getTime())
+    .filter((a) => a.startsAt == null || (a.endsAt ?? a.startsAt + (a.durationHrs ?? 3) * 3600000) > now.getTime())
     .map((a) => ({
       key: 'a-' + a.id,
       id: a.id,
