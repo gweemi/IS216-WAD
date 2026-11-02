@@ -11,6 +11,8 @@ describe('curated activity dataset', () => {
       expect(categoryIds).toContain(activity.category)
       expect(activity.source).toBe('curated')
       expect(activity).not.toHaveProperty('tags')
+      expect(activity.description.length).toBeGreaterThan(0)
+      expect(activity.description.length).toBeLessThanOrEqual(1000)   // the curated limit in firestore.rules
       expect(Number.isFinite(activity.lat)).toBe(true)
       expect(Number.isFinite(activity.lng)).toBe(true)
     }
@@ -21,7 +23,8 @@ describe('curated activity dataset', () => {
     for (const categoryId of MAP_ACTIVITY_CATEGORY_IDS) {
       const category = getMapActivityCategory(categoryId)
       expect(category.color).toMatch(/^#[0-9A-F]{6}$/i)
-      expect(category.icon).toMatch(/^bi-/)
+      expect(category.icon).toMatch(/^[a-z-]+$/)
+      expect(category.emoji).toBe(INTERESTS.find((interest) => interest.id === categoryId)?.emoji)
     }
   })
 

@@ -23,6 +23,16 @@ export default defineConfig([
     },
   },
 
+  {
+    // Node scripts, e.g. the daily Eventbrite sync run by GitHub Actions
+    files: ['scripts/**'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
 

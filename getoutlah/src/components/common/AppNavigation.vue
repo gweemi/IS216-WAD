@@ -1,4 +1,7 @@
 <script setup>
+import { computed } from 'vue'
+import { unreadCount, incomingRequests } from '@/stores/friends'
+
 const links = [
   { name: 'friends', label: 'Friends', icon: 'bi-people' },
   { name: 'activities', label: 'Activities', icon: 'bi-stars' },
@@ -6,6 +9,9 @@ const links = [
   { name: 'badges', label: 'Badges', icon: 'bi-award' },
   { name: 'profile', label: 'Profile', icon: 'bi-person' },
 ]
+
+// Coral dot on Friends when there's something new.
+const friendsAlert = computed(() => unreadCount.value + incomingRequests.value.length > 0)
 </script>
 
 <template>
@@ -17,7 +23,15 @@ const links = [
       class="nav-link"
       :data-testid="`nav-${link.name}`"
     >
-      <span class="nav-icon" aria-hidden="true"><i class="bi" :class="link.icon"></i></span>
+      <span class="nav-icon position-relative" aria-hidden="true">
+        <i class="bi" :class="link.icon"></i>
+        <span
+          v-if="link.name === 'friends' && friendsAlert"
+          class="position-absolute top-0 end-0 p-1 rounded-circle border border-2 border-white"
+          style="background: var(--gol-coral)"
+          data-testid="nav-friends-dot"
+        ></span>
+      </span>
       <span class="nav-label">{{ link.label }}</span>
     </RouterLink>
   </nav>

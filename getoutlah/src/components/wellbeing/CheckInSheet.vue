@@ -70,6 +70,18 @@
       <span class="gol-pill mb-2" :class="'gol-pill--' + status.tone">{{ status.label }}</span>
       <p class="muted mt-2 mb-3">{{ changeText }}</p>
 
+      <!-- Points for checking in (shown on the Badges page as level + points) -->
+      <div v-if="reward" class="points-card text-start mb-3" data-testid="checkin-points">
+        <span class="points-badge" :class="{ none: !reward.pointsGiven }">
+          {{ reward.pointsGiven ? '+' + reward.pointsGiven : '0' }}<small>pts</small>
+        </span>
+        <div class="flex-grow-1 min-w-0">
+          <div class="fw-bold">{{ reward.levelledUp ? 'Level up! You’re now Level ' + level.level : reward.message }}</div>
+          <div class="small muted mb-1">Level {{ level.level }} · {{ level.into }}/{{ level.needed }} pts to the next level</div>
+          <div class="gol-progress"><span :style="{ width: level.percent + '%' }"></span></div>
+        </div>
+      </div>
+
       <!-- Gentle support note for low scores -->
       <div v-if="status.tone === 'support' || status.tone === 'low'" class="support-card text-start mb-3">
         <div class="fw-bold mb-1"><i class="bi bi-chat-heart me-1"></i> It's okay to not be okay</div>
@@ -81,6 +93,21 @@
           If you need to talk to someone now, Samaritans of Singapore (SOS) is available 24/7 at
           <a href="tel:1767" class="fw-bold">1767</a>.
         </p>
+      </div>
+
+      <!-- "Keep the energy going": a couple of activities to try next -->
+      <div v-if="suggestions.length" class="text-start mb-3">
+        <h3 class="suggest-title mb-2">{{ status.tone === 'good' || status.tone === 'okay' ? 'Keep the energy going' : 'Something gentle to try' }}</h3>
+        <div class="d-grid gap-2">
+          <button v-for="a in suggestions" :key="a.id" class="suggest-row" @click="openActivity(a)">
+            <span class="suggest-emoji" :style="{ background: categoryColor(a.category) }">{{ categoryEmoji(a.category) }}</span>
+            <span class="flex-grow-1 min-w-0">
+              <span class="d-block fw-bold text-truncate">{{ a.title }}</span>
+              <span class="d-block small muted">{{ categoryLabel(a.category) }}<template v-if="a.area"> · {{ a.area }}</template></span>
+            </span>
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
       </div>
 
       <p class="small muted mb-3">This isn't a diagnosis. It's just a way to notice how you're trending.</p>
@@ -98,6 +125,11 @@ import {
   statusFor,
   latestCheckIn,
 } from '../../stores/wellbeing.js'
+import { awardWellbeingCheckIn, levelInfo } from '../../stores/gamification(badges).js'
+import { allActivities, loadActivities } from '../../stores/activities.js'
+import { useAuthStore } from '../../stores/auth.js'
+import { wellbeingSuggestions } from '../../utils/profile.js'
+import { categoryColor, categoryEmoji, categoryLabel } from '../../utils/activityStyle.js'
 
 export default {
   name: 'CheckInSheet',
@@ -112,6 +144,7 @@ export default {
       busy: false,
       answers: [],
       result: null,
+      reward: null, // points given for this check-in
       previous: null,
       questions: WHO5_QUESTIONS,
       options: WHO5_OPTIONS,
@@ -123,6 +156,14 @@ export default {
     }
   },
   computed: {
+    level() {
+      return levelInfo()
+    },
+    suggestions() {
+      if (!this.result) return []
+      const interests = useAuthStore().preferences?.interests ?? []
+      return wellbeingSuggestions(this.result.score, allActivities.value, interests)
+    },
     status() {
       return this.result ? statusFor(this.result.score) : null
     },
@@ -141,6 +182,8 @@ export default {
         this.step = 'intro'
         this.answers = []
         this.result = null
+        this.reward = null
+        loadActivities().catch(() => {}) // for the suggestions at the end
       }
     },
   },
@@ -160,10 +203,18 @@ export default {
           this.step++
         } else {
           this.result = saveCheckIn(this.answers)
+          this.reward = awardWellbeingCheckIn()
           this.step = 'result'
           this.$emit('saved', this.result)
         }
       }, 180)
+    },
+    categoryColor,
+    categoryEmoji,
+    categoryLabel,
+    openActivity(a) {
+      this.close()
+      this.$router?.push(`/activities/${a.id}`)
     },
     close() {
       this.$emit('close')
@@ -259,4 +310,61 @@ export default {
   padding: 0.9rem 1rem;
 }
 .support-card a { color: var(--gol-purple); }
+
+.points-card {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  background: #fff;
+  border-radius: 16px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 3px 0 var(--gol-card-edge);
+}
+.points-badge {
+  flex-shrink: 0;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  border: 2px solid var(--gol-ink);
+  box-shadow: 3px 3px 0 var(--gol-ink);
+  background: var(--gol-lime);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.25rem;
+  line-height: 1;
+  transform: rotate(-4deg);
+}
+.points-badge small { font-size: 0.65rem; font-weight: 800; }
+.points-badge.none { background: var(--gol-locked); }
+.points-card .gol-progress > span { background: var(--gol-purple); }
+
+.suggest-title { font-weight: 900; font-size: 1rem; }
+.suggest-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  border: none;
+  background: #fff;
+  border-radius: 16px;
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  color: var(--gol-ink);
+  font-family: var(--gol-font);
+  box-shadow: 0 3px 0 var(--gol-card-edge);
+}
+.suggest-row:hover { background: var(--gol-purple-soft); }
+.suggest-emoji {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
 </style>

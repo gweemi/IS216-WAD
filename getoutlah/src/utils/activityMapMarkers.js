@@ -1,26 +1,5 @@
 import { h, render } from 'vue'
 import ActivityMapMarker from '@/components/map/ActivityMapMarker.vue'
-import { MAP_ACTIVITY_CATEGORY_FALLBACK, getMapActivityCategory } from '@/config/mapActivityCategories'
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, (character) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    "'": '&#039;',
-    '"': '&quot;',
-  })[character])
-}
-
-function formatCost(cost) {
-  if (cost === null || cost === undefined || !Number.isFinite(Number(cost))) return 'Price TBC'
-  return Number(cost) === 0 ? 'Free' : `S$${Number(cost)}`
-}
-
-function formatDuration(duration) {
-  if (duration === null || duration === undefined || !Number.isFinite(Number(duration))) return 'Duration TBC'
-  return `${Number(duration)} min`
-}
 
 export function hasValidCoordinates(activity) {
   return (
@@ -33,32 +12,42 @@ export function hasValidCoordinates(activity) {
   )
 }
 
-export function createActivityMarker(L, activity) {
-  const category = getMapActivityCategory(activity.category) ?? MAP_ACTIVITY_CATEGORY_FALLBACK
+function escapeTooltipText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character]))
+}
+
+export function createActivityMarker(L, activity, { onSelect } = {}) {
   const markerContent = document.createElement('div')
   render(h(ActivityMapMarker, { activity }), markerContent)
   const icon = L.divIcon({
     className: 'gol-activity-marker-wrapper',
     html: markerContent,
-    iconSize: [58, 58],
-    iconAnchor: [29, 29],
-    popupAnchor: [0, -31],
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -25],
   })
 
   const marker = L.marker([Number(activity.lat), Number(activity.lng)], { icon, title: activity.title })
+  marker.__activityId = activity.id
+  marker.bindTooltip?.(
+    `<strong>${escapeTooltipText(activity.title || 'Activity')}</strong><span>${escapeTooltipText(activity.category || 'Activity')}</span>`,
+    { className: 'gol-activity-tooltip', direction: 'top', offset: [0, -24], opacity: 1 },
+  )
   // MarkerCluster temporarily removes child markers while recalculating a zoom level.
   // Keep their component mounted through that transition; consumers explicitly clean
   // these up when replacing the activity data or destroying the map.
   marker.__cleanupActivityMarker = () => render(null, markerContent)
-
-  marker.bindPopup(`
-    <section class="gol-activity-popup">
-      <strong>${escapeHtml(activity.title)}</strong>
-      <span>${escapeHtml(category.label)}</span>
-      <span>${escapeHtml(formatCost(activity.cost))} · ${escapeHtml(formatDuration(activity.duration ?? (activity.durationHrs ? activity.durationHrs * 60 : null)))}</span>
-    </section>
-  `)
+  if (onSelect) marker.on('click', () => onSelect(activity))
   return marker
+}
+
+export function setActivityMarkerSelected(marker, selected) {
+  marker?.setZIndexOffset?.(selected ? 1000 : 0)
+  marker?.getElement?.()
+    ?.querySelector('.gol-activity-marker')
+    ?.classList.toggle('gol-activity-marker--selected', selected)
 }
 
 export function createClusterIcon(L, cluster) {
@@ -96,12 +85,12 @@ export function clearActivityClusterLayer(clusterLayer) {
   clusterLayer.clearLayers()
 }
 
-export function populateActivityClusterLayer(L, clusterLayer, activities = []) {
+export function populateActivityClusterLayer(L, clusterLayer, activities = [], options) {
   clearActivityClusterLayer(clusterLayer)
 
   const markers = activities
     .filter(hasValidCoordinates)
-    .map((activity) => createActivityMarker(L, activity))
+    .map((activity) => createActivityMarker(L, activity, options))
 
   clusterLayer.__activityMarkerCleanups = markers.map((marker) => marker.__cleanupActivityMarker)
   clusterLayer.addLayers(markers)

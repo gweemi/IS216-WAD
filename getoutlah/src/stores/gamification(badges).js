@@ -199,6 +199,42 @@ function awardPoints(amount, reason) {
   return given
 }
 
+// ---------- Wellbeing check-in points (Profile page) ----------
+// Finishing the WHO-5 check-in gives points once every 14 days, whatever the
+// score (we reward checking in, never a "good" score). Counts towards the weekly cap.
+export const POINTS_PER_WELLBEING_CHECKIN = 20
+export const WELLBEING_POINTS_EVERY_DAYS = 14
+const WELLBEING_REASON = 'Wellbeing check-in'
+
+/** Days until the next check-in earns points (0 = it will earn points now). */
+export function daysUntilWellbeingPoints(now = new Date()) {
+  const last = game.ledger.filter((e) => e.reason === WELLBEING_REASON).at(-1)
+  if (!last) return 0
+  const today = new Date(now).setHours(0, 0, 0, 0)
+  const days = Math.floor((today - new Date(last.date).setHours(0, 0, 0, 0)) / 86400000)
+  return Math.max(0, WELLBEING_POINTS_EVERY_DAYS - days)
+}
+
+/** Call after a WHO-5 check-in is saved. Returns { pointsGiven, levelledUp, message }. */
+export function awardWellbeingCheckIn() {
+  const wait = daysUntilWellbeingPoints()
+  if (wait > 0) {
+    return { pointsGiven: 0, levelledUp: false, message: `Check-in points come back in ${wait} day${wait === 1 ? '' : 's'}.` }
+  }
+  const levelBefore = levelInfo().level
+  const pointsGiven = awardPoints(POINTS_PER_WELLBEING_CHECKIN, WELLBEING_REASON)
+  const levelledUp = levelInfo().level > levelBefore
+  try {
+    if (levelledUp) celebrateLevelUp()
+  } catch {
+    /* confetti is only decoration */
+  }
+  const message = pointsGiven
+    ? `+${pointsGiven} points for checking in`
+    : "You've hit this week's points cap, so no points this time."
+  return { pointsGiven, levelledUp, message }
+}
+
 // ---------- Streaks ----------
 // A week counts if it has at least 1 verified activity. Extra activities
 // in the same week don't add more. Study-break weeks are skipped — they

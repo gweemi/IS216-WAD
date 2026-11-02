@@ -62,7 +62,7 @@
 
       <TransitionGroup tag="div" name="suggest" appear class="d-grid gap-2 mb-3">
         <button v-for="(a, i) in plan.items" :key="a.id" type="button" class="suggest-card" :style="{ '--i': i }" @click="pick(a)">
-          <span class="gol-icon-tile tile" :class="'tile--' + a.energy"><i class="bi" :class="iconFor(a.category)"></i></span>
+          <span class="gol-icon-tile tile" :class="'tile--' + a.energy" aria-hidden="true">{{ iconFor(a.category) }}</span>
           <span class="text-start flex-grow-1 min-w-0">
             <span class="d-block s-title">{{ a.title }}</span>
             <span class="d-block small-muted">{{ a.reason }}</span>
@@ -153,7 +153,7 @@ export default {
       this.$emit('close')
     },
     iconFor(category) {
-      return getInterest(category)?.mapIcon || 'bi-compass'
+      return getInterest(category)?.emoji || '🧭'
     },
   },
 }

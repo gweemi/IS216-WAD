@@ -23,6 +23,8 @@ export const useAuthStore = defineStore('auth', {
       Boolean(state.profile?.preferences) && state.profile?.preferencesVersion === PREFERENCES_VERSION,
     /** The questionnaire answers, or null. See PREFERENCES.md. */
     preferences: (state) => state.profile?.preferences ?? null,
+    /** Admins are made by hand in the Firebase console (users/{uid}.role == 'admin'). */
+    isAdmin: (state) => state.profile?.role === 'admin',
   },
 
   actions: {

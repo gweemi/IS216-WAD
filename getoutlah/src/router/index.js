@@ -1,21 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import AuthView from '@/views/AuthView.vue'
+import LandingView from '@/views/LandingView.vue'
+import LoginView from '@/views/LoginView.vue'
+import InformationPageView from '@/views/InformationPageView.vue'
 import ActivitiesView from '@/views/ActivitiesView.vue'
 import ActivityDetailView from '@/views/ActivityDetailView.vue'
 import MapView from '@/views/MapView.vue'
 import BadgesView from '@/views/BadgesView.vue'
 import MyFeaturesTestView from '@/views/MyFeaturesTestView.vue'
 import ProfileView from '@/views/ProfileView.vue'
-import RoutePlaceholderView from '@/views/RoutePlaceholderView.vue'
 
 const appRouteMeta = { requiresLogin: true, appNavigation: true }
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', redirect: '/map' },
-    { path: '/auth', name: 'auth', component: AuthView, meta: { guestOnly: true } },
+    { path: '/', name: 'landing', component: LandingView, meta: { guestOnly: true } },
+    { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
+    { path: '/auth', redirect: '/login' },
+    { path: '/privacy', name: 'privacy', component: InformationPageView, meta: { page: 'privacy' } },
+    { path: '/terms', name: 'terms', component: InformationPageView, meta: { page: 'terms' } },
+    { path: '/guidelines', name: 'guidelines', component: InformationPageView, meta: { page: 'guidelines' } },
+    { path: '/about', name: 'about', component: InformationPageView, meta: { page: 'about' } },
     {
       // New-user questionnaire (interests, budget, energy, solo/group).
       path: '/onboarding',
@@ -45,8 +51,13 @@ const router = createRouter({
     {
       path: '/friends',
       name: 'friends',
-      component: RoutePlaceholderView,
-      props: { title: 'Friends', icon: 'bi-people' },
+      component: () => import('@/views/FriendsView.vue'),
+      meta: appRouteMeta,
+    },
+    {
+      path: '/notifications',
+      name: 'notifications',
+      component: () => import('@/views/NotificationsView.vue'),
       meta: appRouteMeta,
     },
     { path: '/badges', name: 'badges', component: BadgesView, meta: appRouteMeta },
@@ -64,11 +75,26 @@ const router = createRouter({
       meta: appRouteMeta,
     },
     {
-      // Admin only: sync Eventbrite events into Firestore. The page itself checks the role.
-      path: '/admin/activities',
-      name: 'admin-activities',
-      component: () => import('@/views/AdminActivitiesView.vue'),
-      meta: { requiresLogin: true },
+      // Admin only. One page with a tab per tool; add new tools as children here.
+      // Firestore rules are the real lock, this only keeps non-admins off the page.
+      path: '/admin',
+      component: () => import('@/views/AdminView.vue'),
+      meta: { ...appRouteMeta, requiresAdmin: true },
+      children: [
+        { path: '', name: 'admin', redirect: { name: 'admin-activities' } },
+        {
+          // Eventbrite organisers + sync, and curated activities.
+          path: 'activities',
+          name: 'admin-activities',
+          component: () => import('@/views/AdminActivitiesView.vue'),
+        },
+        {
+          // Reported OpenJios waiting for an admin to restore or remove them.
+          path: 'reports',
+          name: 'admin-reports',
+          component: () => import('@/views/AdminReportsView.vue'),
+        },
+      ],
     },
     {
       path: '/test-my-features',
@@ -87,7 +113,7 @@ router.beforeEach(async (to) => {
 
   // Pages for logged-in users only.
   if (to.meta.requiresLogin && !auth.isLoggedIn) {
-    return { name: 'auth', query: { redirect: to.fullPath } }
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 
   // New users must answer the questionnaire before using the app...
@@ -96,6 +122,9 @@ router.beforeEach(async (to) => {
   }
   // ...and only see it once.
   if (to.name === 'onboarding' && auth.hasPreferences) return { name: 'map' }
+
+  // Admin pages: everyone else goes back to the map.
+  if (to.meta.requiresAdmin && !auth.isAdmin) return { name: 'map' }
 
   // Log-in page: skip it if already logged in.
   if (to.meta.guestOnly && auth.isLoggedIn) return { name: 'map' }
