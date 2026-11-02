@@ -1,0 +1,73 @@
+export const LAST_UPDATED = '2 November 2026'
+
+export const INFORMATION_PAGES = {
+  privacy: {
+    title: 'Privacy Policy',
+    eyebrow: 'GETOUTLAH! · G3T7',
+    updated: true,
+    intro: 'This policy explains how GETOUTLAH! handles information when you use this educational activity-discovery application.',
+    sections: [
+      { title: '1. Introduction', paragraphs: ['GETOUTLAH! is an educational web application developed by SMU students to help people discover activities, connect with others and support their wellbeing. It is a student project, not an official service of Singapore Management University.'] },
+      { title: '2. Information we collect', paragraphs: ['When you use the app, we may process information supplied through its features.'], bullets: ['Google sign-in account information, including your name, email address and profile picture.', 'Your activity preferences, budget, energy and group preferences.', 'Profile details, saved activities, activity check-in identifiers and free-time windows.', 'Friend requests, friendships, activity invitations, notifications and OPENJIO activities that you create, join or are invited to.', 'Optional profile photos that you upload, stored as a compressed image in your profile.', 'Wellbeing scores, optional reflections and gamification history stored in your browser.'] },
+      { title: '3. How we use information', paragraphs: ['We use this information to sign you in, create and show your profile, personalise activity recommendations, display map-based activities, support check-ins, friends and OPENJIO participation, and provide badges, streaks and wellbeing features.'] },
+      { title: '4. Storage and third-party services', paragraphs: ['Account, profile, activity, friendship, notification and OPENJIO information is stored using Firebase Authentication and Cloud Firestore. GETOUTLAH! also uses Eventbrite event data, OpenStreetMap and CARTO map tiles, Google Maps direction links, and NEA weather data provided through data.gov.sg. These services operate under their own policies.'] },
+      { title: '5. Location information', paragraphs: ['The app asks for browser location permission only when you choose to check in to an activity. Your location is used in that moment to calculate whether you are within the check-in distance; the check-in flow does not save those coordinates. You can decline location permission, but location-verified check-ins will not work.'] },
+      { title: '6. Information visibility', paragraphs: ['Signed-in users can view user profiles needed for social features. Friends can see relevant shared details such as free-time windows and activity check-in identifiers. OPENJIO details and participant information are visible according to the activity’s public or friends-only setting.'] },
+      { title: '7. Security and retention', paragraphs: ['Firebase access is protected by the application’s Firestore rules and account authentication. No online service can guarantee absolute security. We keep project data while the student project and its configured services remain available; we do not promise a specific retention or deletion period.'] },
+      { title: '8. Your choices and data requests', paragraphs: ['You can update your display name and profile photo in the app, manage your preferences through the available profile/onboarding experience, remove friendships, and sign out. Account deletion is not currently implemented. Contact details for G3T7 data requests will be added here before any public release.'] },
+      { title: '9. Cookies and browser storage', paragraphs: ['Firebase Authentication may use browser storage to keep you signed in. GETOUTLAH! also stores wellbeing scores, reflections and gamification progress locally in your browser. Clearing browser storage can remove this locally stored information.'] },
+      { title: '10. Contact', paragraphs: ['A dedicated privacy contact channel has not yet been set up for this student project. G3T7 contact details will be added here when available.'] },
+    ],
+  },
+  terms: {
+    title: 'Terms of Use',
+    eyebrow: 'GETOUTLAH! · G3T7',
+    updated: true,
+    intro: 'These terms set out the simple ground rules for using GETOUTLAH!.',
+    sections: [
+      { title: '1. Acceptance of terms', paragraphs: ['By using GETOUTLAH!, you agree to use the platform respectfully and in line with these terms and the Community Guidelines.'] },
+      { title: '2. Educational project disclaimer', paragraphs: ['GETOUTLAH! was developed for IS216 Web Application Development at Singapore Management University as an educational project. It is not an official SMU-operated service.'] },
+      { title: '3. User accounts', paragraphs: ['You are responsible for the Google account you use to sign in and for keeping the profile information you provide accurate. Do not use another person’s account or impersonate another person.'] },
+      { title: '4. Acceptable use', paragraphs: ['Do not misuse the platform. This includes harassment, discrimination, spam, impersonation, fraudulent activity listings, malicious links, attempts to access accounts or data without permission, and interference with the platform.'] },
+      { title: '5. Activity information', paragraphs: ['Activity details, prices, schedules, capacity and availability can change. Check the organiser’s information and any external registration page before attending.'] },
+      { title: '6. OPENJIO participation', paragraphs: ['Organisers should create accurate, respectful activity listings. Participants should communicate responsibly, observe capacity limits, follow reasonable organiser instructions and update their participation when plans change.'] },
+      { title: '7. Personal safety', paragraphs: ['Use your own judgement when choosing activities and meeting other users. Choose appropriate public meeting locations, respect boundaries and do not rely on GETOUTLAH! as a guarantee of another person’s identity, conduct or safety.'] },
+      { title: '8. Third-party services', paragraphs: ['External listings, maps, directions and registration websites are operated by third parties and may have their own terms and policies.'] },
+      { title: '9. Moderation', paragraphs: ['The project may review inappropriate content or activities where moderation tools are available. User-facing reporting and full moderation workflows are still under development.'] },
+      { title: '10. Changes to the platform', paragraphs: ['Features and information may change as the project continues to be developed.'] },
+    ],
+  },
+  guidelines: {
+    title: 'Community Guidelines',
+    eyebrow: 'A good jio starts here',
+    intro: 'GETOUTLAH! is for finding things to do and people to do them with. Help keep it welcoming, genuine and safe.',
+    sections: [
+      { title: 'Be respectful', paragraphs: ['Treat other users politely. Bullying, harassment, hateful behaviour and discrimination do not belong here.'] },
+      { title: 'Create genuine activities', paragraphs: ['OPENJIO organisers should give accurate titles, descriptions, locations, schedules and participation details. Do not create fake activities, scams or misleading listings.'] },
+      { title: 'Prioritise safety', paragraphs: ['Choose sensible meeting places, respect personal boundaries and use care when meeting someone new.'] },
+      { title: 'Respect privacy', paragraphs: ['Do not share another person’s contact details, personal information, location or photographs without appropriate permission.'] },
+      { title: 'Participate responsibly', paragraphs: ['Let people know if your availability changes, respect capacity limits and follow reasonable organiser instructions.'] },
+      { title: 'Keep content appropriate', paragraphs: ['Do not post spam, offensive content, malicious links or unrelated promotion.'] },
+      { title: 'Problems and moderation', paragraphs: ['User-facing reporting tools and the full moderation workflow are still under development. Until then, please avoid unsafe or inappropriate activity listings and use the platform responsibly.'] },
+    ],
+    closing: 'Let’s build a community that makes it easier for everyone to get out, try something new and feel welcome.',
+  },
+  about: {
+    title: 'About GETOUTLAH!',
+    eyebrow: 'Less scrolling, more exploring.',
+    intro: 'GETOUTLAH! is an activity discovery platform designed to help people explore Singapore, discover experiences, connect with others and make meaningful use of their free time.',
+    mission: 'We want to make activity discovery feel less overwhelming, and make it easier to balance everyday routines with outdoor, recreational and social experiences.',
+    features: [
+      { icon: 'bi-search-heart', title: 'Discover activities', text: 'Search and filter activities around your interests and preferences.' },
+      { icon: 'bi-map', title: 'Explore the map', text: 'Find activities and places across Singapore.' },
+      { icon: 'bi-stars', title: 'Personalised picks', text: 'See activities suited to your interests, budget and energy.' },
+      { icon: 'bi-people', title: 'OPENJIO & Friends', text: 'Organise activities, participate together and connect with friends.' },
+      { icon: 'bi-trophy', title: 'Check-ins & rewards', text: 'Build streaks, earn points and unlock badges.' },
+      { icon: 'bi-heart-pulse', title: 'Wellbeing', text: 'Reflect on wellbeing and build healthier routines.' },
+    ],
+    sections: [
+      { title: 'Built by students', paragraphs: ['Developed by Group G3T7 for IS216 Web Application Development at Singapore Management University (2026).'] },
+      { title: 'A student project', paragraphs: ['GETOUTLAH! is not an official product or service of Singapore Management University.'] },
+    ],
+  },
+}

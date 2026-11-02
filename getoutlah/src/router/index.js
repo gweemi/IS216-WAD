@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import AuthView from '@/views/AuthView.vue'
+import LandingView from '@/views/LandingView.vue'
+import LoginView from '@/views/LoginView.vue'
+import InformationPageView from '@/views/InformationPageView.vue'
 import ActivitiesView from '@/views/ActivitiesView.vue'
 import ActivityDetailView from '@/views/ActivityDetailView.vue'
 import MapView from '@/views/MapView.vue'
@@ -13,8 +15,13 @@ const appRouteMeta = { requiresLogin: true, appNavigation: true }
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', redirect: '/map' },
-    { path: '/auth', name: 'auth', component: AuthView, meta: { guestOnly: true } },
+    { path: '/', name: 'landing', component: LandingView, meta: { guestOnly: true } },
+    { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
+    { path: '/auth', redirect: '/login' },
+    { path: '/privacy', name: 'privacy', component: InformationPageView, meta: { page: 'privacy' } },
+    { path: '/terms', name: 'terms', component: InformationPageView, meta: { page: 'terms' } },
+    { path: '/guidelines', name: 'guidelines', component: InformationPageView, meta: { page: 'guidelines' } },
+    { path: '/about', name: 'about', component: InformationPageView, meta: { page: 'about' } },
     {
       // New-user questionnaire (interests, budget, energy, solo/group).
       path: '/onboarding',
@@ -106,7 +113,7 @@ router.beforeEach(async (to) => {
 
   // Pages for logged-in users only.
   if (to.meta.requiresLogin && !auth.isLoggedIn) {
-    return { name: 'auth', query: { redirect: to.fullPath } }
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 
   // New users must answer the questionnaire before using the app...
