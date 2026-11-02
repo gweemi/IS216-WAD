@@ -8,12 +8,14 @@ Everything updates live, so spot counts change on everyone's screen as people jo
 | Where | What |
 |---|---|
 | **Activities page** (main list) | Public jios, mixed in with events: `jios.publicUpcoming` |
-| **Activities page → OpenJio! view** | `<OpenJioPanel />`: Start a jio, **Invites for you**, **My jios** |
+| **Activities page → OpenJio! view** | `<OpenJioPanel />`: every jio you can see. Start a jio, **Invites for you**, **My jios**, **Open jios** (public ones to join), with an All / Public / Friends only filter. Link straight to it with `/activities?view=openjio` |
+| **Friends page** | `<FreeTogetherJios />` lists times you're free with friends, each with an **OpenJio** button. A friend's details also have an OpenJio button per shared time |
 | **Activity details** | `<JioActionButton>`: Join / Chope / Leave on a public jio |
 | `/openjio` | The same panel as its own page (handy for testing) |
 
-- **Public:** anyone can see and join. Listed in Activities.
-- **Friends only:** the host ticks which friends to invite. Only they see it (under "Invites for you") and only they can join.
+- **Public** (globe badge): anyone can see and join. Listed in All activities and under Open jios.
+- **Friends only** (lock badge): the host ticks which friends to invite. Only they see it (under "Invites for you") and only they can join.
+- Every jio card shows a **Public** or **Friends only** badge.
 
 ## Where the data is
 
@@ -48,7 +50,8 @@ Firestore → `openjios/{jioId}`:
 | `src/utils/openjio.js` | The rules (validate, join, chope, leave, who can see). No Firebase, easy to test |
 | `src/services/openjio.js` | Firestore calls. Join/chope/leave run in a transaction so a jio can't be overbooked |
 | `src/stores/openjio.js` | Pinia store with the live lists |
-| `src/components/openjio/OpenJioPanel.vue` | The OpenJio! view: start, invites, my jios |
+| `src/components/openjio/OpenJioPanel.vue` | The OpenJio! view: start, invites, my jios, open jios, Public / Friends only filter |
+| `src/components/openjio/FreeTogetherJios.vue` | "Free with friends" card on the Friends page with OpenJio buttons |
 | `src/components/openjio/JioCard.vue` | One jio card |
 | `src/components/openjio/JioActionButton.vue` | Join / Chope / Leave / Cancel button that does the work itself. Use it anywhere |
 | `src/components/openjio/CreateJioSheet.vue` | "Start a jio" form with the friend picker (accepts `prefill`) |
@@ -117,18 +120,20 @@ const view = ref('all') // 'all' | 'openjio'
 
 ## Friends page (Eugenia)
 
-From a free time slot, open the form with the time filled in and the free friends ticked:
+Already added to `FriendsView.vue`:
+
+- `<FreeTogetherJios />` under "When are you free?": groups shared free times (`commonFreeTimes(friendList)`)
+  and each has an **OpenJio** button.
+- In a friend's details, each "Free at the same time as you" time has an **OpenJio** button.
+
+Both open the form with the time filled in, set to friends-only, and those friends ticked:
 
 ```vue
-<StartJioButton
-  label="OpenJio at this time"
-  :prefill="{ startAt: slotStart, durationMins: 180, visibility: 'friends', invited: freeFriendIds }"
-/>
+<StartJioButton label="OpenJio" :prefill="prefillFromWindow(window, [friend.uid])" />
 ```
 
-The invite list reads friends from `users/{uid}.friendIds` (a list of uids).
-If the friends feature stores them differently, change `loadFriends()` in `CreateJioSheet.vue`
-and `friendIds` in `stores/openjio.js`.
+The invite list uses the Friends feature's accepted friends (`friendList` from `stores/friends`),
+so whoever you've added on the Friends page can be invited.
 
 ## Other pages
 

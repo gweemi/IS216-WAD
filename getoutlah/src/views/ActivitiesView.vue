@@ -1,6 +1,7 @@
 <script setup>
 import '@/assets/discovery.css'
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { filters, recommended, loadingActivities, sourceErrors, loadActivities } from '@/stores/activities'
 import { activeFilterPills } from '@/utils/activeFilters'
 import ActivityCard from '@/components/ActivityCard.vue'
@@ -8,7 +9,8 @@ import FilterSheet from '@/components/FilterSheet.vue'
 import OpenJioPanel from '@/components/openjio/OpenJioPanel.vue'
 
 const filtersOpen = ref(false)
-const view = ref('all') // 'all' = everything, 'openjio' = start a jio, invites, my jios
+// 'all' = everything, 'openjio' = every jio you can see. /activities?view=openjio opens the OpenJio! view.
+const view = ref(useRoute().query.view === 'openjio' ? 'openjio' : 'all')
 const activePills = computed(() => activeFilterPills(filters.value))
 
 onMounted(() => {

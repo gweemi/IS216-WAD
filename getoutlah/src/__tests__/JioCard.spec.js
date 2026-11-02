@@ -82,6 +82,12 @@ describe('JioCard', () => {
     expect(button(w).text()).toBe('Join')
   })
 
+  it('labels each jio as Public or Friends only', () => {
+    const badge = (w) => w.find('[data-testid="jio-visibility"]').text()
+    expect(badge(card({}))).toBe('Public')
+    expect(badge(card({ visibility: 'friends', invited: ['me'] }))).toBe('Friends only')
+  })
+
   it('shows no button on a cancelled jio', () => {
     const w = card({ status: 'cancelled' })
     expect(button(w).exists()).toBe(false)
