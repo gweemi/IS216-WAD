@@ -1,6 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap-icons/font/bootstrap-icons.css'
+import '@phosphor-icons/web/regular'
 import './assets/gol-theme.css'
+import './assets/phosphor-icons.css'
 import './assets/main.css'
 
 import { createApp, watch } from 'vue'

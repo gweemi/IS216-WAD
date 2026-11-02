@@ -1,0 +1,81 @@
+/*
+ * The app previously used Bootstrap's `bi-*` class names.  This bridge keeps
+ * existing templates stable while rendering every UI glyph from Phosphor's
+ * regular icon font. New UI should use `ph ph-*` classes directly.
+ */
+.bi {
+  font-family: "Phosphor" !important;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: normal;
+  line-height: 1;
+  text-transform: none;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.bi-arrow-left::before { content: "arrow-left"; }
+.bi-arrow-right::before { content: "arrow-right"; }
+.bi-arrow-up-right::before, .bi-box-arrow-up-right::before { content: "arrow-square-out"; }
+.bi-award::before { content: "medal"; }
+.bi-bell::before { content: "bell"; }
+.bi-book::before { content: "book"; }
+.bi-bookmark::before, .bi-bookmark-fill::before, .bi-bookmark-heart::before, .bi-bookmark-x::before { content: "bookmark"; }
+.bi-box-arrow-right::before { content: "sign-out"; }
+.bi-calendar-check::before, .bi-calendar-check-fill::before { content: "calendar-check"; }
+.bi-calendar-event::before { content: "calendar-dots"; }
+.bi-calendar-heart::before { content: "calendar-heart"; }
+.bi-calendar-plus::before { content: "calendar-plus"; }
+.bi-calendar-x::before { content: "calendar-x"; }
+.bi-camera::before, .bi-camera-fill::before { content: "camera"; }
+.bi-chat-heart::before { content: "chat-circle-text"; }
+.bi-check-circle-fill::before, .bi-check2-circle::before { content: "check-circle"; }
+.bi-check-lg::before { content: "check"; }
+.bi-chevron-down::before { content: "caret-down"; }
+.bi-chevron-left::before { content: "caret-left"; }
+.bi-chevron-right::before { content: "caret-right"; }
+.bi-chevron-up::before { content: "caret-up"; }
+.bi-circle::before { content: "circle"; }
+.bi-clock::before { content: "clock"; }
+.bi-cloud-sun::before { content: "cloud-sun"; }
+.bi-compass::before { content: "compass"; }
+.bi-emoji-frown::before { content: "smiley-sad"; }
+.bi-emoji-laughing::before { content: "smiley"; }
+.bi-emoji-neutral::before { content: "smiley-meh"; }
+.bi-emoji-smile::before { content: "smiley"; }
+.bi-envelope-heart::before { content: "envelope-open"; }
+.bi-exclamation-circle-fill::before { content: "warning-circle"; }
+.bi-flag::before { content: "flag"; }
+.bi-funnel::before { content: "funnel"; }
+.bi-geo-alt::before, .bi-geo-alt-fill::before { content: "map-pin"; }
+.bi-grid-3x3-gap::before { content: "squares-four"; }
+.bi-heart-pulse::before { content: "heartbeat"; }
+.bi-hourglass-split::before { content: "hourglass-medium"; }
+.bi-image::before { content: "image"; }
+.bi-info-circle::before { content: "info"; }
+.bi-journal-text::before { content: "notebook"; }
+.bi-lightbulb::before { content: "lightbulb"; }
+.bi-lightning-charge-fill::before { content: "lightning"; }
+.bi-lock-fill::before { content: "lock-key"; }
+.bi-map::before { content: "map-trifold"; }
+.bi-mortarboard-fill::before { content: "graduation-cap"; }
+.bi-pause-fill::before { content: "pause"; }
+.bi-pencil::before, .bi-pencil-fill::before { content: "pencil"; }
+.bi-people::before, .bi-people-fill::before { content: "users"; }
+.bi-person::before { content: "user"; }
+.bi-person-plus::before { content: "user-plus"; }
+.bi-plus-lg::before { content: "plus"; }
+.bi-search::before { content: "magnifying-glass"; }
+.bi-search-heart::before { content: "magnifying-glass"; }
+.bi-shield-lock-fill::before { content: "shield-check"; }
+.bi-signpost-split::before { content: "signpost"; }
+.bi-sliders::before { content: "sliders-horizontal"; }
+.bi-stars::before { content: "sparkle"; }
+.bi-tag::before { content: "tag"; }
+.bi-ticket-perforated::before { content: "ticket"; }
+.bi-trash3::before { content: "trash"; }
+.bi-trophy::before { content: "trophy"; }
+/* Phosphor's single-character X has no ligature, so use its font glyph directly. */
+.bi-x-lg::before { content: "\e4f6"; }

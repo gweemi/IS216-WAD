@@ -4,7 +4,7 @@ import { activeFilterPills } from '@/utils/activeFilters'
 const defaults = () => ({
   query: '', categories: [], sources: [],
   maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false,
-  nearMe: false, radiusKm: 5, prioritiseFreeTime: false,
+  prioritiseFreeTime: false,
 })
 
 describe('activeFilterPills', () => {
@@ -13,8 +13,8 @@ describe('activeFilterPills', () => {
   })
 
   it('labels every filter in use like the filter sheet does', () => {
-    const f = { ...defaults(), sources: ['eventbrite'], maxCost: 0, maxHours: 2, setting: 'Indoor', energy: 'low', onlySlots: true, nearMe: true, radiusKm: 8 }
-    expect(activeFilterPills(f).map((p) => p.label)).toEqual(['Limited', 'Free', '2 hr or less', 'Indoor', 'Chill', 'Has slots', 'Within 8 km'])
+    const f = { ...defaults(), sources: ['eventbrite'], maxCost: 0, maxHours: 2, setting: 'Indoor', energy: 'low', onlySlots: true }
+    expect(activeFilterPills(f).map((p) => p.label)).toEqual(['Limited', 'Free', '2 hr or less', 'Indoor', 'Chill', 'Has slots'])
   })
 
   it('counts a Free budget as in use even though it is 0', () => {

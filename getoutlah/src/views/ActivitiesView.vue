@@ -1,21 +1,18 @@
 <script setup>
 import '@/assets/discovery.css'
 import { ref, computed, onMounted } from 'vue'
-import { filters, recommended, loadingActivities, sourceErrors, setLocation, loadActivities } from '@/stores/activities'
+import { filters, recommended, loadingActivities, sourceErrors, loadActivities } from '@/stores/activities'
 import { activeFilterPills } from '@/utils/activeFilters'
-import { useGeolocation } from '@/composables/useGeolocation'
 import ActivityCard from '@/components/ActivityCard.vue'
 import FilterSheet from '@/components/FilterSheet.vue'
 import OpenJioPanel from '@/components/openjio/OpenJioPanel.vue'
 
-const { request } = useGeolocation()
 const filtersOpen = ref(false)
 const view = ref('all') // 'all' = everything, 'openjio' = start a jio, invites, my jios
 const activePills = computed(() => activeFilterPills(filters.value))
 
-onMounted(async () => {
+onMounted(() => {
   loadActivities()
-  setLocation(await request())
 })
 </script>
 
