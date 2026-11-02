@@ -12,5 +12,7 @@
         "destination": "/index.html"
       }
     ]
-  }
+  },
+  "firestore": { "rules": "firestore.rules" },
+  "emulators": { "firestore": { "port": 8081 }, "ui": { "enabled": true } }
 }

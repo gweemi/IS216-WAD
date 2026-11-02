@@ -67,7 +67,7 @@ export function buildPlans({ planIds = [], findActivity, jios = [], uid, complet
       when: j.startAt.getTime(),
       kind: 'jio',
       role: myRole(j, uid),
-      to: '/openjio',
+      to: '/activities?view=openJio',
     }))
   // Dated plans first (soonest first), then the ones with no date
   return [...fromActivities, ...fromJios].sort((x, y) => (x.when ?? Infinity) - (y.when ?? Infinity))

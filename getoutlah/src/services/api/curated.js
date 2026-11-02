@@ -1,5 +1,5 @@
-// Save and remove admin-picked ("curated") activities. They live in Firestore "activities" next to the
-// Eventbrite ones (source: 'curated'), so the list and map show both together.
+// Save and remove admin-picked GetOutLah Picks. They live in Firestore
+// "activities" next to external listings, so the list and map show both together.
 import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { toCuratedActivity } from '@/utils/curated'

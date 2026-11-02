@@ -19,8 +19,8 @@
         :class="'jio-visibility--' + jio.visibility"
         data-testid="jio-visibility"
       >
-        <i class="ph" :class="jio.visibility === 'friends' ? 'ph-lock' : 'ph-globe-hemisphere-west'"></i>
-        {{ jio.visibility === 'friends' ? 'Friends only' : 'Public' }}
+        <i class="ph" :class="jio.visibility === 'public' ? 'ph-globe-hemisphere-west' : 'ph-lock'"></i>
+        {{ visibilityLabel }}
       </span>
     </div>
 
@@ -48,7 +48,7 @@
         </span>
         <span v-else class="jio-host">Hosted by {{ jio.hostName }}</span>
         <span class="jio-going ms-auto">
-          <i class="bi bi-people"></i> {{ jio.participants.length }}/{{ jio.capacity }} going
+          <i class="bi bi-people"></i> {{ jio.participantCount ?? jio.participants.length }}/{{ jio.capacity }} going
         </span>
       </div>
 
@@ -56,14 +56,41 @@
         If someone drops out, the spot goes to you automatically.
       </p>
 
-      <JioActionButton :jio="jio" :uid="uid" class="mt-3" />
+      <div v-if="canManage" class="jio-host-actions mt-3">
+        <button type="button" class="gol-btn-soft" data-testid="view-jio-attendees" @click="showAttendees = true">
+          <i class="bi bi-people" aria-hidden="true"></i> Who's going
+        </button>
+        <button v-if="canEdit" type="button" class="gol-btn-primary" data-testid="edit-jio" @click="$router.push({ name: 'openjio-edit', params: { id: jio.id } })">
+          <i class="bi bi-pencil-square" aria-hidden="true"></i> Edit OPENJIO
+        </button>
+        <JioActionButton :jio="jio" :uid="uid" />
+      </div>
+      <div v-else class="jio-actions mt-3">
+        <JioActionButton :jio="jio" :uid="uid" />
+        <RouterLink v-if="showDetails" :to="{ name: 'activity', params: { id: `jio-${jio.id}` } }" class="gol-btn-soft jio-details">
+          View details
+        </RouterLink>
+        <button
+          v-if="canDecline"
+          type="button"
+          class="gol-btn-soft"
+          :disabled="declining"
+          data-testid="decline-jio"
+          @click="decline"
+        >
+          {{ declining ? 'Declining…' : 'Decline' }}
+        </button>
+      </div>
     </div>
+    <JioParticipantsSheet :open="showAttendees" :jio="jio" @close="showAttendees = false" />
   </article>
 </template>
 
 <script>
 import JioActionButton from '@/components/openjio/JioActionButton.vue'
+import JioParticipantsSheet from '@/components/openjio/JioParticipantsSheet.vue'
 import { categoryColor, categoryEmoji } from '@/utils/activityStyle'
+import { runJioAction } from '@/services/openjio'
 import {
   statusOf,
   statusLabel,
@@ -76,10 +103,11 @@ import {
 
 export default {
   name: 'JioCard',
-  components: { JioActionButton },
+  components: { JioActionButton, JioParticipantsSheet },
   props: {
     jio: { type: Object, required: true },
     uid: { type: String, required: true },
+    showDetails: { type: Boolean, default: false },
   },
   computed: {
     status() {
@@ -91,11 +119,41 @@ export default {
     invited() {
       return isInvited(this.jio, this.uid)
     },
+    visibilityLabel() {
+      return { public: 'Public', friends_only: 'Friends only', invite_only: 'Invite only', friends: 'Legacy invite only' }[this.jio.visibility] ?? 'Private'
+    },
     greyed() {
       return this.status === 'full' && this.role === 'none'
     },
+    canEdit() {
+      return this.role === 'host' && ['open', 'full'].includes(this.status)
+    },
+    canManage() {
+      return this.role === 'host'
+    },
+    canDecline() {
+      return ['invite_only', 'friends'].includes(this.jio.visibility) && this.invited && this.role === 'none' && this.status !== 'cancelled' && this.status !== 'ended'
+    },
   },
-  methods: { statusLabel, queuePosition, priceText, whenText, categoryColor, categoryEmoji },
+  data() {
+    return { showAttendees: false, declining: false }
+  },
+  methods: {
+    statusLabel,
+    queuePosition,
+    priceText,
+    whenText,
+    categoryColor,
+    categoryEmoji,
+    async decline() {
+      this.declining = true
+      try {
+        await runJioAction('decline', this.jio.id)
+      } finally {
+        this.declining = false
+      }
+    },
+  },
 }
 </script>
 
@@ -164,4 +222,12 @@ export default {
 .tag-queued { background: #ffe1de; color: #b4382f; }
 .tag-invited { background: var(--gol-cyan); color: var(--gol-ink); }
 .queue-note { color: #b4382f; font-weight: 700; font-size: 0.8rem; }
+.jio-host-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .5rem; }
+.jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button), .jio-actions > button, .jio-details { min-height: 2.35rem; padding: .45rem .7rem !important; font-size: .8rem !important; line-height: 1.1; }
+.jio-host-actions > .gol-btn-primary, .jio-actions :deep(.gol-btn-primary) { display: inline-flex; align-items: center; justify-content: center; }
+.jio-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; align-items: stretch; }
+.jio-actions > :first-child { min-width: 0; }
+.jio-actions :deep(.jio-action-button) { width: 100%; }
+.jio-details { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; white-space: nowrap; }
+.jio-actions > button { white-space: nowrap; }
 </style>

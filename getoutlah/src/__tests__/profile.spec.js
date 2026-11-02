@@ -58,7 +58,7 @@ describe('my plans', () => {
   it('combines joined activities and my OPENJIOs, soonest first', () => {
     const plans = buildPlans({ planIds: ['a2', 'a1'], findActivity: find, jios: [jio()], uid: 'me', now })
     expect(plans.map((p) => p.key)).toEqual(['j-j1', 'a-a1', 'a-a2'])
-    expect(plans[0]).toMatchObject({ kind: 'jio', role: 'going', to: '/openjio' })
+    expect(plans[0]).toMatchObject({ kind: 'jio', role: 'going', to: '/activities?view=openJio' })
   })
 
   it('leaves out finished, cancelled, completed and other people’s jios', () => {

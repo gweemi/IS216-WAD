@@ -6,7 +6,10 @@
   Emits `created` with the new jio's id.
 -->
 <template>
-  <button type="button" :class="buttonClass" data-testid="start-jio-button" @click="open = true">
+  <RouterLink v-if="routeTo" :to="routeTo" :class="buttonClass" data-testid="start-jio-button">
+    <i class="bi bi-plus-lg"></i> {{ label }}
+  </RouterLink>
+  <button v-else type="button" :class="buttonClass" data-testid="start-jio-button" @click="open = true">
     <i class="bi bi-plus-lg"></i> {{ label }}
   </button>
   <CreateJioSheet :open="open" :prefill="prefill" @close="open = false" @created="onCreated" />
@@ -23,6 +26,7 @@ export default {
     prefill: { type: Object, default: null },
     // 'coral' (default), 'primary' or 'soft': the team's button styles
     variant: { type: String, default: 'coral' },
+    routeTo: { type: [String, Object], default: null },
   },
   emits: ['created'],
   data() {

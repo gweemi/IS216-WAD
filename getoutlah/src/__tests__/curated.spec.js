@@ -7,7 +7,7 @@ describe('curated activity form', () => {
   it('turns a filled form into an activity', () => {
     const { problems, activity } = toCuratedActivity(filled({ cost: '25' }))
     expect(problems).toEqual([])
-    expect(activity).toMatchObject({ title: 'Pottery taster', cost: 25, lat: 1.3009, region: 'central', source: 'curated', url: null })
+    expect(activity).toMatchObject({ title: 'Pottery taster', cost: 25, lat: 1.3009, region: 'central', source: 'getoutlahPicks', url: null })
   })
 
   it('has no slots (only OpenJio!s have slots)', () => {

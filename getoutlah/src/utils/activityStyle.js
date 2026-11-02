@@ -1,5 +1,6 @@
 // Colour + emoji for each category, matching the app's colour tokens (gol-theme.css).
 import { getInterest } from '@/config/preferences'
+import { canonicalSource, sourceLabel as sharedSourceLabel } from '@/utils/activitySource'
 
 export const categoryColor = (id) => getInterest(id)?.color ?? '#ece6fb'
 export const categoryEmoji = (id) => getInterest(id)?.emoji ?? '✨'
@@ -10,9 +11,7 @@ export const priceText = (a) => (a.cost === 0 ? 'Free' : a.cost == null ? 'Price
 
 
 
-// Eventbrite events only run on set dates, so users see them as "Limited".
-const SOURCE_LABELS = { eventbrite: 'Limited', openjio: 'OpenJio', curated: 'Curated' }
-export const sourceLabel = (source) => SOURCE_LABELS[source] ?? 'Curated'
+export const sourceLabel = sharedSourceLabel
 
 // Events running 24 hrs or more: we only know the first start and last end, not the daily hours.
 export const isVaried = (a) => a.endsAt - a.startsAt >= 86400000
@@ -24,7 +23,9 @@ export function bookingLink(a) {
   let url
   try { url = new URL(a?.url) } catch { return null }
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
-  const label = a.source === 'eventbrite' ? (a.cost === 0 ? 'Register on Eventbrite' : 'Get tickets on Eventbrite') : 'Book or find out more'
+  const label = canonicalSource(a.source) === 'externalListings' && /eventbrite/i.test(url.hostname)
+    ? (a.cost === 0 ? 'Register on Eventbrite' : 'Get tickets on Eventbrite')
+    : 'Book or find out more'
   return { href: url.href, label }
 }
 

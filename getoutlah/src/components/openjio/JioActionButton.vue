@@ -11,7 +11,7 @@
   <div v-if="current && button">
     <button
       type="button"
-      :class="button.style"
+      :class="['jio-action-button', button.style]"
       :disabled="busy"
       data-testid="jio-action"
       @click="onClick"
@@ -51,7 +51,7 @@ export default {
       const status = statusOf(this.current)
       const role = myRole(this.current, this.me)
       if (status === 'cancelled' || status === 'ended') return null
-      if (role === 'host') return { action: 'cancel', label: 'Cancel jio', style: 'gol-btn-soft w-100' }
+      if (role === 'host') return { action: 'cancel', label: 'Cancel jio', style: 'jio-cancel-button w-100' }
       if (role === 'going') return { action: 'leave', label: 'Leave', style: 'gol-btn-soft w-100' }
       if (role === 'queued') return { action: 'leaveQueue', label: 'Leave queue', style: 'gol-btn-soft w-100' }
       if (status === 'full') return { action: 'chope', label: 'Chope next spot', style: 'gol-btn-coral w-100' }
@@ -86,5 +86,10 @@ export default {
 </script>
 
 <style scoped>
+.jio-action-button { min-height: 2.35rem; padding: .45rem .7rem !important; font-size: .8rem !important; line-height: 1.1; }
+.jio-action-button.gol-btn-primary { display: inline-flex; align-items: center; justify-content: center; }
+.jio-cancel-button { border: none; border-radius: 999px; color: #fff; background: #dc4d4d; box-shadow: 0 3px 0 #a83434; font-weight: 850; }
+.jio-cancel-button:hover { filter: brightness(1.05); }
+.jio-cancel-button:active { transform: translateY(2px); box-shadow: 0 1px 0 #a83434; }
 .jio-msg { font-weight: 800; font-size: 0.85rem; color: var(--gol-purple); }
 </style>
