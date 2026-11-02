@@ -39,7 +39,7 @@ export const ENERGY_LEVELS = [
 export const GROUP_PREFERENCES = [
   { id: 'solo', label: 'Solo', emoji: '🧍', hint: 'Me time' },
   { id: 'group', label: 'With friends', emoji: '👯', hint: 'The more the merrier' },
-  { id: 'either', label: 'Both', emoji: '🤷', hint: 'Depends on the day' },
+  { id: 'either', label: 'Balanced', emoji: '🤷', hint: 'Depends on the day' },
 ]
 
 export const MIN_INTERESTS = 1
