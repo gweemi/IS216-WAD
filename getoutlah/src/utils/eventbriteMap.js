@@ -3,6 +3,7 @@
 
 // Starting list of organisers to sync. Admins change the real list on /admin/activities
 // (saved in Firestore config/eventbrite); this is only used until they do.
+import { ACTIVITY_SOURCES } from '@/utils/activitySource'
 export const DEFAULT_ORGANISERS = [
   { id: '18480976563', name: 'MarketWise ASIA' },
   { id: '26202793543', name: 'Affordable Art Fair Singapore' },
@@ -106,7 +107,7 @@ export function defaultsFor(title, lat, lng) {
   const category = guessCategory(title)
   return {
     category, type: 'events', setting: null, energyLevel: guessEnergy(category), groupFriendly: true,
-    region: regionOf(lat, lng), source: 'eventbrite', needsReview: true,
+    region: regionOf(lat, lng), source: ACTIVITY_SOURCES.EXTERNAL, needsReview: true,
   }
 }
 
@@ -184,7 +185,7 @@ export function planActivityWrites(events, existing, now = Date.now(), failedOrg
     else { plan.writes.push({ id, data: { ...base, ...defaultsFor(base.title, base.lat, base.lng) }, merge: false }); plan.added++ }
   }
   for (const [id, a] of existing) {
-    if (a.source !== 'eventbrite' || live.has(id)) continue
+    if (a.source !== ACTIVITY_SOURCES.EXTERNAL || live.has(id)) continue
     const end = a.endsAt ?? a.startsAt   // older activities have no endsAt yet
     const ended = end != null && end < now
     const unlisted = !failedOrganisers.includes(a.organiserId)

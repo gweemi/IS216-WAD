@@ -43,6 +43,24 @@ const router = createRouter({
       meta: appRouteMeta,
     },
     {
+      path: '/activities/openjio',
+      name: 'openjio',
+      component: () => import('@/views/OpenJioView.vue'),
+      meta: appRouteMeta,
+    },
+    {
+      path: '/activities/openjio/create',
+      name: 'openjio-create',
+      component: () => import('@/views/OpenJioCreateView.vue'),
+      meta: appRouteMeta,
+    },
+    {
+      path: '/activities/openjio/:id/edit',
+      name: 'openjio-edit',
+      component: () => import('@/views/OpenJioEditView.vue'),
+      meta: appRouteMeta,
+    },
+    {
       path: '/activities/:id',
       name: 'activity',
       component: ActivityDetailView,
@@ -67,13 +85,7 @@ const router = createRouter({
       component: ProfileView,
       meta: appRouteMeta,
     },
-    {
-      // OPENJIO!: browse, start, join and chope group activities.
-      path: '/openjio',
-      name: 'openjio',
-      component: () => import('@/views/OpenJioView.vue'),
-      meta: appRouteMeta,
-    },
+    { path: '/openjio', redirect: { name: 'openjio' } },
     {
       // Admin only. One page with a tab per tool; add new tools as children here.
       // Firestore rules are the real lock, this only keeps non-admins off the page.

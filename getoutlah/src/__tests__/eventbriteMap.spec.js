@@ -66,9 +66,9 @@ describe('planActivityWrites', () => {
   it('adds new events with guessed defaults, and only refreshes Eventbrite fields on existing ones', () => {
     const fresh = planActivityWrites([event], new Map(), now)
     expect(fresh).toMatchObject({ added: 1, updated: 0 })
-    expect(fresh.writes[0]).toMatchObject({ id: 'eb-2001113878479', merge: false, data: { source: 'eventbrite', needsReview: true } })
+    expect(fresh.writes[0]).toMatchObject({ id: 'eb-2001113878479', merge: false, data: { source: 'externalListings', needsReview: true } })
 
-    const again = planActivityWrites([event], new Map([['eb-2001113878479', { source: 'eventbrite' }]]), now)
+    const again = planActivityWrites([event], new Map([['eb-2001113878479', { source: 'externalListings' }]]), now)
     expect(again).toMatchObject({ added: 0, updated: 1 })
     expect(again.writes[0].merge).toBe(true)
     expect(again.writes[0].data).not.toHaveProperty('category')   // admin edits survive
@@ -82,10 +82,10 @@ describe('planActivityWrites', () => {
 
   it('removes ended events and ones Eventbrite no longer lists, but keeps curated ones', () => {
     const existing = new Map([
-      ['eb-2001113878479', { source: 'eventbrite', organiserId: '49232782843', startsAt: Date.parse('2026-11-15T03:30:00Z') }],
-      ['eb-ended', { source: 'eventbrite', organiserId: '49232782843', startsAt: Date.parse('2026-10-01T00:00:00Z') }],
-      ['eb-cancelled', { source: 'eventbrite', organiserId: '49232782843', startsAt: Date.parse('2026-12-01T00:00:00Z') }],
-      ['s1', { source: 'curated' }],
+      ['eb-2001113878479', { source: 'externalListings', organiserId: '49232782843', startsAt: Date.parse('2026-11-15T03:30:00Z') }],
+      ['eb-ended', { source: 'externalListings', organiserId: '49232782843', startsAt: Date.parse('2026-10-01T00:00:00Z') }],
+      ['eb-cancelled', { source: 'externalListings', organiserId: '49232782843', startsAt: Date.parse('2026-12-01T00:00:00Z') }],
+      ['s1', { source: 'getoutlahPicks' }],
     ])
     const plan = planActivityWrites([event], existing, now)
     expect(plan.deletes.sort()).toEqual(['eb-cancelled', 'eb-ended'])
@@ -94,12 +94,12 @@ describe('planActivityWrites', () => {
 
   it('keeps an event that is happening right now', () => {
     const during = Date.parse('2026-11-15T08:00:00Z')   // between start and end
-    const existing = new Map([['eb-2001113878479', { source: 'eventbrite', organiserId: '49232782843' }]])
+    const existing = new Map([['eb-2001113878479', { source: 'externalListings', organiserId: '49232782843' }]])
     expect(planActivityWrites([event], existing, during)).toMatchObject({ updated: 1, removed: 0 })
   })
 
   it("doesn't remove upcoming events of an organiser whose fetch failed", () => {
-    const existing = new Map([['eb-other', { source: 'eventbrite', organiserId: '999', startsAt: Date.parse('2026-12-01T00:00:00Z') }]])
+    const existing = new Map([['eb-other', { source: 'externalListings', organiserId: '999', startsAt: Date.parse('2026-12-01T00:00:00Z') }]])
     expect(planActivityWrites([], existing, now, ['999']).deletes).toEqual([])
   })
 })

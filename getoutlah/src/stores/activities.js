@@ -1,4 +1,4 @@
-// All activities (curated + Eventbrite + OpenJio!s), the filters, and the personalised ranking.
+// All GetOutLah Picks, external listings, and OPENJIO!s, plus shared filters.
 import { ref, computed } from 'vue'
 import { collection, getDocs, writeBatch, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db, isFirebaseConfigured } from '@/firebase'
@@ -12,9 +12,10 @@ import { fitsWindow } from '@/utils/freeTime'
 import { useOpenJioStore } from '@/stores/openjio'
 import { toActivity } from '@/utils/openjio'
 import { fitsHours } from '@/utils/activityStyle'
+import { canonicalActivity } from '@/utils/activitySource'
 
 const defaultFilters = () => ({
-  query: '', categories: [], sources: [],          // empty = all. sources: curated | eventbrite ("Limited") | openjio
+  query: '', categories: [], sources: [],          // empty = all; otherwise canonical activity source values
   maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false,
   prioritiseFreeTime: false,
 })
@@ -22,11 +23,12 @@ const defaultFilters = () => ({
 export const filters = ref(defaultFilters())
 export const resetFilters = () => { filters.value = defaultFilters() }
 
-const baseActivities = ref([])   // curated (admin-picked) + Eventbrite, both from Firestore
+const baseActivities = ref([])   // GetOutLah Picks + external listings, both from Firestore
 export const forecasts = ref([])
 export const trails = ref({ type: 'FeatureCollection', features: [] })
 export const loadingActivities = ref(false)
 export const sourceErrors = ref({})   // which outside source failed, so the screen can say so
+export const openJioLoadError = computed(() => useOpenJioStore().error)
 
 export async function loadActivities() {
   if (loadingActivities.value || baseActivities.value.length) return
@@ -36,11 +38,11 @@ export async function loadActivities() {
   
   useOpenJioStore().start() // live public OpenJios (see allActivities)
 
-  // Admin-picked (source 'curated') and Eventbrite (source 'eventbrite') activities both live in Firestore.
+  // GetOutLah Picks and external listings both live in Firestore.
   // The built-in list only stands in when Firestore can't be reached.
   let stored = null
   if (isFirebaseConfigured) try {
-    stored = (await getDocs(collection(db, 'activities'))).docs.map((d) => ({ id: d.id, ...d.data() }))
+    stored = (await getDocs(collection(db, 'activities'))).docs.map((d) => canonicalActivity({ id: d.id, ...d.data() }))
   } catch (e) {
     sourceErrors.value.firestore = e.message
   }
@@ -60,10 +62,10 @@ export function reloadActivities() {
   return loadActivities()
 }
 
-// Everything you can do: curated + events + upcoming OpenJio!s shown as activities.
+// Everything you can do: stored activities + upcoming OPENJIO!s shown as activities.
 export const allActivities = computed(() => {
   const jios = useOpenJioStore()
-  return [...baseActivities.value, ...jios.publicUpcoming.map((j) => toActivity(j, jios.uid))]
+  return [...baseActivities.value, ...jios.discoverableUpcoming.map((j) => toActivity(j, jios.uid))]
 })
 export const activityById = (id) => allActivities.value.find((a) => a.id === id)
 

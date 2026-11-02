@@ -13,8 +13,8 @@ describe('activeFilterPills', () => {
   })
 
   it('labels every filter in use like the filter sheet does', () => {
-    const f = { ...defaults(), sources: ['eventbrite'], maxCost: 0, maxHours: 2, setting: 'Indoor', energy: 'low', onlySlots: true }
-    expect(activeFilterPills(f).map((p) => p.label)).toEqual(['Limited', 'Free', '2 hr or less', 'Indoor', 'Chill', 'Has slots'])
+    const f = { ...defaults(), sources: ['externalListings'], maxCost: 0, maxHours: 2, setting: 'Indoor', energy: 'low', onlySlots: true }
+    expect(activeFilterPills(f).map((p) => p.label)).toEqual(['External Listings', 'Free', '2 hr or less', 'Indoor', 'Chill', 'Has slots'])
   })
 
   it('counts a Free budget as in use even though it is 0', () => {
