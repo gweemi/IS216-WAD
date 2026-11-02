@@ -45,5 +45,6 @@ playwright-report/
 .env
 
 # Firebase service account keys (admin access to the whole project). Never commit these.
+.firebase/
 *service-account*.json
 *firebase-adminsdk*.json
