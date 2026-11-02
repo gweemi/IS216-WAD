@@ -8,7 +8,6 @@ import { freeWindows } from './ports'
 import { seedActivities } from '@/data/seedActivities'
 import { getForecasts, nearestForecast, isRainy } from '@/services/api/weather'
 import { getTrails } from '@/services/api/nparks'
-import { distanceMeters } from '@/utils/geo'
 import { fitsWindow } from '@/utils/freeTime'
 import { useOpenJioStore } from '@/stores/openjio'
 import { toActivity } from '@/utils/openjio'
@@ -17,7 +16,7 @@ import { fitsHours } from '@/utils/activityStyle'
 const defaultFilters = () => ({
   query: '', categories: [], sources: [],          // empty = all. sources: curated | eventbrite ("Limited") | openjio
   maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false,
-  nearMe: false, radiusKm: 5, prioritiseFreeTime: false,
+  prioritiseFreeTime: false,
 })
 
 export const filters = ref(defaultFilters())
@@ -26,10 +25,8 @@ export const resetFilters = () => { filters.value = defaultFilters() }
 const baseActivities = ref([])   // curated (admin-picked) + Eventbrite, both from Firestore
 export const forecasts = ref([])
 export const trails = ref({ type: 'FeatureCollection', features: [] })
-export const userCoords = ref(null)
 export const loadingActivities = ref(false)
 export const sourceErrors = ref({})   // which outside source failed, so the screen can say so
-export const setLocation = (coords) => { userCoords.value = coords }
 
 export async function loadActivities() {
   if (loadingActivities.value || baseActivities.value.length) return
@@ -96,8 +93,7 @@ export const filtered = computed(() => {
     (f.maxHours === null || fitsHours(a, f.maxHours)) &&
     (f.setting === 'Any' || a.setting === f.setting) &&
     (f.energy === 'Any' || a.energyLevel == null || a.energyLevel === f.energy) &&
-    (!f.onlySlots || a.slotsLeft == null || a.slotsLeft > 0) &&
-    (!f.nearMe || !userCoords.value || a.lat == null || distanceMeters(userCoords.value, a) <= f.radiusKm * 1000))
+    (!f.onlySlots || a.slotsLeft == null || a.slotsLeft > 0))
 })
 
 export const weatherAt = (a) => {
@@ -123,7 +119,6 @@ export const recommended = computed(() => {
         : freeWindows.value.some((w) => w.end - w.start >= (a.durationHrs ?? 1) * 3600000)
       s += fits ? 3 : -1
     }
-    if (userCoords.value && a.lat != null) s += Math.max(0, 2 - distanceMeters(userCoords.value, a) / 5000)
     return s
   }
   return oneCardPerEvent([...filtered.value].map((a) => ({ a, s: score(a) })).sort((x, y) => y.s - x.s).map((x) => x.a))

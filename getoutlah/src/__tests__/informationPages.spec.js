@@ -17,4 +17,9 @@ describe('informational page content', () => {
     expect(INFORMATION_PAGES.privacy.updated).toBe(true)
     expect(INFORMATION_PAGES.terms.updated).toBe(true)
   })
+
+  it('explains that Near me location stays in browser memory', () => {
+    expect(INFORMATION_PAGES.privacy.sections.find((section) => section.title.startsWith('5. Location')).paragraphs.join(' '))
+      .toContain('Near me and the Map introduction keep your current coordinates only in browser memory')
+  })
 })

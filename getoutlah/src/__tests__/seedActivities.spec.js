@@ -23,7 +23,8 @@ describe('curated activity dataset', () => {
     for (const categoryId of MAP_ACTIVITY_CATEGORY_IDS) {
       const category = getMapActivityCategory(categoryId)
       expect(category.color).toMatch(/^#[0-9A-F]{6}$/i)
-      expect(category.icon).toMatch(/^bi-/)
+      expect(category.icon).toMatch(/^[a-z-]+$/)
+      expect(category.emoji).toBe(INTERESTS.find((interest) => interest.id === categoryId)?.emoji)
     }
   })
 

@@ -6,8 +6,17 @@ import { categories } from '@/data/seedActivities'
 import { categoryLabel, sourceLabel } from '@/utils/activityStyle'
 import { BUDGETS, HOURS, ENERGY } from '@/utils/activeFilters'
 // Works with v-if="open" OR :open="open" (the Map page can use either).
-defineProps({ open: { type: Boolean, default: true } })
-const emit = defineEmits(['close'])
+const props = defineProps({
+  open: { type: Boolean, default: true },
+  singleCategory: { type: Boolean, default: false },
+  showNearby: { type: Boolean, default: false },
+  nearbyEnabled: { type: Boolean, default: false },
+  nearbyRadiusKm: { type: Number, default: 5 },
+  nearbyLoading: { type: Boolean, default: false },
+  nearbyError: { type: String, default: '' },
+  resultCount: { type: Number, default: null },
+})
+const emit = defineEmits(['close', 'toggle-nearby', 'update:nearbyRadiusKm', 'clear-nearby'])
 
 const SETTINGS = ['Any', 'Indoor', 'Outdoor']
 const SOURCES = ['curated', 'eventbrite', 'openjio']   // shown as Curated, Limited, OpenJio (same labels as the cards)
@@ -15,6 +24,19 @@ const SOURCES = ['curated', 'eventbrite', 'openjio']   // shown as Curated, Limi
 function toggle(key, v) {
   const list = filters.value[key]
   filters.value[key] = list.includes(v) ? list.filter((x) => x !== v) : [...list, v]
+}
+
+function selectCategory(category) {
+  if (props.singleCategory) {
+    filters.value.categories = [category]
+    return
+  }
+  toggle('categories', category)
+}
+
+function clearFilters() {
+  resetFilters()
+  emit('clear-nearby')
 }
 </script>
 
@@ -32,7 +54,7 @@ function toggle(key, v) {
     <div class="fs-chips">
       <button class="fs-chip" :class="{ on: !filters.categories.length }" @click="filters.categories = []">All</button>
       <button v-for="c in categories" :key="c" class="fs-chip" :class="{ on: filters.categories.includes(c) }"
-        @click="toggle('categories', c)">{{ categoryLabel(c) }}</button>
+        @click="selectCategory(c)">{{ categoryLabel(c) }}</button>
     </div>
 
     <h3 class="fs-label">Type</h3>
@@ -72,17 +94,29 @@ function toggle(key, v) {
       </button>
     </div>
 
-    <h3 class="fs-label">Near me</h3>
-    <div class="fs-chips fs-near">
-      <button class="fs-chip" :class="{ on: filters.nearMe }" @click="filters.nearMe = !filters.nearMe">
-        <i class="bi bi-geo-alt"></i> Within {{ filters.radiusKm }} km
-      </button>
-      <input v-if="filters.nearMe" type="range" min="1" max="20" v-model.number="filters.radiusKm" class="form-range fs-range" />
-    </div>
+    <template v-if="showNearby">
+      <h3 class="fs-label">Near me</h3>
+      <div class="fs-chips fs-near">
+        <button class="fs-chip" :class="{ on: nearbyEnabled }" :disabled="nearbyLoading" @click="emit('toggle-nearby')">
+          <i class="bi bi-geo-alt"></i> {{ nearbyLoading ? 'Finding your location…' : `Within ${nearbyRadiusKm} km` }}
+        </button>
+        <input
+          v-if="nearbyEnabled"
+          :value="nearbyRadiusKm"
+          type="range"
+          min="1"
+          max="20"
+          class="form-range fs-range"
+          aria-label="Nearby radius in kilometres"
+          @input="emit('update:nearbyRadiusKm', Number($event.target.value))"
+        />
+        <p v-if="nearbyError" class="fs-near-error" role="status">{{ nearbyError }}</p>
+      </div>
+    </template>
 
     <div class="fs-actions">
-      <button class="fs-clear" @click="resetFilters">Clear</button>
-      <button class="gol-btn-primary" @click="emit('close')">Show {{ recommended.length }} activities</button>
+      <button class="fs-clear" @click="clearFilters">Clear</button>
+      <button class="gol-btn-primary" @click="emit('close')">Show {{ resultCount ?? recommended.length }} activities</button>
     </div>
   </BottomSheet>
 </template>

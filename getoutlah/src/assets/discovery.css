@@ -51,6 +51,7 @@
   .fs-chip.on:hover { background: var(--gol-purple-dark); border-color: var(--gol-purple-dark); }
 }
 .fs-range { flex: 1; min-width: 120px; accent-color: var(--gol-purple); }
+.fs-near-error { width: 100%; margin: .15rem 0 0; color: #a74343; font: 700 .8rem/1.35 var(--gol-font); }
 .fs-actions {
   display: flex; gap: 0.6rem; margin-top: 1.4rem; position: sticky; bottom: 0; background: var(--gol-bg); padding-top: 0.4rem;
 }

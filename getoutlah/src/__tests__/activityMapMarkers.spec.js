@@ -6,20 +6,19 @@ import {
   createClusterIcon,
   hasValidCoordinates,
   populateActivityClusterLayer,
+  setActivityMarkerSelected,
 } from '@/utils/activityMapMarkers'
 
 function makeLeaflet() {
   const clearLayers = vi.fn()
   const addLayers = vi.fn()
-  const bindPopup = vi.fn()
-  const marker = { bindPopup, on: vi.fn() }
-  bindPopup.mockReturnValue(marker)
+  const marker = { bindTooltip: vi.fn(), on: vi.fn() }
   const L = {
     divIcon: vi.fn((options) => options),
     marker: vi.fn(() => marker),
     markerClusterGroup: vi.fn((options) => ({ ...options, clearLayers, addLayers })),
   }
-  return { L, addLayers, bindPopup, clearLayers }
+  return { L, addLayers, clearLayers, marker }
 }
 
 describe('activity map markers', () => {
@@ -29,21 +28,30 @@ describe('activity map markers', () => {
     expect(hasValidCoordinates({ lat: 1.3 })).toBe(false)
   })
 
-  it('creates a category marker with activity popup details', () => {
-    const { L, bindPopup } = makeLeaflet()
-    createActivityMarker(L, {
+  it('creates a category marker and selects its activity when clicked', () => {
+    const { L, marker } = makeLeaflet()
+    const onSelect = vi.fn()
+    const activity = {
+      id: 'pottery-jam',
       title: 'Pottery jam OPENJIO',
       category: 'workshops',
       cost: 45,
       duration: 120,
       lat: 1.2966,
       lng: 103.8497,
-    })
+    }
+    createActivityMarker(L, activity, { onSelect })
 
     expect(L.marker).toHaveBeenCalledWith([1.2966, 103.8497], expect.any(Object))
-    expect(bindPopup).toHaveBeenCalledWith(expect.stringContaining('S$45 · 120 min'))
+    expect(marker.bindTooltip).toHaveBeenCalledWith(
+      expect.stringContaining('Pottery jam OPENJIO'),
+      expect.objectContaining({ direction: 'top', className: 'gol-activity-tooltip' }),
+    )
+    expect(marker.on).toHaveBeenCalledWith('click', expect.any(Function))
+    marker.on.mock.calls[0][1]()
+    expect(onSelect).toHaveBeenCalledWith(activity)
     const markerIcon = L.divIcon.mock.calls[0][0]
-    expect(markerIcon.html.innerHTML).toContain('bi-paintbrush')
+    expect(markerIcon.html.innerHTML).toContain('🏺')
     expect(markerIcon.html.innerHTML).toContain('--activity-color: #FFC976')
   })
 
@@ -70,6 +78,20 @@ describe('activity map markers', () => {
     expect(marker.on).not.toHaveBeenCalled()
   })
 
+  it('adds and removes the selected marker state without rebuilding markers', () => {
+    const element = document.createElement('div')
+    const markerElement = document.createElement('div')
+    markerElement.className = 'gol-activity-marker'
+    element.append(markerElement)
+    const marker = { getElement: () => element }
+
+    setActivityMarkerSelected(marker, true)
+    expect(markerElement.classList).toContain('gol-activity-marker--selected')
+
+    setActivityMarkerSelected(marker, false)
+    expect(markerElement.classList).not.toContain('gol-activity-marker--selected')
+  })
+
   it('cleans up marker components only when their cluster layer is explicitly cleared', () => {
     const { L, clearLayers } = makeLeaflet()
     const layer = createActivityClusterLayer(L)
@@ -90,12 +112,4 @@ describe('activity map markers', () => {
     expect(icon.html).toContain('7 activities')
   })
 
-  it('uses neutral text for unknown price and duration', () => {
-    const { L, bindPopup } = makeLeaflet()
-    createActivityMarker(L, {
-      title: 'Demo: Food festival', category: 'events', cost: null, duration: null, lat: 1.28, lng: 103.85,
-    })
-
-    expect(bindPopup).toHaveBeenCalledWith(expect.stringContaining('Price TBC · Duration TBC'))
-  })
 })

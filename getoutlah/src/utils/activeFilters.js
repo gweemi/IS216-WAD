@@ -18,6 +18,5 @@ export function activeFilterPills(f) {
   if (f.setting !== 'Any') add('setting', f.setting, () => { f.setting = 'Any' })
   if (f.energy !== 'Any') add('energy', labelFor(ENERGY, f.energy), () => { f.energy = 'Any' })
   if (f.onlySlots) add('slots', 'Has slots', () => { f.onlySlots = false })
-  if (f.nearMe) add('near', `Within ${f.radiusKm} km`, () => { f.nearMe = false })
   return pills
 }
