@@ -14,8 +14,13 @@
       <span class="jio-status" :class="'jio-status--' + status" data-testid="jio-status">
         {{ statusLabel(jio) }}
       </span>
-      <span v-if="jio.visibility === 'friends'" class="jio-visibility">
-        <i class="bi bi-people-fill"></i> Friends only
+      <span
+        class="jio-visibility"
+        :class="'jio-visibility--' + jio.visibility"
+        data-testid="jio-visibility"
+      >
+        <i class="ph" :class="jio.visibility === 'friends' ? 'ph-lock' : 'ph-globe-hemisphere-west'"></i>
+        {{ jio.visibility === 'friends' ? 'Friends only' : 'Public' }}
       </span>
     </div>
 
@@ -133,7 +138,9 @@ export default {
   font-weight: 900;
 }
 .jio-status { left: 0.6rem; }
-.jio-visibility { right: 0.6rem; background: #fff; color: var(--gol-purple); }
+.jio-visibility { right: 0.6rem; background: #fff; }
+.jio-visibility--public { color: #1d5f8a; }
+.jio-visibility--friends { color: var(--gol-purple); }
 .jio-status--open { background: var(--gol-lime); color: var(--gol-ink); }
 .jio-status--full { background: #5d4d72; color: #fff; }
 .jio-status--ended { background: var(--gol-locked); color: var(--gol-ink); }

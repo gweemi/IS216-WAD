@@ -120,8 +120,8 @@
           <label v-for="f in friends" :key="f.uid" class="friend" :class="{ picked: form.invited.includes(f.uid) }">
             <input v-model="form.invited" type="checkbox" :value="f.uid" class="visually-hidden" />
             <img v-if="f.photoURL" :src="f.photoURL" alt="" referrerpolicy="no-referrer" />
-            <span v-else class="initial">{{ f.displayName[0] }}</span>
-            {{ f.displayName }}
+            <span v-else class="initial">{{ f.name[0] }}</span>
+            {{ f.name }}
             <i class="bi ms-auto" :class="form.invited.includes(f.uid) ? 'bi-check-circle-fill' : 'bi-circle'"></i>
           </label>
         </div>
@@ -151,8 +151,8 @@
 import BottomSheet from '@/components/common/BottomSheet.vue'
 import { INTERESTS } from '@/config/preferences'
 import { VISIBILITY, REGIONS, LIMITS, validateJio } from '@/utils/openjio'
-import { createJio, getProfiles, friendlyJioError } from '@/services/openjio'
-import { useAuthStore } from '@/stores/auth'
+import { createJio, friendlyJioError } from '@/services/openjio'
+import { friendsState, friendList } from '@/stores/friends'
 
 // 'YYYY-MM-DD' in the user's own time zone
 function isoDate(d) {
@@ -200,8 +200,6 @@ export default {
       hours: 2,
       saving: false,
       error: '',
-      friends: [], // [{ uid, displayName, photoURL }]
-      friendsLoading: false,
     }
   },
   watch: {
@@ -214,6 +212,13 @@ export default {
     },
   },
   computed: {
+    // Accepted friends from the Friends page: [{ uid, name, photoURL }]
+    friends() {
+      return friendList.value
+    },
+    friendsLoading() {
+      return !friendsState.ready && !friendsState.error
+    },
     today() {
       return isoDate(new Date())
     },
@@ -244,23 +249,6 @@ export default {
       this.time = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`
       this.hours = p.durationMins ? p.durationMins / 60 : 2
       this.error = ''
-      this.loadFriends()
-    },
-
-    async loadFriends() {
-      const friendIds = useAuthStore().profile?.friendIds ?? []
-      if (!friendIds.length) {
-        this.friends = []
-        return
-      }
-      this.friendsLoading = true
-      try {
-        this.friends = await getProfiles(friendIds)
-      } catch {
-        this.friends = []
-      } finally {
-        this.friendsLoading = false
-      }
     },
 
     async onSubmit() {

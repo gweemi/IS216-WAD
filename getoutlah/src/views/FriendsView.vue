@@ -14,6 +14,9 @@ import { formatWindow } from '@/utils/friends'
 import FriendAvatar from '@/components/friends/FriendAvatar.vue'
 import FreeTimeCard from '@/components/friends/FreeTimeCard.vue'
 import BottomSheet from '@/components/common/BottomSheet.vue'
+import FreeTogetherJios from '@/components/openjio/FreeTogetherJios.vue' // OpenJio! (Li Min)
+import StartJioButton from '@/components/openjio/StartJioButton.vue'
+import { prefillFromWindow } from '@/utils/openjio'
 
 const auth = useAuthStore()
 
@@ -215,6 +218,9 @@ async function unfriend() {
 
           <FreeTimeCard />
 
+          <!-- Shared free times, each with an OpenJio button (OpenJio! feature) -->
+          <FreeTogetherJios />
+
           <!-- People from the same university -->
           <section v-if="visibleSuggestions.length" class="gol-card">
             <h2 class="gol-section-title mb-2">From {{ auth.profile?.universityName }}</h2>
@@ -247,8 +253,9 @@ async function unfriend() {
         <div class="gol-card mb-3">
           <h3 class="gol-section-title fs-6 mb-2">Free at the same time as you</h3>
           <ul v-if="selected.freeTogether.length" class="list-unstyled mb-0 d-flex flex-column gap-1 fw-bold">
-            <li v-for="w in selected.freeTogether" :key="w.start">
-              <i class="bi bi-calendar-check" style="color: var(--gol-teal)"></i> {{ formatWindow(w) }}
+            <li v-for="w in selected.freeTogether" :key="w.start" class="d-flex align-items-center justify-content-between gap-2">
+              <span><i class="bi bi-calendar-check" style="color: var(--gol-teal)"></i> {{ formatWindow(w) }}</span>
+              <StartJioButton label="OpenJio" variant="soft" :prefill="prefillFromWindow(w, [selected.uid])" />
             </li>
           </ul>
           <p v-else class="small text-muted fw-semibold mb-0">

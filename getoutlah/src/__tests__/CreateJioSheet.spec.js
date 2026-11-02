@@ -6,12 +6,22 @@ import { prefillFromActivity } from '@/utils/openjio'
 
 vi.mock('@/services/openjio', () => ({
   createJio: vi.fn(async () => 'new-id'),
-  getProfiles: vi.fn(async (ids) => ids.map((uid) => ({ uid, displayName: 'Friend ' + uid, photoURL: null }))),
   friendlyJioError: (e) => e.message,
 }))
-vi.mock('@/stores/auth', () => ({
-  useAuthStore: () => ({ user: { uid: 'me' }, profile: { friendIds: ['jiali', 'siti'] } }),
-}))
+vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ user: { uid: 'me' }, profile: {} }) }))
+
+// Two accepted friends in the Friends feature's store
+const { friendsState } = await import('@/stores/friends')
+Object.assign(friendsState, {
+  uid: 'me',
+  ready: true,
+  friendships: ['jiali', 'siti'].map((uid) => ({
+    id: uid,
+    members: ['me', uid],
+    status: 'accepted',
+    names: { [uid]: 'Friend ' + uid },
+  })),
+})
 
 const { default: CreateJioSheet } = await import('@/components/openjio/CreateJioSheet.vue')
 

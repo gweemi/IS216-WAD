@@ -33,6 +33,7 @@ beforeEach(() => {
     jio('not-invited', { visibility: 'friends', invited: ['someone'] }),
     jio('mine-private', { visibility: 'friends', hostId: 'me', participants: ['me'], invited: ['x'] }),
     jio('ended', { startAt: new Date(Date.now() - 86400000) }),
+    jio('cancelled', { status: 'cancelled' }),
   ]
 })
 
@@ -49,6 +50,10 @@ describe('openjio store', () => {
 
   it('lists jios you host or joined under My jios', () => {
     expect(ids(store.mine)).toEqual(['public-going', 'mine-private'])
+  })
+
+  it('lists public jios you can still join under Open jios', () => {
+    expect(ids(store.openToJoin)).toEqual(['public'])
   })
 
   it('never shows friends-only jios you were not invited to', () => {
