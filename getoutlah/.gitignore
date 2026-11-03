@@ -48,3 +48,6 @@ playwright-report/
 .firebase/
 *service-account*.json
 *firebase-adminsdk*.json
+
+# This project uses pnpm; ignore npm's lockfile
+package-lock.json
