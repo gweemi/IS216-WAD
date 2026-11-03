@@ -16,7 +16,7 @@ describe('prefillFromWindow', () => {
     const p = prefillFromWindow({ start: at(4), end: at(7) }, ['jiali', 'siti', 'jiali'], NOW)
     expect(p.startAt.getTime()).toBe(at(4))
     expect(p.durationMins).toBe(180)
-    expect(p.visibility).toBe('friends')
+    expect(p.visibility).toBe('invite_only')
     expect(p.invited).toEqual(['jiali', 'siti'])
   })
 

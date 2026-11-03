@@ -4,11 +4,13 @@ import BottomSheet from '@/components/common/BottomSheet.vue'
 import { filters, recommended, resetFilters } from '@/stores/activities'
 import { categories } from '@/data/seedActivities'
 import { categoryLabel, sourceLabel } from '@/utils/activityStyle'
+import { SOURCE_OPTIONS } from '@/utils/activitySource'
 import { BUDGETS, HOURS, ENERGY } from '@/utils/activeFilters'
 // Works with v-if="open" OR :open="open" (the Map page can use either).
 const props = defineProps({
   open: { type: Boolean, default: true },
   singleCategory: { type: Boolean, default: false },
+  showSources: { type: Boolean, default: true },
   showNearby: { type: Boolean, default: false },
   nearbyEnabled: { type: Boolean, default: false },
   nearbyRadiusKm: { type: Number, default: 5 },
@@ -16,10 +18,10 @@ const props = defineProps({
   nearbyError: { type: String, default: '' },
   resultCount: { type: Number, default: null },
 })
-const emit = defineEmits(['close', 'toggle-nearby', 'update:nearbyRadiusKm', 'clear-nearby'])
+const emit = defineEmits(['close', 'toggle-nearby', 'update:nearbyRadiusKm', 'clear-nearby', 'cleared'])
 
 const SETTINGS = ['Any', 'Indoor', 'Outdoor']
-const SOURCES = ['curated', 'eventbrite', 'openjio']   // shown as Curated, Limited, OpenJio (same labels as the cards)
+const SOURCES = SOURCE_OPTIONS
 
 function toggle(key, v) {
   const list = filters.value[key]
@@ -37,6 +39,7 @@ function selectCategory(category) {
 function clearFilters() {
   resetFilters()
   emit('clear-nearby')
+  emit('cleared')
 }
 </script>
 
@@ -57,11 +60,13 @@ function clearFilters() {
         @click="selectCategory(c)">{{ categoryLabel(c) }}</button>
     </div>
 
-    <h3 class="fs-label">Type</h3>
+    <template v-if="showSources">
+    <h3 class="fs-label">Source</h3>
     <div class="fs-chips">
       <button v-for="s in SOURCES" :key="s" class="fs-chip" :class="{ on: filters.sources.includes(s) }"
         @click="toggle('sources', s)">{{ sourceLabel(s) }}</button>
     </div>
+    </template>
 
     <h3 class="fs-label">Budget</h3>
     <div class="fs-chips">

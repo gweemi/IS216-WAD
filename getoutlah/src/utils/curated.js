@@ -1,7 +1,8 @@
-// Admin-picked ("curated") activities: the form's starting values and the check before saving.
+// Admin-picked GetOutLah Picks: form starting values and validation before saving.
 // Pure functions, no Firebase. Keep the limits in sync with validActivity() in firestore.rules.
 import { categories } from '@/data/seedActivities'
 import { regionOf } from '@/utils/eventbriteMap'
+import { ACTIVITY_SOURCES } from '@/utils/activitySource'
 
 export const CURATED_TYPES = [['outdoor', 'Outdoor'], ['events', 'Event'], ['volunteering', 'Volunteering'], ['paid', 'Paid class / venue']]
 export const CURATED_DESCRIPTION_MAX = 1000
@@ -36,7 +37,7 @@ export function toCuratedActivity(form) {
       title, description, category: form.category, type: form.type, cost, durationHrs, setting: form.setting,
       energyLevel: form.energyLevel, groupFriendly: !!form.groupFriendly,
       area: (form.area ?? '').trim() || 'Singapore', region: regionOf(lat, lng), lat, lng,
-      url: (form.url ?? '').trim() || null, source: 'curated',
+      url: (form.url ?? '').trim() || null, source: ACTIVITY_SOURCES.PICKS,
     },
   }
 }

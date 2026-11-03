@@ -3,6 +3,7 @@
 
 // Starting list of organisers to sync. Admins change the real list on /admin/activities
 // (saved in Firestore config/eventbrite); this is only used until they do.
+import { ACTIVITY_SOURCES } from '@/utils/activitySource'
 export const DEFAULT_ORGANISERS = [
   { id: '18480976563', name: 'MarketWise ASIA' },
   { id: '26202793543', name: 'Affordable Art Fair Singapore' },
@@ -58,21 +59,29 @@ export function regionOf(lat, lng) {
 
 // Fields that Eventbrite owns: refreshed on every sync.
 export function fromEventbrite(e) {
-  const start = Date.parse(e.start?.utc), end = Date.parse(e.end?.utc)
-  const lat = parseFloat(e.venue?.latitude) || null, lng = parseFloat(e.venue?.longitude) || null
+  // Eventbrite leaves some parts out (e.g. online events have no venue), so use {} for a missing part.
+  // Then venue.latitude is just undefined instead of crashing.
+  const venue = e.venue || {}
+  const address = venue.address || {}
+  const logo = e.logo || {}
+  const original = logo.original || {}
+  const description = e.description || {}
+
+  const start = Date.parse(utcTime(e.start)), end = Date.parse(utcTime(e.end))
+  const lat = parseFloat(venue.latitude) || null, lng = parseFloat(venue.longitude) || null
   return {
-    title: e.name?.text ?? 'Event',
+    title: eventName(e) ?? 'Event',
     cost: e.is_free ? 0 : null,
     // 24 hrs or more: Eventbrite doesn't tell us the daily hours, so the app shows "Varied duration".
     durationHrs: start && end && end - start < 86400000 ? Math.round(((end - start) / 3600000) * 10) / 10 : null,
-    area: e.venue?.name ?? e.venue?.address?.city ?? '',
+    area: venue.name ?? address.city ?? '',
     lat, lng, startsAt: start || null, endsAt: end || null, url: e.url ?? null,
     // The event's picture, straight from Eventbrite's image server. The links are signed, so we can't resize them:
     // imageUrl is their small crop (450x200) for cards, imageLargeUrl the full picture for the activity page.
-    imageUrl: e.logo?.url ?? null,
-    imageLargeUrl: e.logo?.original?.url ?? null,
+    imageUrl: logo.url ?? null,
+    imageLargeUrl: original.url ?? null,
     // Full description when fetchDescriptions() got it, otherwise the short summary from the event list.
-    description: htmlToText(e.fullDescription ?? e.description?.html) || e.summary?.trim() || null,
+    description: htmlToText(e.fullDescription ?? description.html) || (e.summary ? e.summary.trim() : '') || null,
     seriesId: e.series_id ?? null,         // repeating events share this, so the app can show them as one card
     organiserId: e.organizer_id ?? null,   // so removing an organiser can also remove their events
   }
@@ -106,7 +115,7 @@ export function defaultsFor(title, lat, lng) {
   const category = guessCategory(title)
   return {
     category, type: 'events', setting: null, energyLevel: guessEnergy(category), groupFriendly: true,
-    region: regionOf(lat, lng), source: 'eventbrite', needsReview: true,
+    region: regionOf(lat, lng), source: ACTIVITY_SOURCES.EXTERNAL, needsReview: true,
   }
 }
 
@@ -123,7 +132,7 @@ export async function fetchOrganiserEvents(token, organiser) {
     }
     const body = await res.json()
     out.push(...(body.events ?? []))
-    if (!body.pagination?.has_more_items) break
+    if (!body.pagination || !body.pagination.has_more_items) break   // that was the last page
     continuation = body.pagination.continuation
   }
   return out
@@ -150,8 +159,20 @@ export async function fetchDescriptions(token, events) {
 
 // Events we keep: not a business event and not over yet (one that is happening right now still counts).
 const wanted = (e, now) => {
-  const end = Date.parse(e.end?.utc ?? e.start?.utc)
-  return !EXCLUDE.test(e.name?.text ?? '') && !(end < now)
+  const end = Date.parse(utcTime(e.end) ?? utcTime(e.start))
+  return !EXCLUDE.test(eventName(e) ?? '') && !(end < now)
+}
+
+// Eventbrite sends times as { utc: '2026-11-03T10:00:00Z', ... }. Gives the utc text, or undefined if missing.
+function utcTime(time) {
+  if (!time) return undefined
+  return time.utc
+}
+
+// Eventbrite sends the name as { text: 'Pottery workshop', ... }. Gives the text, or undefined if missing.
+function eventName(e) {
+  if (!e.name) return undefined
+  return e.name.text
 }
 
 // Events of all organisers, without duplicates. One failing organiser doesn't stop the others.
@@ -184,7 +205,7 @@ export function planActivityWrites(events, existing, now = Date.now(), failedOrg
     else { plan.writes.push({ id, data: { ...base, ...defaultsFor(base.title, base.lat, base.lng) }, merge: false }); plan.added++ }
   }
   for (const [id, a] of existing) {
-    if (a.source !== 'eventbrite' || live.has(id)) continue
+    if (a.source !== ACTIVITY_SOURCES.EXTERNAL || live.has(id)) continue
     const end = a.endsAt ?? a.startsAt   // older activities have no endsAt yet
     const ended = end != null && end < now
     const unlisted = !failedOrganisers.includes(a.organiserId)

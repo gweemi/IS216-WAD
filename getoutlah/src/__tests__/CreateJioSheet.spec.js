@@ -6,6 +6,7 @@ import { prefillFromActivity } from '@/utils/openjio'
 
 vi.mock('@/services/openjio', () => ({
   createJio: vi.fn(async () => 'new-id'),
+  updateJio: vi.fn(async (id) => id),
   friendlyJioError: (e) => e.message,
 }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ user: { uid: 'me' }, profile: {} }) }))
@@ -24,6 +25,7 @@ Object.assign(friendsState, {
 })
 
 const { default: CreateJioSheet } = await import('@/components/openjio/CreateJioSheet.vue')
+const { createJio, updateJio } = await import('@/services/openjio')
 
 setActivePinia(createPinia())
 
@@ -56,13 +58,13 @@ describe('CreateJioSheet', () => {
   it('fills in a free time slot as a friends-only jio', () => {
     const slot = new Date(Date.now() + 2 * 86400000)
     slot.setHours(14, 0, 0, 0)
-    const w = open({ startAt: slot, visibility: 'friends' })
+    const w = open({ startAt: slot, visibility: 'invite_only' })
     expect(value(w, 'jio-time')).toBe('14:00')
-    expect(w.find('[data-testid="jio-visibility-friends"]').attributes('aria-checked')).toBe('true')
+    expect(w.find('[data-testid="jio-visibility-invite_only"]').attributes('aria-checked')).toBe('true')
   })
 
   it('lists your friends to invite for a friends-only jio', async () => {
-    const w = open({ visibility: 'friends', invited: ['siti'] })
+    const w = open({ visibility: 'invite_only', invited: ['siti'] })
     await flushPromises()
     const list = w.find('[data-testid="jio-invite-list"]')
     expect(list.text()).toContain('Friend jiali')
@@ -70,7 +72,7 @@ describe('CreateJioSheet', () => {
   })
 
   it('asks you to invite someone before posting a friends-only jio', async () => {
-    const w = open({ title: 'Picnic', category: 'outdoors', location: 'Jurong Lake', visibility: 'friends' })
+    const w = open({ title: 'Picnic', category: 'outdoors', location: 'Jurong Lake', visibility: 'invite_only' })
     await flushPromises()
     await w.find('form').trigger('submit')
     expect(w.find('[data-testid="create-jio-error"]').text()).toBe('Invite at least one friend.')
@@ -85,5 +87,53 @@ describe('CreateJioSheet', () => {
     await w.find('form').trigger('submit')
     expect(w.find('[data-testid="create-jio-error"]').text()).toBe('Give your jio a name.')
     expect(w.emitted('created')).toBeUndefined()
+  })
+
+  it('requires confirmation before posting a valid OpenJio', async () => {
+    const start = new Date(Date.now() + 2 * 86400000)
+    start.setHours(15, 0, 0, 0)
+    const w = open({ title: 'Picnic', category: 'outdoors', location: 'Jurong Lake', startAt: start })
+
+    await w.find('form').trigger('submit')
+    expect(w.get('[data-testid="jio-confirmation"]').text()).toContain('Post this OPENJIO?')
+    expect(createJio).not.toHaveBeenCalled()
+
+    await w.get('[data-testid="jio-confirm-submit"]').trigger('click')
+    await flushPromises()
+    expect(createJio).toHaveBeenCalledTimes(1)
+    expect(w.emitted('created')?.[0]).toEqual(['new-id'])
+  })
+
+  it('pre-fills a host OpenJio and confirms before saving edits', async () => {
+    const start = new Date(Date.now() + 2 * 86400000)
+    start.setHours(15, 0, 0, 0)
+    const editJio = {
+      id: 'jio-1', title: 'Original walk', category: 'outdoors', location: 'MacRitchie', region: 'central',
+      startAt: start, durationMins: 120, cost: 0, capacity: 4, visibility: 'public', invited: [],
+      participants: ['host', 'friend'], description: 'Bring water.', lat: 1.34, lng: 103.82,
+    }
+    const w = mount(CreateJioSheet, { props: { open: true, editJio }, global: { stubs: { teleport: true } } })
+
+    expect(value(w, 'jio-title')).toBe('Original walk')
+    await w.find('form').trigger('submit')
+    expect(w.get('[data-testid="jio-confirmation"]').text()).toContain('Save these changes?')
+    expect(updateJio).not.toHaveBeenCalled()
+
+    await w.get('[data-testid="jio-confirm-submit"]').trigger('click')
+    await flushPromises()
+    expect(updateJio).toHaveBeenCalledWith('jio-1', expect.objectContaining({ title: 'Original walk', capacity: 4 }))
+    expect(w.emitted('updated')?.[0]).toEqual(['jio-1'])
+  })
+
+  it('does not let an edit reduce capacity below people already going', async () => {
+    const start = new Date(Date.now() + 2 * 86400000)
+    const w = mount(CreateJioSheet, {
+      props: { open: true, editJio: { id: 'jio-1', title: 'Walk', category: 'outdoors', location: 'MacRitchie', region: 'central', startAt: start, durationMins: 60, cost: 0, capacity: 3, visibility: 'public', invited: [], participants: ['host', 'a', 'b'] } },
+      global: { stubs: { teleport: true } },
+    })
+    await w.find('[data-testid="jio-capacity"]').setValue(2)
+    await w.find('form').trigger('submit')
+    expect(w.find('[data-testid="create-jio-error"]').text()).toContain('cannot be lower than the 3 people')
+    expect(w.find('[data-testid="jio-confirmation"]').exists()).toBe(false)
   })
 })

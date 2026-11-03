@@ -6,10 +6,12 @@
 // See OPENJIO.md for the data format.
 // =============================================================
 import { INTERESTS } from '@/config/preferences'
+import { ACTIVITY_SOURCES } from '@/utils/activitySource'
 
 export const VISIBILITY = [
   { id: 'public', label: 'Public', hint: 'Anyone on GetOutLah! can join' },
-  { id: 'friends', label: 'Friends only', hint: 'Only the friends you invite can see it' },
+  { id: 'friends_only', label: 'Friends only', hint: 'All your accepted friends can discover and join' },
+  { id: 'invite_only', label: 'Invite only', hint: 'Only friends you select can discover and join' },
 ]
 
 export const REGIONS = ['central', 'north', 'north-east', 'east', 'west', 'south']
@@ -65,9 +67,9 @@ export function validateJio(form, now = new Date()) {
     problems.push(`Total spots must be between ${LIMITS.minCapacity} and ${LIMITS.maxCapacity}.`)
   }
 
-  if (!VISIBILITY.some((v) => v.id === form?.visibility)) problems.push('Choose who can see it.')
+  if (![...VISIBILITY.map((v) => v.id), 'friends'].includes(form?.visibility)) problems.push('Choose who can see it.')
 
-  if (form?.visibility === 'friends') {
+  if (['invite_only', 'friends'].includes(form?.visibility)) {
     const invited = form.invited ?? []
     if (!invited.length) problems.push('Invite at least one friend.')
     else if (invited.length > LIMITS.maxInvites) problems.push('Too many friends invited.')
@@ -82,12 +84,14 @@ export function validateJio(form, now = new Date()) {
 
 // ---------- Reading a jio ----------
 
-export const slotsLeft = (jio) => Math.max(0, jio.capacity - jio.participants.length)
+export const slotsLeft = (jio) => jio.slotsLeft ?? Math.max(0, jio.capacity - (jio.participants?.length ?? jio.participantCount ?? 0))
 
 export const endTime = (jio) => new Date(jio.startAt.getTime() + jio.durationMins * 60000)
 
-/** 'cancelled' | 'ended' | 'full' | 'open' */
+/** 'suspended' | 'cancelled' | 'ended' | 'full' | 'open' */
 export function statusOf(jio, now = new Date()) {
+  // Change code is necessary: reported jios are suspended until an admin reviews them (see utils/reports.js)
+  if (jio.status === 'suspended') return 'suspended'
   if (jio.status === 'cancelled') return 'cancelled'
   if (endTime(jio) <= now) return 'ended'
   if (slotsLeft(jio) === 0) return 'full'
@@ -96,24 +100,29 @@ export function statusOf(jio, now = new Date()) {
 
 /** How this user is connected to the jio: 'host' | 'going' | 'queued' | 'none' */
 export function myRole(jio, uid) {
+  if (jio.viewerRole) return jio.viewerRole
   if (jio.hostId === uid) return 'host'
   if (jio.participants.includes(uid)) return 'going'
   if (jio.waitlist.includes(uid)) return 'queued'
   return 'none'
 }
 
-/** Did the host invite this user to a friends-only jio? */
-export const isInvited = (jio, uid) => (jio.invited ?? []).includes(uid)
+/** Did the host explicitly invite this user? */
+export const isInvited = (jio, uid) => jio.viewerInvited ?? (jio.invited ?? []).includes(uid)
 
 /** 1 = next in line. 0 = not in the queue. */
-export const queuePosition = (jio, uid) => jio.waitlist.indexOf(uid) + 1
+export const queuePosition = (jio, uid) => jio.viewerQueuePosition ?? jio.waitlist.indexOf(uid) + 1
 
 /**
  * Can this user see the jio?
- * Public: everyone. Friends only: the host, invited friends, and anyone already in it.
+ * Public: everyone. Friends only: the host, an accepted friend of the host,
+ * or anyone already in it. Invite-only and legacy `friends` use the invite list.
  */
-export function canSee(jio, uid) {
+export function canSee(jio, uid, friendIds = []) {
   if (jio.visibility === 'public') return true
+  if (jio.visibility === 'friends_only') {
+    return myRole(jio, uid) !== 'none' || jio.viewerFriend === true || friendIds.includes(jio.hostId)
+  }
   return myRole(jio, uid) !== 'none' || isInvited(jio, uid)
 }
 
@@ -125,6 +134,7 @@ export function canSee(jio, uid) {
 function mustBeActive(jio, uid, now) {
   if (!canSee(jio, uid)) throw new Error('This jio is for invited friends only.')
   const status = statusOf(jio, now)
+  if (status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (status === 'cancelled') throw new Error('This jio was cancelled by the host.')
   if (status === 'ended') throw new Error('This jio has already ended.')
   return status
@@ -155,6 +165,7 @@ export function applyChope(jio, uid, now = new Date()) {
  * gets the freed spot automatically.
  */
 export function applyLeave(jio, uid) {
+  if (jio.status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (jio.status === 'cancelled') throw new Error('This jio was cancelled, so there is nothing to leave.')
   if (jio.hostId === uid) throw new Error("Hosts can't leave. Cancel the jio instead.")
   if (!jio.participants.includes(uid)) throw new Error("You're not in this jio.")
@@ -169,6 +180,7 @@ export function applyLeave(jio, uid) {
 
 /** Give up your place in the queue. */
 export function applyLeaveQueue(jio, uid) {
+  if (jio.status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (jio.status === 'cancelled') throw new Error('This jio was cancelled, so there is no queue.')
   if (!jio.waitlist.includes(uid)) throw new Error("You're not in the queue.")
   return { participants: jio.participants, waitlist: jio.waitlist.filter((id) => id !== uid) }
@@ -182,7 +194,8 @@ export function statusLabel(jio, now = new Date()) {
     const n = slotsLeft(jio)
     return `Open · ${n} spot${n === 1 ? '' : 's'} left`
   }
-  return { full: 'Full', ended: 'Ended', cancelled: 'Cancelled' }[s]
+  // Change code is necessary: added suspended
+  return { full: 'Full', ended: 'Ended', cancelled: 'Cancelled', suspended: 'Suspended' }[s]
 }
 
 export const priceText = (jio) => (jio.cost === 0 ? 'Free' : `$${jio.cost}`)
@@ -209,7 +222,10 @@ export function toActivity(jio, uid) {
     title: jio.title,
     category: jio.category,
     type: 'openjio',
-    source: 'openjio',
+    source: ACTIVITY_SOURCES.OPEN_JIO,
+    // Keep the server-owned discovery visibility when this Jio is rendered
+    // through the shared Activities pipeline.
+    visibility: jio.visibility,
     cost: jio.cost,
     durationHrs: jio.durationMins / 60,
     setting: null,
@@ -222,6 +238,10 @@ export function toActivity(jio, uid) {
     groupFriendly: true,
     startsAt: jio.startAt.getTime(),
     hostedByMe: jio.hostId === uid,
+    viewerRole: jio.viewerRole ?? myRole(jio, uid),
+    viewerInvited: jio.viewerInvited ?? isInvited(jio, uid),
+    viewerQueuePosition: jio.viewerQueuePosition,
+    participantCount: jio.participantCount,
   }
 }
 
@@ -256,7 +276,7 @@ export function prefillFromWindow(window, friendUids = [], now = Date.now()) {
   return {
     startAt: new Date(start),
     durationMins: Math.min(720, Math.max(15, mins)),
-    visibility: 'friends',
+    visibility: 'invite_only',
     invited: [...new Set(friendUids)].slice(0, LIMITS.maxInvites),
   }
 }
