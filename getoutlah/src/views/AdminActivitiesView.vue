@@ -9,7 +9,7 @@ import '@/assets/discovery.css'
 const token = ref('')
 const busy = ref(false), message = ref('')
 const organisers = ref([]), newId = ref(''), newName = ref(''), loadError = ref('')
-const confirming = ref(null)   // id of the organiser whose Remove button was pressed once
+const confirming = ref(null)
 
 async function run(fn, label) {
   busy.value = true; message.value = ''
@@ -26,9 +26,8 @@ async function loadOrganisers() {
       : `Couldn't load the organiser list: ${e.message}`
   }
 }
-onMounted(loadOrganisers)   // the router only lets admins in
+onMounted(loadOrganisers) 
 
-// Sync has its own message, shown right under its button (red when it failed).
 const syncMessage = ref(''), syncFailed = ref(false)
 const lastDailySync = ref(null)
 onMounted(async () => { lastDailySync.value = await getLastDailySync() })
@@ -38,7 +37,7 @@ async function sync() {
   busy.value = true; syncMessage.value = ''; syncFailed.value = false
   try {
     const r = await syncEventbriteToFirestore({ token: token.value.trim() })
-    await reloadActivities()   // so the rest of the app shows the synced events without a page refresh
+    await reloadActivities()  
     syncMessage.value = `Done: ${r.added} added, ${r.updated} updated, ${r.skipped} skipped, ${r.removed} removed.` + (r.failures.length ? ` Problems: ${r.failures.join('; ')}` : '')
   } catch (e) {
     syncFailed.value = true
@@ -52,7 +51,6 @@ const add = () => run(async () => {
   newId.value = ''; newName.value = ''
 }, () => 'Organiser added. Their events come in on the next sync.')
 
-// First press asks for confirmation, second press removes.
 function remove(o) {
   if (confirming.value !== o.id) { confirming.value = o.id; return }
   confirming.value = null
@@ -94,7 +92,7 @@ function remove(o) {
 
     <div class="gol-card mt-3">
       <h2 class="gol-section-title">Sync from Eventbrite</h2>
-      <p class="adm-help">This already runs every morning at 6am. Use it to sync right now.
+      <p class="adm-help">This already runs every morning. Use it to sync right now.
         Safe to run again: it won't overwrite category or energy edits.</p>
       <p class="adm-help" data-testid="last-daily-sync">Last daily sync: {{ lastDailySync ? syncTime(lastDailySync) : 'none recorded yet' }}</p>
       <input id="adm-token" v-model="token" class="form-control mb-3" type="password" placeholder="Eventbrite private token" autocomplete="off" />

@@ -463,7 +463,7 @@ describe('MapView', () => {
     )
 
     await card.get('.map-activity-card__view').trigger('click')
-    expect(routerMocks.push).toHaveBeenCalledWith({ name: 'activity', params: { id: 'shared-1' } })
+    expect(routerMocks.push).toHaveBeenCalledWith({ name: 'activity', params: { id: 'shared-1' }, query: { from: 'map' } })
 
     await card.get('.map-activity-card__close').trigger('click')
     expect(wrapper.find('[data-testid="selected-map-activity"]').exists()).toBe(false)

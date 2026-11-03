@@ -81,6 +81,8 @@
           {{ declining ? 'Declining…' : 'Decline' }}
         </button>
       </div>
+      <!-- Change code is necessary: report button (hides itself for the host and for cancelled, ended or suspended jios) -->
+      <ReportJioButton :jio="jio" class="mt-2" />
     </div>
     <JioParticipantsSheet :open="showAttendees" :jio="jio" @close="showAttendees = false" />
   </article>
@@ -89,6 +91,8 @@
 <script>
 import JioActionButton from '@/components/openjio/JioActionButton.vue'
 import JioParticipantsSheet from '@/components/openjio/JioParticipantsSheet.vue'
+// Change code is necessary: report button
+import ReportJioButton from '@/components/reports/ReportJioButton.vue'
 import { categoryColor, categoryEmoji } from '@/utils/activityStyle'
 import { runJioAction } from '@/services/openjio'
 import {
@@ -103,7 +107,8 @@ import {
 
 export default {
   name: 'JioCard',
-  components: { JioActionButton, JioParticipantsSheet },
+  // Change code is necessary: added ReportJioButton
+  components: { JioActionButton, JioParticipantsSheet, ReportJioButton },
   props: {
     jio: { type: Object, required: true },
     uid: { type: String, required: true },
@@ -123,7 +128,8 @@ export default {
       return { public: 'Public', friends_only: 'Friends only', invite_only: 'Invite only', friends: 'Legacy invite only' }[this.jio.visibility] ?? 'Private'
     },
     greyed() {
-      return this.status === 'full' && this.role === 'none'
+      // Change code is necessary: suspended jios are greyed out too
+      return (this.status === 'full' && this.role === 'none') || this.status === 'suspended'
     },
     canEdit() {
       return this.role === 'host' && ['open', 'full'].includes(this.status)
@@ -132,7 +138,7 @@ export default {
       return this.role === 'host'
     },
     canDecline() {
-      return ['invite_only', 'friends'].includes(this.jio.visibility) && this.invited && this.role === 'none' && this.status !== 'cancelled' && this.status !== 'ended'
+      return ['invite_only', 'friends'].includes(this.jio.visibility) && this.invited && this.role === 'none' && this.status !== 'cancelled' && this.status !== 'ended' && this.status !== 'suspended' // Change code is necessary: added suspended
     },
   },
   data() {
@@ -203,6 +209,8 @@ export default {
 .jio-status--full { background: #5d4d72; color: #fff; }
 .jio-status--ended { background: var(--gol-locked); color: var(--gol-ink); }
 .jio-status--cancelled { background: var(--gol-coral); color: #fff; }
+/* Change code is necessary: suspended badge */
+.jio-status--suspended { background: #dc4d4d; color: #fff; }
 
 .min-w-0 { min-width: 0; }
 .jio-title { font-weight: 900; font-size: 1.15rem; margin: 0; }

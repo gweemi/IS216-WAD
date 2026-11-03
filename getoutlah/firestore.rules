@@ -52,6 +52,15 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin';
     }
 
+    // Change code is necessary: banned or suspended users can't start, join or report OPENJIOs.
+    // Admins set users/{uid}.banned and users/{uid}.suspendedUntil from the Reports page.
+    function canAct() {
+      let me = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return signedIn()
+        && me.get('banned', false) != true
+        && (!(me.get('suspendedUntil', null) is timestamp) || request.time >= me.suspendedUntil);
+    }
+
     // Activities are GetOutLah Picks (admin-picked) or external listings. The daily GitHub Action
     // writes with the Admin SDK, which skips these rules. Keep in sync with src/utils/curated.js.
     function validActivity(d) {
@@ -95,11 +104,18 @@ service cloud.firestore {
       allow update: if signedIn()
         && request.auth.uid == uid
         && !request.resource.data.diff(resource.data)
-             .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points', 'role'])
+             // Change code is necessary: added 'banned', 'suspendedUntil' (only admins may change these)
+             .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points', 'role', 'banned', 'suspendedUntil'])
         && (!request.resource.data.diff(resource.data)
               .affectedKeys().hasAny(['preferences', 'preferencesVersion'])
             || (validPreferences(request.resource.data.preferences)
                 && request.resource.data.preferencesVersion == 2));
+
+      // Change code is necessary: admins can ban, suspend or lift (from the Reports page), and nothing else
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['banned', 'suspendedUntil'])
+        && (!('banned' in request.resource.data) || request.resource.data.banned == true)
+        && (!('suspendedUntil' in request.resource.data) || request.resource.data.suspendedUntil is timestamp);
 
       allow delete: if false;
     }
@@ -127,7 +143,8 @@ service cloud.firestore {
         && d.cost is number && d.cost >= 0 && d.cost <= 500
         && d.capacity is int && d.capacity >= 2 && d.capacity <= 50
         && d.visibility in ['public', 'friends_only', 'invite_only', 'friends']
-        && d.status in ['open', 'cancelled']
+        // Change code is necessary: added 'suspended' (a reported jio waiting for an admin)
+        && d.status in ['open', 'cancelled', 'suspended']
         && d.participants is list && d.participants.size() <= d.capacity
         && d.participants.size() == d.participants.toSet().size() // no duplicates
         && d.waitlist is list && d.waitlist.size() <= 200
@@ -156,6 +173,8 @@ service cloud.firestore {
       return after.diff(before).affectedKeys().hasOnly(['participants', 'waitlist'])
         && before.status == 'open'
         && mayJoin(before, me)
+        // Change code is necessary: banned or suspended users can still leave, but can't join or chope
+        && (canAct() || !after.participants.toSet().union(after.waitlist.toSet()).hasAny([me]))
         && after.participants.hasAny([before.hostId])
         // only you (or someone from the queue) can be added to the going list
         && after.participants.toSet().difference(beforeEveryone).hasOnly([me])
@@ -180,6 +199,15 @@ service cloud.firestore {
         && after.invited.toSet() == before.invited.toSet().difference([me].toSet());
     }
 
+    // Change code is necessary: reporting a jio suspends it. Only allowed in the same batch as the
+    // user's own report (reports/{jioId}_{uid}), so a jio is never suspended without a report.
+    function reportSuspendsJio(jioId) {
+      return resource.data.status == 'open'
+        && request.resource.data.status == 'suspended'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && existsAfter(/databases/$(database)/documents/reports/$(jioId + '_' + request.auth.uid));
+    }
+
     match /openjios/{jioId} {
       // This is a lightweight school-project setup: signed-in users may read
       // the collection and the app applies visibility filtering for discovery.
@@ -187,6 +215,7 @@ service cloud.firestore {
 
       // You can only host as yourself, and start as the only person going.
       allow create: if signedIn()
+        && canAct() // Change code is necessary: banned or suspended users can't start jios
         && request.resource.data.keys().hasOnly(['title', 'category', 'description', 'location',
              'region', 'lat', 'lng', 'startAt', 'durationMins', 'cost', 'capacity', 'visibility',
              'hostId', 'hostName', 'participants', 'waitlist', 'invited', 'status', 'createdAt'])
@@ -207,11 +236,50 @@ service cloud.firestore {
       allow update: if signedIn() && validJio(request.resource.data) && (
         (resource.data.hostId == request.auth.uid
           && !request.resource.data.diff(resource.data).affectedKeys()
-               .hasAny(['hostId', 'hostName', 'participants', 'waitlist', 'createdAt']))
+               .hasAny(['hostId', 'hostName', 'participants', 'waitlist', 'createdAt'])
+          // Change code is necessary: hosts can't edit or cancel while suspended, or un-suspend it themselves
+          && resource.data.status != 'suspended'
+          && request.resource.data.status in ['open', 'cancelled'])
         || fairSpotChange()
         || fairInviteDecline()
+        // Change code is necessary: reporting suspends the jio; admins can restore it
+        || reportSuspendsJio(jioId)
+        || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
       );
-      allow delete: if signedIn() && resource.data.hostId == request.auth.uid;
+      // Change code is necessary: hosts can't delete while suspended; admins can remove a reported jio
+      allow delete: if signedIn()
+        && ((resource.data.hostId == request.auth.uid && resource.data.status != 'suspended') || isAdmin());
+    }
+
+    // Change code is necessary: this whole Reports section is new
+    // ---------- Reports (see src/utils/reports.js) ----------
+    // reports/{jioId}_{reporterId}: one report per person per jio.
+    match /reports/{reportId} {
+      // Admins see every report; a user can check their own (to know if they already reported).
+      // resource == null means it doesn't exist yet, which tells them nothing.
+      allow read: if isAdmin()
+        || (signedIn() && (resource == null || resource.data.reporterId == request.auth.uid));
+
+      // Report someone else's open jio, as yourself. Banned or suspended users can't report.
+      allow create: if canAct()
+        && reportId == request.resource.data.jioId + '_' + request.auth.uid
+        && request.resource.data.keys().hasOnly(['jioId', 'jioTitle', 'hostId', 'hostName',
+             'reporterId', 'reporterName', 'reason', 'details', 'status', 'createdAt'])
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reason is string && request.resource.data.reason.size() <= 40
+        && request.resource.data.details is string && request.resource.data.details.size() <= 500
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time
+        && get(openJioPath(request.resource.data.jioId)).data.status == 'open'
+        && get(openJioPath(request.resource.data.jioId)).data.hostId == request.resource.data.hostId
+        && request.resource.data.hostId != request.auth.uid;
+
+      // Only admins resolve reports, and only these fields change.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'outcome', 'resolvedBy', 'resolvedAt'])
+        && request.resource.data.status == 'resolved';
+      allow delete: if false;
     }
 
     // ---------- Friends & notifications ----------
