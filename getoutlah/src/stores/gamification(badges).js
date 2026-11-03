@@ -12,6 +12,7 @@ export const CHECKIN_RADIUS_M = 200      // must be within 200m to check in
 export const POINTS_PER_ACTIVITY = 50    // base points for a verified activity
 export const POINTS_PER_LEVEL = 250      // points needed per level
 const STORAGE_KEY = 'gol-gamification-v2'
+const USE_DEMO_DATA = true
 
 
 export const BADGES = [
