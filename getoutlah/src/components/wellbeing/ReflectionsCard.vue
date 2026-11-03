@@ -1,9 +1,3 @@
-<!--
-  "My reflections" card for the Profile page (under "My wellbeing").
-  Shows activities waiting for a reflection, a mood insight, recent moods
-  and notes, and a "What should I do next?" button.
-  Usage in the Profile page:  <ReflectionsCard />
--->
 <template>
   <section class="gol-card refl-card">
     <div class="d-flex align-items-center gap-3 mb-3">
@@ -15,21 +9,17 @@
       <span class="private-pill"><i class="bi bi-lock-fill"></i> Private</span>
     </div>
 
-    <!-- Activities waiting for a reflection -->
     <button v-for="p in store.pending" :key="p.activityId" class="pending-row mb-2" @click="openReflect(p)">
       <i class="bi bi-hourglass-split"></i>
       <span class="flex-grow-1 text-start">Reflect on <strong>{{ p.activityTitle }}</strong></span>
       <i class="bi bi-chevron-right"></i>
     </button>
 
-    <!-- Last 8 moods as coloured faces -->
     <div v-if="moodStrip.length" class="d-flex flex-wrap gap-1 mb-3" aria-label="Recent moods">
       <span v-for="r in moodStrip" :key="r.id" class="face" :class="'dot--' + mood(r).color" :title="r.activityTitle + ': ' + mood(r).label">
         <i class="bi" :class="mood(r).icon"></i>
       </span>
     </div>
-
-    <!-- Past reflections (new ones slide in with <TransitionGroup>) -->
     <TransitionGroup tag="ul" name="refl" class="list-unstyled mb-2 d-grid gap-2">
       <li v-for="r in shown" :key="r.id" class="refl-row">
         <span class="face" :class="mood(r) ? 'dot--' + mood(r).color : ''">
@@ -54,7 +44,7 @@
       </button>
     </div>
 
-    <ReflectionSheet :open="sheetOpen" :item="sheetItem" :suggest-from="sheetSuggestFrom" @close="sheetOpen = false" />
+    <ReflectionSheet :open="sheetOpen" :item="sheetItem" :suggest-from="sheetSuggestFrom" @close="sheetOpen = false" @pick="openActivity" />
   </section>
 </template>
 
@@ -100,6 +90,9 @@ export default {
       this.sheetSuggestFrom = this.latest
       this.sheetOpen = true
     },
+    openActivity(activity) {
+      this.$router.push({ name: 'activity', params: { id: activity.id } })
+    },
   },
 }
 </script>
@@ -134,7 +127,6 @@ export default {
 .row-meta { font-size: 0.75rem; font-weight: 600; color: var(--gol-muted); }
 .row-note { font-size: 0.82rem; font-style: italic; margin-top: 0.15rem; }
 
-/* <TransitionGroup>: new reflections slide in at the top */
 .refl-enter-active { transition: opacity 0.35s ease, transform 0.35s ease; }
 .refl-enter-from { opacity: 0; transform: translateY(-12px); }
 .refl-move { transition: transform 0.35s ease; }

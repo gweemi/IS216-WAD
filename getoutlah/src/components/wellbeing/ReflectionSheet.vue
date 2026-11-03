@@ -1,13 +1,4 @@
-<!--
-  Post-activity reflection pop-up (Wellbeing 6c) + mood-based suggestions.
-  Step 1: rate mood 1–4 and write an optional private note.
-  Step 2: 3 suggested next activities based on that mood.
 
-  Reflect on a pending activity:
-    <ReflectionSheet :open="show" :item="pendingItem" @close="show = false" />
-  Only show suggestions (from a past reflection):
-    <ReflectionSheet :open="show" :suggest-from="latestEntry" @close="show = false" />
--->
 <template>
   <BottomSheet :open="open" label="Post-activity reflection" @close="close">
     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -18,7 +9,7 @@
       <button class="gol-close" aria-label="Close" @click="close"><i class="bi bi-x-lg"></i></button>
     </div>
 
-    <!-- STEP 1: mood + note -->
+    <!-- mood part and small note -->
     <div v-if="step === 'rate' && item">
       <div class="activity-chip mb-3"><i class="bi bi-geo-alt-fill"></i> {{ item.activityTitle }}</div>
 
@@ -56,13 +47,12 @@
       <button class="skip-btn" @click="skip">Skip this one</button>
     </div>
 
-    <!-- STEP 2: suggestions (cards slide in with <TransitionGroup>) -->
     <div v-else-if="step === 'suggest'">
       <p class="small-muted plan-message mb-3">{{ plan.message }}</p>
 
       <TransitionGroup tag="div" name="suggest" appear class="d-grid gap-2 mb-3">
         <button v-for="(a, i) in plan.items" :key="a.id" type="button" class="suggest-card" :style="{ '--i': i }" @click="pick(a)">
-          <span class="gol-icon-tile tile" :class="'tile--' + a.energy"><i class="bi" :class="iconFor(a.category)"></i></span>
+          <span class="gol-icon-tile tile" :class="'tile--' + a.energy" aria-hidden="true">{{ iconFor(a.category) }}</span>
           <span class="text-start flex-grow-1 min-w-0">
             <span class="d-block s-title">{{ a.title }}</span>
             <span class="d-block small-muted">{{ a.reason }}</span>
@@ -96,8 +86,8 @@ export default {
   components: { BottomSheet },
   props: {
     open: { type: Boolean, default: false },
-    item: { type: Object, default: null }, // pending reflection → start at step 1
-    suggestFrom: { type: Object, default: null }, // saved reflection → jump to suggestions
+    item: { type: Object, default: null }, 
+    suggestFrom: { type: Object, default: null }, 
     activities: { type: Array, default: () => seedActivities },
   },
   emits: ['close', 'saved', 'pick'],
@@ -138,7 +128,7 @@ export default {
       const lastActivity = { ...this.item }
       const entry = saveReflection(this.item, this.mood, this.note)
       this.$emit('saved', entry)
-      this.buildPlan(this.mood || 3, lastActivity) // note only → treat as "Good"
+      this.buildPlan(this.mood || 3, lastActivity) 
       this.step = 'suggest'
     },
     skip() {
@@ -153,7 +143,7 @@ export default {
       this.$emit('close')
     },
     iconFor(category) {
-      return getInterest(category)?.mapIcon || 'bi-compass'
+      return getInterest(category)?.emoji || '🧭'
     },
   },
 }
@@ -171,7 +161,6 @@ export default {
   font-weight: 800; font-size: 0.85rem; border-radius: 999px; padding: 0.3rem 0.85rem;
 }
 
-/* Mood buttons */
 .mood-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
 .mood-btn {
   font-family: var(--gol-font); color: var(--gol-ink); background: #fff;
@@ -193,7 +182,7 @@ export default {
 .mood-btn.selected { border-color: var(--gol-purple); }
 .mood-btn.selected .mood-face { transform: scale(1.12) rotate(-6deg); box-shadow: 3px 3px 0 var(--gol-ink); }
 
-/* Note */
+
 .note-label { font-weight: 800; font-size: 0.9rem; margin-bottom: 0.35rem; display: block; }
 .note-label span { color: var(--gol-muted); font-weight: 600; }
 .note-box {
@@ -206,7 +195,7 @@ export default {
   font-family: var(--gol-font); font-weight: 800; color: var(--gol-muted); padding: 0.4rem;
 }
 
-/* Suggestion cards */
+
 .suggest-card {
   font-family: var(--gol-font); color: var(--gol-ink); display: flex; align-items: center; gap: 0.8rem;
   width: 100%; background: #fff; border: 2px solid transparent; border-radius: 18px; padding: 0.75rem 0.85rem;
@@ -228,7 +217,6 @@ export default {
   padding: 0.7rem 0.9rem; font-size: 0.85rem; font-weight: 700;
 }
 
-/* <TransitionGroup>: cards slide in one after another */
 .suggest-enter-active {
   transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   transition-delay: calc(var(--i) * 90ms);

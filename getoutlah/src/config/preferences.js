@@ -7,15 +7,15 @@
 // See PREFERENCES.md for the full data format.
 
 export const INTERESTS = [
-  { id: 'outdoors', label: 'Outdoors & nature', emoji: '🌳', hint: 'Hikes, parks, beaches', color: '#B8EC61', mapIcon: 'bi-tree' },
-  { id: 'sports', label: 'Sports & fitness', emoji: '🏃', hint: 'Bouldering, runs, team sports', color: '#78DDE9', mapIcon: 'bi-dumbbell' },
-  { id: 'arts', label: 'Arts & culture', emoji: '🎨', hint: 'Museums, exhibitions', color: '#FFB8D1', mapIcon: 'bi-palette' },
-  { id: 'food', label: 'Food & cafés', emoji: '🍜', hint: 'Hawker trails, café hopping', color: '#FF947B', mapIcon: 'bi-fork-knife' },
-  { id: 'workshops', label: 'Workshops & crafts', emoji: '🏺', hint: 'Pottery, cooking, art', color: '#FFC976', mapIcon: 'bi-paintbrush' },
-  { id: 'events', label: 'Events', emoji: '🎟️', hint: 'Concerts, festivals, markets, pop-ups', color: '#BD9BFF', mapIcon: 'bi-calendar-event' },
-  { id: 'games', label: 'Games & chill', emoji: '🎲', hint: 'Board games, escape rooms', color: '#FFE075', mapIcon: 'bi-controller' },
-  { id: 'wellness', label: 'Wellness', emoji: '🧘', hint: 'Yoga, meditation', color: '#6DE4F2', mapIcon: 'bi-heart-pulse' },
-  { id: 'volunteering', label: 'Volunteering', emoji: '🤝', hint: 'Community events', color: '#8EACFF', mapIcon: 'bi-heart' },
+  { id: 'outdoors', label: 'Outdoors & nature', emoji: '🌳', hint: 'Hikes, parks, beaches', color: '#B8EC61', mapIcon: 'tree' },
+  { id: 'sports', label: 'Sports & fitness', emoji: '🏃', hint: 'Bouldering, runs, team sports', color: '#78DDE9', mapIcon: 'barbell' },
+  { id: 'arts', label: 'Arts & culture', emoji: '🎨', hint: 'Museums, exhibitions', color: '#FFB8D1', mapIcon: 'palette' },
+  { id: 'food', label: 'Food & cafés', emoji: '🍜', hint: 'Hawker trails, café hopping', color: '#FF947B', mapIcon: 'fork-knife' },
+  { id: 'workshops', label: 'Workshops & crafts', emoji: '🏺', hint: 'Pottery, cooking, art', color: '#FFC976', mapIcon: 'paint-brush' },
+  { id: 'events', label: 'Events', emoji: '🎟️', hint: 'Concerts, festivals, markets, pop-ups', color: '#BD9BFF', mapIcon: 'calendar-dots' },
+  { id: 'games', label: 'Games & chill', emoji: '🎲', hint: 'Board games, escape rooms', color: '#FFE075', mapIcon: 'game-controller' },
+  { id: 'wellness', label: 'Wellness', emoji: '🧘', hint: 'Yoga, meditation', color: '#4FAE84', mapIcon: 'heartbeat' },
+  { id: 'volunteering', label: 'Volunteering', emoji: '🤝', hint: 'Community events', color: '#8EACFF', mapIcon: 'hand-heart' },
 ]
 
 export const PREFERENCES_VERSION = 2
@@ -39,7 +39,7 @@ export const ENERGY_LEVELS = [
 export const GROUP_PREFERENCES = [
   { id: 'solo', label: 'Solo', emoji: '🧍', hint: 'Me time' },
   { id: 'group', label: 'With friends', emoji: '👯', hint: 'The more the merrier' },
-  { id: 'either', label: 'Either', emoji: '🤷', hint: 'Depends on the day' },
+  { id: 'either', label: 'Balanced', emoji: '🤷', hint: 'Depends on the day' },
 ]
 
 export const MIN_INTERESTS = 1

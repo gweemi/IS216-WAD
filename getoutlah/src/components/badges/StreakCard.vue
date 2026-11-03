@@ -1,7 +1,4 @@
-<!--
-  Purple "Weekly streak" card (matches Figma).
-  <StreakCard />
--->
+
 <template>
   <section class="streak-card">
     <div class="d-flex justify-content-between align-items-start gap-3">
@@ -40,7 +37,6 @@ export default {
   },
   computed: {
     streak() {
-      // currentStreak() reads the reactive store, so this updates automatically
       return currentStreak()
     },
     paused() {
@@ -56,7 +52,8 @@ export default {
       if (this.streak > 0 && !doneThisWeek()) return 'Do one activity this week to keep it going'
       return 'One activity a week keeps it going'
     },
-    // Show weeks in blocks of 7: W1–W7, then W8–W14, ...
+    
+    // Show weeks in intervals of 7 so W1–W7 then W8–W14 
     weeks() {
       const start = Math.floor(this.streak / 7) * 7
       return Array.from({ length: 7 }, (_, i) => {

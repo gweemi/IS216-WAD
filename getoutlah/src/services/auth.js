@@ -4,8 +4,11 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '@/firebase'
 import { getUniversity } from '@/config/universities'
 import { useAuthStore } from '@/stores/auth'
+import { startDemoSession } from '@/stores/gamification(badges).js'
+import { useBadgeHunt } from '@/composables/useBadgeHunt'
 
 const provider = new GoogleAuthProvider()
+const { clearTrackedBadge } = useBadgeHunt()
 // Always show the account chooser, so people can pick which Google account to use.
 provider.setCustomParameters({ prompt: 'select_account' })
 
@@ -16,15 +19,28 @@ provider.setCustomParameters({ prompt: 'select_account' })
 export async function signInWithGoogle() {
   const { user } = await signInWithPopup(auth, provider)
   const profile = await ensureUserProfile(user)
+  // This only runs after an intentional Google login. Firebase's passive
+  // session-restoration listener never calls this service, so refreshes retain
+  // the in-progress local demo session.
+  startDemoSession()
+  clearTrackedBadge()
   const store = useAuthStore()
   store.setUser(user)
   store.setProfile(profile)
+  store.queueMapIntro()
+  store.queueBadgeWelcome()
   return user
 }
 
 export async function logOut() {
-  await signOut(auth)
-  useAuthStore().setUser(null)
+  try {
+    await signOut(auth)
+  } finally {
+    // Firebase can clear its local session before reporting an error from a
+    // follow-up persistence operation. Reflect the actual auth state so the
+    // UI does not keep a user in a completed session.
+    if (!auth.currentUser) useAuthStore().setUser(null)
+  }
 }
 
 /**

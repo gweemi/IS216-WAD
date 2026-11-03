@@ -1,10 +1,7 @@
 <!--
-  One OPENJIO in the list. Shows the details and the right button for this user:
-    not in it + spots left → Join      not in it + full → Chope next spot
-    going → Leave                       queued → Leave queue
-    host → Cancel jio
-  The card doesn't talk to Firebase itself. It emits `action` with the
-  button's name and OpenJioView.vue does the work.
+  One OPENJIO: details, who's going, and the right button for this user
+  (JioActionButton does join / chope / leave / cancel).
+    <JioCard :jio="jio" :uid="uid" />
 -->
 <template>
   <article
@@ -12,13 +9,18 @@
     :class="{ 'is-greyed': greyed, 'is-cancelled': status === 'cancelled' }"
     data-testid="jio-card"
   >
-    <div class="jio-art" :style="{ background: colour }">
-      <span class="jio-emoji" aria-hidden="true">{{ emoji }}</span>
+    <div class="jio-art" :style="{ background: categoryColor(jio.category) }">
+      <span class="jio-emoji" aria-hidden="true">{{ categoryEmoji(jio.category) }}</span>
       <span class="jio-status" :class="'jio-status--' + status" data-testid="jio-status">
         {{ statusLabel(jio) }}
       </span>
-      <span v-if="jio.visibility === 'friends'" class="jio-visibility">
-        <i class="bi bi-people-fill"></i> Friends only
+      <span
+        class="jio-visibility"
+        :class="'jio-visibility--' + jio.visibility"
+        data-testid="jio-visibility"
+      >
+        <i class="ph" :class="jio.visibility === 'public' ? 'ph-globe-hemisphere-west' : 'ph-lock'"></i>
+        {{ visibilityLabel }}
       </span>
     </div>
 
@@ -41,9 +43,12 @@
         <span v-else-if="role === 'queued'" class="gol-pill tag-queued" data-testid="queue-position">
           Choped · #{{ queuePosition(jio, uid) }} in line
         </span>
+        <span v-else-if="invited" class="gol-pill tag-invited" data-testid="jio-invited">
+          <i class="bi bi-envelope-heart"></i> {{ jio.hostName }} invited you
+        </span>
         <span v-else class="jio-host">Hosted by {{ jio.hostName }}</span>
         <span class="jio-going ms-auto">
-          <i class="bi bi-people"></i> {{ jio.participants.length }}/{{ jio.capacity }} going
+          <i class="bi bi-people"></i> {{ jio.participantCount ?? jio.participants.length }}/{{ jio.capacity }} going
         </span>
       </div>
 
@@ -51,53 +56,64 @@
         If someone drops out, the spot goes to you automatically.
       </p>
 
-      <div v-if="button" class="mt-3">
+      <div v-if="canManage" class="jio-host-actions mt-3">
+        <button type="button" class="gol-btn-soft" data-testid="view-jio-attendees" @click="showAttendees = true">
+          <i class="bi bi-people" aria-hidden="true"></i> Who's going
+        </button>
+        <button v-if="canEdit" type="button" class="gol-btn-primary" data-testid="edit-jio" @click="$router.push({ name: 'openjio-edit', params: { id: jio.id } })">
+          <i class="bi bi-pencil-square" aria-hidden="true"></i> Edit OPENJIO
+        </button>
+        <JioActionButton :jio="jio" :uid="uid" />
+      </div>
+      <div v-else class="jio-actions mt-3">
+        <JioActionButton :jio="jio" :uid="uid" />
+        <RouterLink v-if="showDetails" :to="{ name: 'activity', params: { id: `jio-${jio.id}` } }" class="gol-btn-soft jio-details">
+          View details
+        </RouterLink>
         <button
+          v-if="canDecline"
           type="button"
-          :class="button.style"
-          :disabled="busy"
-          data-testid="jio-action"
-          @click="$emit('action', button.action)"
+          class="gol-btn-soft"
+          :disabled="declining"
+          data-testid="decline-jio"
+          @click="decline"
         >
-          {{ busy ? 'One sec…' : button.label }}
+          {{ declining ? 'Declining…' : 'Decline' }}
         </button>
       </div>
+      <!-- Change code is necessary: report button (hides itself for the host and for cancelled, ended or suspended jios) -->
+      <ReportJioButton :jio="jio" class="mt-2" />
     </div>
+    <JioParticipantsSheet :open="showAttendees" :jio="jio" @close="showAttendees = false" />
   </article>
 </template>
 
 <script>
-import { INTERESTS } from '@/config/preferences'
+import JioActionButton from '@/components/openjio/JioActionButton.vue'
+import JioParticipantsSheet from '@/components/openjio/JioParticipantsSheet.vue'
+// Change code is necessary: report button
+import ReportJioButton from '@/components/reports/ReportJioButton.vue'
+import { categoryColor, categoryEmoji } from '@/utils/activityStyle'
+import { runJioAction } from '@/services/openjio'
 import {
   statusOf,
   statusLabel,
   myRole,
+  isInvited,
   queuePosition,
   priceText,
   whenText,
 } from '@/utils/openjio'
 
-// One colour per category, from the Figma palette
-const COLOURS = {
-  outdoors: 'var(--gol-lime)',
-  sports: 'var(--gol-coral)',
-  arts: 'var(--gol-cyan)',
-  food: 'var(--gol-yellow)',
-  workshops: 'var(--gol-purple)',
-  music: 'var(--gol-cyan)',
-  games: 'var(--gol-yellow)',
-  wellness: 'var(--gol-lime)',
-  volunteering: 'var(--gol-coral)',
-}
-
 export default {
   name: 'JioCard',
+  // Change code is necessary: added ReportJioButton
+  components: { JioActionButton, JioParticipantsSheet, ReportJioButton },
   props: {
     jio: { type: Object, required: true },
     uid: { type: String, required: true },
-    busy: { type: Boolean, default: false },
+    showDetails: { type: Boolean, default: false },
   },
-  emits: ['action'],
   computed: {
     status() {
       return statusOf(this.jio)
@@ -105,26 +121,45 @@ export default {
     role() {
       return myRole(this.jio, this.uid)
     },
+    invited() {
+      return isInvited(this.jio, this.uid)
+    },
+    visibilityLabel() {
+      return { public: 'Public', friends_only: 'Friends only', invite_only: 'Invite only', friends: 'Legacy invite only' }[this.jio.visibility] ?? 'Private'
+    },
     greyed() {
-      return this.status === 'full' && this.role === 'none'
+      // Change code is necessary: suspended jios are greyed out too
+      return (this.status === 'full' && this.role === 'none') || this.status === 'suspended'
     },
-    colour() {
-      return COLOURS[this.jio.category] ?? 'var(--gol-purple-soft)'
+    canEdit() {
+      return this.role === 'host' && ['open', 'full'].includes(this.status)
     },
-    emoji() {
-      return INTERESTS.find((i) => i.id === this.jio.category)?.emoji ?? '✨'
+    canManage() {
+      return this.role === 'host'
     },
-    // Which button to show, if any
-    button() {
-      if (this.status === 'cancelled' || this.status === 'ended') return null
-      if (this.role === 'host') return { action: 'cancel', label: 'Cancel jio', style: 'gol-btn-soft w-100' }
-      if (this.role === 'going') return { action: 'leave', label: 'Leave', style: 'gol-btn-soft w-100' }
-      if (this.role === 'queued') return { action: 'leaveQueue', label: 'Leave queue', style: 'gol-btn-soft w-100' }
-      if (this.status === 'full') return { action: 'chope', label: 'Chope next spot', style: 'gol-btn-coral w-100' }
-      return { action: 'join', label: 'Join', style: 'gol-btn-primary' }
+    canDecline() {
+      return ['invite_only', 'friends'].includes(this.jio.visibility) && this.invited && this.role === 'none' && this.status !== 'cancelled' && this.status !== 'ended' && this.status !== 'suspended' // Change code is necessary: added suspended
     },
   },
-  methods: { statusLabel, queuePosition, priceText, whenText },
+  data() {
+    return { showAttendees: false, declining: false }
+  },
+  methods: {
+    statusLabel,
+    queuePosition,
+    priceText,
+    whenText,
+    categoryColor,
+    categoryEmoji,
+    async decline() {
+      this.declining = true
+      try {
+        await runJioAction('decline', this.jio.id)
+      } finally {
+        this.declining = false
+      }
+    },
+  },
 }
 </script>
 
@@ -167,11 +202,15 @@ export default {
   font-weight: 900;
 }
 .jio-status { left: 0.6rem; }
-.jio-visibility { right: 0.6rem; background: #fff; color: var(--gol-purple); }
+.jio-visibility { right: 0.6rem; background: #fff; }
+.jio-visibility--public { color: #1d5f8a; }
+.jio-visibility--friends { color: var(--gol-purple); }
 .jio-status--open { background: var(--gol-lime); color: var(--gol-ink); }
 .jio-status--full { background: #5d4d72; color: #fff; }
 .jio-status--ended { background: var(--gol-locked); color: var(--gol-ink); }
 .jio-status--cancelled { background: var(--gol-coral); color: #fff; }
+/* Change code is necessary: suspended badge */
+.jio-status--suspended { background: #dc4d4d; color: #fff; }
 
 .min-w-0 { min-width: 0; }
 .jio-title { font-weight: 900; font-size: 1.15rem; margin: 0; }
@@ -189,5 +228,14 @@ export default {
 }
 .tag-host { background: var(--gol-purple-soft); color: var(--gol-purple); }
 .tag-queued { background: #ffe1de; color: #b4382f; }
+.tag-invited { background: var(--gol-cyan); color: var(--gol-ink); }
 .queue-note { color: #b4382f; font-weight: 700; font-size: 0.8rem; }
+.jio-host-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .5rem; }
+.jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button), .jio-actions > button, .jio-details { min-height: 2.35rem; padding: .45rem .7rem !important; font-size: .8rem !important; line-height: 1.1; }
+.jio-host-actions > .gol-btn-primary, .jio-actions :deep(.gol-btn-primary) { display: inline-flex; align-items: center; justify-content: center; }
+.jio-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; align-items: stretch; }
+.jio-actions > :first-child { min-width: 0; }
+.jio-actions :deep(.jio-action-button) { width: 100%; }
+.jio-details { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; white-space: nowrap; }
+.jio-actions > button { white-space: nowrap; }
 </style>

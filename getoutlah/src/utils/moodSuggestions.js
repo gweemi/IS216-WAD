@@ -112,7 +112,7 @@ export function suggestNext({ mood, lastActivity = null, activities = [], doneId
         score += 2
         reasons.unshift(`Something new: you haven't tried ${a.category} yet`)
       }
-      if (plan.tryNew && (a.isOpenJio || a.type === 'openjio')) {
+      if (plan.tryNew && (a.isOpenJio || a.type === 'openJio')) {
         score += 1
         reasons.push('Others are going')
       }

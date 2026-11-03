@@ -1,11 +1,11 @@
 <script setup>
-// Admin: add, edit and remove admin-picked ("curated") activities. They're saved in Firestore
+// Admin: add, edit and remove GetOutLah Picks. They're saved in Firestore
 // "activities" next to the Eventbrite ones, so users see both together.
 import { ref, reactive, computed, onMounted } from 'vue'
 import { allActivities, loadActivities, reloadActivities, sourceErrors, seedFirestore } from '@/stores/activities'
 import { saveCurated, removeCurated } from '@/services/api/curated'
 import { searchPlaces } from '@/services/api/onemap'
-import { emptyCurated, toCuratedActivity, CURATED_TYPES, ENERGY_LEVELS } from '@/utils/curated'
+import { emptyCurated, toCuratedActivity, CURATED_TYPES, ENERGY_LEVELS, CURATED_DESCRIPTION_MAX } from '@/utils/curated'
 import { seedActivities } from '@/data/seedActivities'
 import { INTERESTS } from '@/config/preferences'
 import { categoryLabel, priceText } from '@/utils/activityStyle'
@@ -18,7 +18,7 @@ const confirming = ref(null)
 
 onMounted(loadActivities)
 const curated = computed(() =>
-  allActivities.value.filter((a) => a.source === 'curated').sort((a, b) => a.title.localeCompare(b.title)))
+  allActivities.value.filter((a) => a.source === 'getoutlahPicks').sort((a, b) => a.title.localeCompare(b.title)))
 
 async function run(fn, done) {
   busy.value = true; message.value = ''
@@ -27,8 +27,8 @@ async function run(fn, done) {
 }
 
 function openForm(activity) {
-  Object.assign(form, emptyCurated(), activity ? { ...activity, url: activity.url ?? '' } : {})
-  editingId.value = activity?.id ?? null
+  Object.assign(form, emptyCurated(), activity ? { ...activity, url: activity.url ?? '', description: activity.description ?? '' } : {})
+  editingId.value = activity ? activity.id : null   
   problems.value = []; places.value = []; placeQuery.value = ''; placeError.value = ''
   formOpen.value = true
 }
@@ -71,7 +71,7 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
 <template>
   <div class="gol-card mt-3">
     <div class="adm-head">
-      <h2 class="gol-section-title">Curated activities</h2>
+      <h2 class="gol-section-title">GetOutLah Picks</h2>
       <button v-if="!formOpen" class="gol-btn-soft" :disabled="busy" @click="openForm()">+ Add activity</button>
     </div>
     <p class="adm-help">Activities you pick. They show alongside Eventbrite events in Activities and on the map.</p>
@@ -86,6 +86,11 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
 
       <label class="adm-field adm-wide">Title
         <input id="cur-title" v-model="form.title" class="form-control" maxlength="80" required />
+      </label>
+      <label class="adm-field adm-wide">Description
+        <textarea id="cur-description" v-model="form.description" class="form-control" rows="4"
+          :maxlength="CURATED_DESCRIPTION_MAX" placeholder="What is it, and why would a student like it?" required></textarea>
+        <span class="adm-help">{{ form.description.length }}/{{ CURATED_DESCRIPTION_MAX }}</span>
       </label>
       <label class="adm-field">Category
         <select id="cur-category" v-model="form.category" class="form-select">
@@ -112,9 +117,6 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
         <select id="cur-energy" v-model="form.energyLevel" class="form-select">
           <option v-for="[id, label] in ENERGY_LEVELS" :key="id" :value="id">{{ label }}</option>
         </select>
-      </label>
-      <label class="adm-field">Slots left
-        <input id="cur-slots" v-model="form.slotsLeft" class="form-control" type="number" min="0" step="1" placeholder="Empty = no limit" />
       </label>
       <label class="adm-field adm-check">
         <input id="cur-group" v-model="form.groupFriendly" class="form-check-input" type="checkbox" /> Good for groups
@@ -171,7 +173,7 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
           </button>
         </div>
       </li>
-      <li v-if="!curated.length" class="adm-help">No curated activities yet. Add one, or load the starter set below.</li>
+      <li v-if="!curated.length" class="adm-help">No GetOutLah Picks yet. Add one, or load the starter set below.</li>
     </ul>
 
     <div class="adm-starter">

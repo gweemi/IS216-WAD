@@ -1,29 +1,20 @@
-// =============================================================
-// GetOutLah! — Points, Badges, Streaks & Study-break mode
-// A small shared store (no Pinia needed). Import it anywhere:
-//   import { game, checkInToActivity } from '../stores/gamification.js'
-// Data is saved to localStorage for now. Swap load()/save() for
-// your team's backend (e.g. Firebase) later.
-// =============================================================
-import { reactive, watch } from 'vue'
-import turfDistance from '@turf/distance' // X-factor: Turf.js geofencing
-import { point } from '@turf/helpers'
-import { celebrateBadge, celebrateCheckIn, celebrateLevelUp } from '../utils/celebrate.js' // X-factor: canvas-confetti
-import { addPendingReflection } from './reflections.js'
 
-// ---------- Rules (tweak these with your team) ----------
+import { reactive, watch } from 'vue'
+import turfDistance from '@turf/distance' 
+import { point } from '@turf/helpers'
+import { celebrateBadge, celebrateCheckIn, celebrateLevelUp } from '../utils/celebrate.js' 
+import { addPendingReflection } from './reflections.js'
+import { getInterest } from '@/config/preferences'
+
+// ---------- Baselines we followed ----------
 export const WEEKLY_POINT_CAP = 300      // max points a student can earn per week
 export const CHECKIN_RADIUS_M = 200      // must be within 200m to check in
 export const POINTS_PER_ACTIVITY = 50    // base points for a verified activity
 export const POINTS_PER_LEVEL = 250      // points needed per level
-const STORAGE_KEY = 'gol-gamification-v1'
-
-// Set to false once real data is flowing — it only fills the
-// screen with sample data that matches the Figma.
+const STORAGE_KEY = 'gol-gamification-v2'
 const USE_DEMO_DATA = true
 
-// ---------- Badge definitions ----------
-// progress(state) returns how far the user is towards the target.
+
 export const BADGES = [
   {
     id: 'first-one-out',
@@ -31,10 +22,12 @@ export const BADGES = [
     desc: 'Complete your first verified activity.',
     icon: 'bi-stars',
     color: 'yellow',
+    emoji: '✦',
     target: 1,
     unit: 'activity',
     bonus: 20,
     progress: (s) => s.completed.length,
+    qualifies: () => true,
   },
   {
     id: 'try-everything-trio',
@@ -42,10 +35,12 @@ export const BADGES = [
     desc: 'Try activities from 3 different categories.',
     icon: 'bi-award',
     color: 'cyan',
+    emoji: '🏅',
     target: 3,
     unit: 'categories',
     bonus: 30,
     progress: (s) => new Set(s.completed.map((a) => a.category)).size,
+    qualifies: (a, s) => !s.completed.some((done) => done.category === a.category),
   },
   {
     id: 'crew-energy',
@@ -53,10 +48,12 @@ export const BADGES = [
     desc: 'Join your first OPENJIO!',
     icon: 'bi-people',
     color: 'coral',
+    emoji: '👥',
     target: 1,
     unit: 'OPENJIO',
     bonus: 20,
     progress: (s) => s.completed.filter((a) => a.isOpenJio && !a.hostedByMe).length,
+    qualifies: (a) => Boolean(a.isOpenJio) && !a.hostedByMe,
   },
   {
     id: 'big-host-energy',
@@ -64,10 +61,12 @@ export const BADGES = [
     desc: 'Organise your own OPENJIO!',
     icon: 'bi-person-plus',
     color: 'lime',
+    emoji: '🎉',
     target: 1,
     unit: 'hosted',
     bonus: 30,
     progress: (s) => s.completed.filter((a) => a.hostedByMe).length,
+    qualifies: (a) => Boolean(a.hostedByMe),
   },
   {
     id: 'trailblazer',
@@ -75,10 +74,12 @@ export const BADGES = [
     desc: 'Complete 3 outdoor or trail activities.',
     icon: 'bi-geo-alt',
     color: 'yellow',
+    category: 'outdoors', emoji: '🧭',
     target: 3,
     unit: 'outdoor activities',
     bonus: 30,
     progress: (s) => s.completed.filter((a) => a.category === 'outdoors').length,
+    qualifies: (a) => a.category === 'outdoors',
   },
   {
     id: 'eastie-explorer',
@@ -86,12 +87,30 @@ export const BADGES = [
     desc: 'Complete 5 activities in the east of Singapore.',
     icon: 'bi-map',
     color: 'cyan',
+    emoji: '🗺️',
     target: 5,
     unit: 'east activities',
     bonus: 30,
     progress: (s) => s.completed.filter((a) => a.region === 'east').length,
+    qualifies: (a) => a.region === 'east',
   },
+  { id: 'fitness-fanatic', name: 'Fitness fanatic', desc: 'Complete 3 sports or fitness activities.', icon: 'bi-heart-pulse', emoji: '🏃', category: 'sports', color: 'coral', target: 3, unit: 'sports activities', bonus: 30, progress: (s) => s.completed.filter((a) => a.category === 'sports').length, qualifies: (a) => a.category === 'sports' },
+  { id: 'culture-seeker', name: 'Culture seeker', desc: 'Complete 3 arts and culture activities.', icon: 'bi-palette', emoji: '🎨', category: 'arts', color: 'cyan', target: 3, unit: 'arts activities', bonus: 30, progress: (s) => s.completed.filter((a) => a.category === 'arts').length, qualifies: (a) => a.category === 'arts' },
+  { id: 'creative-explorer', name: 'Creative explorer', desc: 'Complete 2 workshops or craft activities.', icon: 'bi-brush', emoji: '🎨', category: 'workshops', color: 'yellow', target: 2, unit: 'workshops', bonus: 20, progress: (s) => s.completed.filter((a) => a.category === 'workshops').length, qualifies: (a) => a.category === 'workshops' },
+  { id: 'event-chaser', name: 'Event chaser', desc: 'Complete 3 events around Singapore.', icon: 'bi-calendar-event', emoji: '🎟️', category: 'events', color: 'lime', target: 3, unit: 'events', bonus: 30, progress: (s) => s.completed.filter((a) => a.category === 'events').length, qualifies: (a) => a.category === 'events' },
 ]
+
+/**
+ * One shared visual treatment for badges wherever they appear in the app.
+ * Category badges inherit the category's canonical colour; broader goals use
+ * the app's purple accent.
+ */
+export function badgePresentation(badge) {
+  return {
+    emoji: badge?.emoji ?? '🏆',
+    color: getInterest(badge?.category)?.color ?? 'var(--gol-purple)',
+  }
+}
 
 // ---------- Date helpers ----------
 // Weeks start on Monday. A week is identified by its Monday "YYYY-MM-DD".
@@ -116,34 +135,45 @@ function addDays(date, n) {
   return d
 }
 
-// ---------- State ----------
 function emptyState() {
   return {
-    completed: [],      // verified activities: { id, title, category, region, isOpenJio, hostedByMe, date }
-    ledger: [],         // points history: { date, amount, reason }
-    earnedBadges: {},   // { badgeId: 'YYYY-MM-DD' }
+    completed: [],      
+    ledger: [],         
+    earnedBadges: {},   
     studyBreak: { active: false, since: null },
-    pausedWeeks: [],    // week keys that were covered by study-break mode
+    pausedWeeks: [],    
   }
 }
 
-function demoState() {
+/**
+ * A fresh shared starting point for each explicit demo login.
+ *
+ * Activities are replayed from oldest to newest so completed activities,
+ * badge dates and the points ledger all tell the same story. The two outdoor
+ * activities deliberately leave Trailblazer one check-in away from unlocking.
+ */
+export function createDemoStartingState() {
   const s = emptyState()
   const today = new Date()
   const ago = (weeks) => toISODate(addDays(today, -7 * weeks))
-  s.completed = [
+  const completed = [
     { id: 'demo-1', title: 'Pottery taster class', category: 'workshops', region: 'central', isOpenJio: false, hostedByMe: false, date: ago(4) },
     { id: 'demo-2', title: 'Badminton OPENJIO', category: 'sports', region: 'east', isOpenJio: true, hostedByMe: false, date: ago(3) },
     { id: 'demo-3', title: 'MacRitchie TreeTop Walk', category: 'outdoors', region: 'central', isOpenJio: false, hostedByMe: false, date: ago(2) },
     { id: 'demo-4', title: 'East Coast picnic (hosted)', category: 'outdoors', region: 'east', isOpenJio: true, hostedByMe: true, date: ago(1) },
     { id: 'demo-5', title: 'Art jam at Jurong', category: 'arts', region: 'west', isOpenJio: false, hostedByMe: false, date: ago(0) },
   ]
-  s.ledger = s.completed.map((a) => ({ date: a.date, amount: POINTS_PER_ACTIVITY, reason: a.title }))
-  // Award the badges the demo activities unlock
-  for (const b of BADGES) {
-    if (b.progress(s) >= b.target) {
-      s.earnedBadges[b.id] = s.completed[0].date
-      s.ledger.push({ date: s.completed[0].date, amount: b.bonus, reason: `Badge: ${b.name}` })
+
+  for (const activity of completed) {
+    s.completed.push(activity)
+    s.ledger.push({ date: activity.date, amount: POINTS_PER_ACTIVITY, reason: activity.title })
+
+    // Award each badge on the date the activity actually unlocked it.
+    for (const badge of BADGES) {
+      if (!s.earnedBadges[badge.id] && badge.progress(s) >= badge.target) {
+        s.earnedBadges[badge.id] = activity.date
+        s.ledger.push({ date: activity.date, amount: badge.bonus, reason: `Badge: ${badge.name}` })
+      }
     }
   }
   return s
@@ -154,26 +184,29 @@ function load() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return { ...emptyState(), ...JSON.parse(raw) }
   } catch (e) {
-    /* storage blocked or corrupted — fall through */
+
   }
-  return USE_DEMO_DATA ? demoState() : emptyState()
+  return USE_DEMO_DATA ? createDemoStartingState() : emptyState()
 }
 
 export const game = reactive(load())
 
+function saveGame(state = game) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch (e) {
+    /* storage may be blocked */
+  }
+}
+
 watch(
   game,
   (val) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
-    } catch (e) {
-      /* ignore */
-    }
+    saveGame(val)
   },
   { deep: true }
 )
 
-// ---------- Points & levels ----------
 export function totalPoints() {
   return game.ledger.reduce((sum, e) => sum + e.amount, 0)
 }
@@ -190,8 +223,6 @@ export function levelInfo() {
   return { level, points: pts, into, needed: POINTS_PER_LEVEL, percent: Math.round((into / POINTS_PER_LEVEL) * 100) }
 }
 
-// Adds points but never past the weekly cap (badge bonuses count too,
-// so they can't be used to get around the cap). Returns points actually given.
 function awardPoints(amount, reason) {
   const room = Math.max(0, WEEKLY_POINT_CAP - pointsThisWeek())
   const given = Math.min(amount, room)
@@ -199,14 +230,11 @@ function awardPoints(amount, reason) {
   return given
 }
 
-// ---------- Wellbeing check-in points (Profile page) ----------
-// Finishing the WHO-5 check-in gives points once every 14 days, whatever the
-// score (we reward checking in, never a "good" score). Counts towards the weekly cap.
+// ---------- Wellbeing check-in Part  ----------
 export const POINTS_PER_WELLBEING_CHECKIN = 20
 export const WELLBEING_POINTS_EVERY_DAYS = 14
 const WELLBEING_REASON = 'Wellbeing check-in'
 
-/** Days until the next check-in earns points (0 = it will earn points now). */
 export function daysUntilWellbeingPoints(now = new Date()) {
   const last = game.ledger.filter((e) => e.reason === WELLBEING_REASON).at(-1)
   if (!last) return 0
@@ -215,7 +243,6 @@ export function daysUntilWellbeingPoints(now = new Date()) {
   return Math.max(0, WELLBEING_POINTS_EVERY_DAYS - days)
 }
 
-/** Call after a WHO-5 check-in is saved. Returns { pointsGiven, levelledUp, message }. */
 export function awardWellbeingCheckIn() {
   const wait = daysUntilWellbeingPoints()
   if (wait > 0) {
@@ -227,7 +254,6 @@ export function awardWellbeingCheckIn() {
   try {
     if (levelledUp) celebrateLevelUp()
   } catch {
-    /* confetti is only decoration */
   }
   const message = pointsGiven
     ? `+${pointsGiven} points for checking in`
@@ -235,10 +261,6 @@ export function awardWellbeingCheckIn() {
   return { pointsGiven, levelledUp, message }
 }
 
-// ---------- Streaks ----------
-// A week counts if it has at least 1 verified activity. Extra activities
-// in the same week don't add more. Study-break weeks are skipped — they
-// neither break nor grow the streak.
 export function currentStreak() {
   const activeWeeks = new Set(game.completed.map((a) => weekKey(a.date)))
   const paused = new Set(game.pausedWeeks)
@@ -246,7 +268,6 @@ export function currentStreak() {
 
   let streak = 0
   let cursor = new Date()
-  // The current week doesn't break the streak until it's over
   if (!activeWeeks.has(weekKey(cursor))) cursor = addDays(cursor, -7)
 
   for (let i = 0; i < 260; i++) {
@@ -263,7 +284,6 @@ export function doneThisWeek() {
   return game.completed.some((a) => weekKey(a.date) === wk)
 }
 
-// ---------- Badges ----------
 export function badgeList() {
   return BADGES.map((b) => {
     const progress = Math.min(b.progress(game), b.target)
@@ -274,6 +294,32 @@ export function badgeList() {
       earnedOn: game.earnedBadges[b.id] || null,
     }
   })
+}
+
+export function badgeById(id) {
+  return badgeList().find((badge) => badge.id === id) ?? null
+}
+
+/** Whether an uncompleted activity can genuinely advance an unfinished badge. */
+export function canActivityProgressBadge(badgeOrId, activity, state = game) {
+  const badge = typeof badgeOrId === 'string' ? BADGES.find((item) => item.id === badgeOrId) : badgeOrId
+  return Boolean(badge && activity?.id && !state.earnedBadges[badge.id]
+    && !state.completed.some((done) => done.id === activity.id)
+    && badge.qualifies?.(activity, state))
+}
+
+/** Map-ready opportunities, ranked by proximity to completion then visible choices. */
+export function badgeOpportunities(activities = [], state = game) {
+  return badgeList()
+    .filter((badge) => !badge.earned)
+    .map((badge, index) => ({
+      ...badge,
+      remaining: Math.max(0, badge.target - badge.progress),
+      eligibleActivities: activities.filter((activity) => canActivityProgressBadge(badge.id, activity, state)),
+      index,
+    }))
+    .filter((badge) => badge.eligibleActivities.length)
+    .sort((a, b) => a.remaining - b.remaining || b.eligibleActivities.length - a.eligibleActivities.length || a.index - b.index)
 }
 
 // Checks every badge and awards any newly unlocked ones. Returns the new badges.
@@ -289,14 +335,11 @@ function checkBadges() {
   return unlocked
 }
 
-// ---------- Location verification ----------
-// Distance between two { lat, lng } points in metres, using Turf.js.
-// Note: Turf wants coordinates as [longitude, latitude].
+
 export function distanceInMetres(a, b) {
   return turfDistance(point([a.lng, a.lat]), point([b.lng, b.lat]), { units: 'meters' })
 }
 
-// Wraps the browser's geolocation in a Promise
 export function getCurrentPosition() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('Location is not supported on this device.'))
@@ -308,10 +351,6 @@ export function getCurrentPosition() {
   })
 }
 
-// ---------- The one function teammates call ----------
-// Call this from the Map / Activity page when the user taps "Check in".
-//   activity = { id, title, category, region, lat, lng, isOpenJio, hostedByMe }
-// Returns { ok, message, pointsGiven, newBadges, distance }
 export async function checkInToActivity(activity, userPosition = null) {
   if (game.completed.some((a) => a.id === activity.id)) {
     return { ok: false, message: "You've already checked in to this one!" }
@@ -348,7 +387,6 @@ export async function checkInToActivity(activity, userPosition = null) {
     date: toISODate(new Date()),
   })
 
-  // Ask for a (private, optional) mood reflection afterwards
   addPendingReflection(activity)
 
   const pointsGiven = awardPoints(POINTS_PER_ACTIVITY, activity.title)
@@ -358,25 +396,22 @@ export async function checkInToActivity(activity, userPosition = null) {
   if (pointsGiven === 0) message = "Checked in! You've hit this week's points cap, so no points this time, but it still counts for your streak and badges."
   else if (pointsGiven < POINTS_PER_ACTIVITY) message = `Checked in! +${pointsGiven} points (you've reached this week's cap)`
 
-  // Confetti! The biggest celebration wins.
   const levelledUp = levelInfo().level > levelBefore
   try {
     if (newBadges.length) celebrateBadge()
     else if (levelledUp) celebrateLevelUp()
     else celebrateCheckIn()
   } catch (e) {
-    /* confetti is only decoration — never block a check-in */
   }
 
   return { ok: true, distance, pointsGiven, newBadges, levelledUp, message }
 }
 
-// ---------- Study-break mode ----------
+// ---------- for study-break mode ----------
 export function setStudyBreak(on) {
   if (on && !game.studyBreak.active) {
     game.studyBreak = { active: true, since: toISODate(new Date()) }
   } else if (!on && game.studyBreak.active) {
-    // Remember every week covered by the break so the streak survives it
     let cursor = new Date(game.studyBreak.since)
     const end = weekKey()
     for (let i = 0; i < 60; i++) {
@@ -389,7 +424,13 @@ export function setStudyBreak(on) {
   }
 }
 
+/** Start a new local demo session and persist it before authenticated UI renders. */
+export function startDemoSession() {
+  Object.assign(game, createDemoStartingState())
+  saveGame()
+}
+
 // Handy while testing: wipes everything back to empty (or demo) data
 export function resetGamification(withDemo = false) {
-  Object.assign(game, withDemo ? demoState() : emptyState())
+  Object.assign(game, withDemo ? createDemoStartingState() : emptyState())
 }

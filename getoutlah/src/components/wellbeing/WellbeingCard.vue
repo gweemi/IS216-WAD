@@ -1,11 +1,6 @@
-<!--
-  "My wellbeing" card for the Profile page + its "My wellbeing" history pop-up.
-  Usage in the Profile page:  <WellbeingCard />
-  It opens the WHO-5 check-in (CheckInSheet) by itself.
--->
 <template>
   <section class="gol-card wellbeing-card">
-    <!-- Card (matches Figma Profile screen) -->
+    <!-- Card Part -->
     <div class="d-flex align-items-center gap-3 mb-2">
       <button class="head-btn d-flex align-items-center gap-3 flex-grow-1" @click="showHistory = true">
         <span class="gol-icon-tile tile-cyan"><i class="bi bi-heart-pulse"></i></span>
@@ -22,7 +17,6 @@
       <WellbeingChart :points="store.history" :max="4" />
     </div>
 
-    <!-- History pop-up (matches Figma "My wellbeing" sheet) -->
     <BottomSheet :open="showHistory" label="My wellbeing" @close="showHistory = false">
       <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
@@ -92,7 +86,7 @@ export default {
   methods: {
     openCheckInFromHistory() {
       this.showHistory = false
-      setTimeout(() => (this.showCheckIn = true), 260) // wait for the first pop-up to slide away
+      setTimeout(() => (this.showCheckIn = true), 260) 
     },
   },
 }

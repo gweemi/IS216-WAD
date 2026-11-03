@@ -1,7 +1,4 @@
-<!--
-  Line chart of WHO-5 scores. Plain SVG, no chart library needed.
-  <WellbeingChart :points="history" />   history = [{ date, score }]
--->
+<!--To display the scores in a line chart to see diff-->
 <template>
   <div class="gol-chart">
     <svg
@@ -10,16 +7,12 @@
       :aria-label="ariaLabel"
       preserveAspectRatio="xMidYMid meet"
     >
-      <!-- Green "good wellbeing" zone above 50 -->
       <rect :x="padL - 12" :y="top" :width="plotW + 24" :height="y(50) - top" rx="6" class="zone" />
-      <!-- Dotted line at 50 -->
       <line :x1="padL - 12" :x2="padL + plotW + 12" :y1="y(50)" :y2="y(50)" class="threshold" />
       <text :x="W - 4" :y="y(50) + 4" text-anchor="end" class="threshold-label">50</text>
 
-      <!-- The line -->
       <polyline v-if="shown.length > 1" :points="linePoints" class="line" />
 
-      <!-- Dots, values and dates -->
       <g v-for="(p, i) in shown" :key="p.date">
         <circle :cx="x(i)" :cy="y(p.score)" r="7.5" class="dot" />
         <text :x="x(i)" :y="y(p.score) - 13" text-anchor="middle" class="value">{{ p.score }}</text>
@@ -40,7 +33,7 @@ export default {
   name: 'WellbeingChart',
   props: {
     points: { type: Array, default: () => [] },
-    max: { type: Number, default: 6 }, // how many recent check-ins to show
+    max: { type: Number, default: 6 }, 
   },
   data() {
     return { W: 320, H: 170, padL: 24, padR: 30, top: 8, bottomAxis: 26 }
@@ -55,7 +48,7 @@ export default {
     plotBottom() {
       return this.H - this.bottomAxis
     },
-    // Zoom the y-axis around the data (always including 50) so changes are visible
+    
     domain() {
       const scores = this.shown.map((p) => p.score).concat(50)
       const lo = Math.max(0, Math.min(...scores) - 25)
@@ -78,7 +71,7 @@ export default {
     y(score) {
       const [lo, hi] = this.domain
       const t = (score - lo) / (hi - lo || 1)
-      return this.plotBottom - t * (this.plotBottom - this.top - 18) // 18px headroom for labels
+      return this.plotBottom - t * (this.plotBottom - this.top - 18) 
     },
     fmt(iso) {
       return shortDate(iso)
