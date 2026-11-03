@@ -55,18 +55,19 @@ const leafletMocks = vi.hoisted(() => {
 })
 
 const routerMocks = vi.hoisted(() => ({ push: vi.fn() }))
-const routeMocks = vi.hoisted(() => ({ query: {} }))
 const authMocks = vi.hoisted(() => ({
   user: { uid: 'map-user' },
   profile: { mapOnboardingCompleted: true },
   isLoggedIn: true,
+  mapIntroPending: false,
+  badgeWelcomePending: false,
+  consumeMapIntro: vi.fn(),
+  consumeBadgeWelcome: vi.fn(),
   setProfile: vi.fn(),
 }))
-const onboardingMocks = vi.hoisted(() => ({ complete: vi.fn() }))
 
-vi.mock('vue-router', () => ({ useRouter: () => routerMocks, useRoute: () => routeMocks }))
+vi.mock('vue-router', () => ({ useRouter: () => routerMocks }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => authMocks }))
-vi.mock('@/services/mapOnboarding', () => ({ completeMapOnboarding: onboardingMocks.complete }))
 
 const activityMocks = vi.hoisted(() => ({
   items: [
@@ -147,6 +148,7 @@ vi.mock('@/stores/activities', async () => {
   ))
 
   return {
+    allActivities,
     filters,
     filtered,
     oneCardPerEvent: (items) => {
@@ -168,6 +170,9 @@ vi.mock('@/stores/activities', async () => {
 const { default: MapView } = await import('@/views/MapView.vue')
 const { filters } = await import('@/stores/activities')
 const { geolocationMocks } = await import('@/composables/useGeolocation')
+const { useBadgeHunt } = await import('@/composables/useBadgeHunt')
+const { startDemoSession } = await import('@/stores/gamification(badges).js')
+const badgeHunt = useBadgeHunt()
 const mountedWrappers = []
 const mountMap = () => {
   const wrapper = mount(MapView)
@@ -178,6 +183,13 @@ const mountMap = () => {
 describe('MapView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubGlobal('matchMedia', vi.fn(() => ({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })))
+    badgeHunt.clearTrackedBadge()
+    startDemoSession()
     leafletMocks.mapInstance.getZoom.mockReturnValue(12)
     leafletMocks.markerInstances.length = 0
     Object.keys(leafletMocks.handlers).forEach((event) => delete leafletMocks.handlers[event])
@@ -193,12 +205,23 @@ describe('MapView', () => {
     authMocks.user = { uid: 'map-user' }
     authMocks.profile = { mapOnboardingCompleted: true }
     authMocks.isLoggedIn = true
+    authMocks.mapIntroPending = false
+    authMocks.badgeWelcomePending = false
+    authMocks.consumeMapIntro.mockImplementation(() => {
+      const pending = authMocks.mapIntroPending
+      authMocks.mapIntroPending = false
+      return pending
+    })
+    authMocks.consumeBadgeWelcome.mockImplementation(() => {
+      const pending = authMocks.badgeWelcomePending
+      authMocks.badgeWelcomePending = false
+      return pending
+    })
     authMocks.setProfile.mockClear()
-    onboardingMocks.complete.mockReset()
-    routeMocks.query = {}
   })
 
   afterEach(() => {
+    badgeHunt.clearTrackedBadge()
     mountedWrappers.splice(0).forEach((wrapper) => wrapper.unmount())
     vi.unstubAllGlobals()
     vi.useRealTimers()
@@ -236,13 +259,77 @@ describe('MapView', () => {
     expect(zoom.element.value).toBe('16')
   })
 
+  it('removes the custom zoom slider on mobile and restores it after resizing to desktop', async () => {
+    let mobileViewport = true
+    vi.stubGlobal('matchMedia', vi.fn((query) => ({
+      matches: query === '(max-width: 767.98px)' ? mobileViewport : false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })))
+    const wrapper = mountMap()
+
+    expect(wrapper.find('[data-testid="map-zoom-slider"]').exists()).toBe(false)
+
+    mobileViewport = false
+    window.dispatchEvent(new Event('resize'))
+    await nextTick()
+    expect(wrapper.find('[data-testid="map-zoom-slider"]').exists()).toBe(true)
+
+    mobileViewport = true
+    window.dispatchEvent(new Event('resize'))
+    await nextTick()
+    expect(wrapper.find('[data-testid="map-zoom-slider"]').exists()).toBe(false)
+  })
+
   it('uses an immediate zoom transition when reduced motion is enabled', async () => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })))
+    vi.stubGlobal('matchMedia', vi.fn((query) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })))
     const wrapper = mountMap()
 
     await wrapper.get('[data-testid="map-zoom-slider"]').setValue('14')
 
     expect(leafletMocks.mapInstance.setZoom).toHaveBeenCalledWith(14, { animate: false })
+  })
+
+  it('automatically tracks the closest achievable badge when Map activities are ready', async () => {
+    const wrapper = mountMap()
+    await nextTick()
+    await nextTick()
+
+    expect(badgeHunt.trackedBadgeId.value).toBe('trailblazer')
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Your next badge')
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Trailblazer')
+  })
+
+  it('opens the selector once after an explicit login and keeps the recommendation when it is dismissed', async () => {
+    authMocks.badgeWelcomePending = true
+    const wrapper = mountMap()
+    await nextTick()
+    await nextTick()
+
+    const dialog = document.body.querySelector('[role="dialog"]')
+    expect(dialog?.textContent).toContain('Choose a badge to explore')
+    expect(authMocks.consumeBadgeWelcome).toHaveBeenCalledTimes(1)
+
+    document.body.querySelector('.hunt-header .gol-close').click()
+    await nextTick()
+
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Trailblazer')
+  })
+
+  it('keeps a manually selected badge when map filters change', async () => {
+    badgeHunt.selectTrackedBadge('event-chaser')
+    const wrapper = mountMap()
+    await nextTick()
+
+    await wrapper.get('[data-testid="map-category-outdoors"]').trigger('click')
+    await nextTick()
+
+    expect(badgeHunt.trackedBadgeId.value).toBe('event-chaser')
   })
 
   it('filters markers with multiple category selections and restores All after the last deselection', async () => {
@@ -385,9 +472,9 @@ describe('MapView', () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
   })
 
-  it('shows a clean first-time Map before presenting the location choice', async () => {
+  it('shows the introduction after sign-in even for an existing account', async () => {
     vi.useFakeTimers()
-    authMocks.profile = {}
+    authMocks.mapIntroPending = true
     const wrapper = mountMap()
 
     expect(wrapper.find('[data-testid="map-search-input"]').exists()).toBe(false)
@@ -399,18 +486,9 @@ describe('MapView', () => {
     expect(leafletMocks.marker).toHaveBeenCalledTimes(1)
   })
 
-  it('replays the introduction in development without changing a completed profile', () => {
-    routeMocks.query = { replayIntro: '1' }
-    const wrapper = mountMap()
-
-    expect(wrapper.find('.map-intro-skip').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="map-search-input"]').exists()).toBe(false)
-    expect(onboardingMocks.complete).not.toHaveBeenCalled()
-  })
-
-  it('can skip the first-time introduction without requesting location', async () => {
+  it('can skip the post-login introduction without requesting location', async () => {
     vi.useFakeTimers()
-    authMocks.profile = {}
+    authMocks.mapIntroPending = true
     const wrapper = mountMap()
 
     await wrapper.get('.map-intro-skip').trigger('click')
@@ -418,12 +496,11 @@ describe('MapView', () => {
 
     expect(geolocationMocks.request).not.toHaveBeenCalled()
     expect(wrapper.find('[data-testid="map-search-input"]').exists()).toBe(true)
-    expect(onboardingMocks.complete).toHaveBeenCalledTimes(1)
   })
 
-  it('reveals the real location dot and enables Near me after onboarding permission', async () => {
+  it('reveals the real location dot and enables Near me after post-login permission', async () => {
     vi.useFakeTimers()
-    authMocks.profile = {}
+    authMocks.mapIntroPending = true
     geolocationMocks.request.mockImplementation(async () => {
       geolocationMocks.coords.value = { lat: 1.31, lng: 103.81 }
       return geolocationMocks.coords.value
@@ -442,7 +519,21 @@ describe('MapView', () => {
     expect(wrapper.get('[data-testid="map-nearby-toggle"]').attributes('aria-checked')).toBe('true')
     expect(wrapper.get('[data-testid="map-nearby-radius"]').attributes('disabled')).toBeUndefined()
     expect(leafletMocks.circle).toHaveBeenCalledWith([1.31, 103.81], expect.objectContaining({ radius: 5000 }))
-    expect(onboardingMocks.complete).toHaveBeenCalledTimes(1)
+  })
+
+  it('consumes the intro trigger so normal map navigation does not replay it', async () => {
+    vi.useFakeTimers()
+    authMocks.mapIntroPending = true
+    const firstMap = mountMap()
+    expect(firstMap.find('.map-intro-skip').exists()).toBe(true)
+
+    firstMap.unmount()
+    mountedWrappers.splice(mountedWrappers.indexOf(firstMap), 1)
+    const secondMap = mountMap()
+    await nextTick()
+
+    expect(secondMap.find('.map-intro-skip').exists()).toBe(false)
+    expect(secondMap.find('[data-testid="map-search-input"]').exists()).toBe(true)
   })
 
   it('shows a selected activity card and routes to its details from a marker click', async () => {
@@ -468,6 +559,26 @@ describe('MapView', () => {
     await card.get('.map-activity-card__close').trigger('click')
     expect(wrapper.find('[data-testid="selected-map-activity"]').exists()).toBe(false)
     expect(leafletMocks.mapInstance.flyTo).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides an active Badge Hunt card while a preview is open and shows live progress in an eligible preview', async () => {
+    badgeHunt.selectTrackedBadge('trailblazer')
+    const wrapper = mountMap()
+
+    expect(wrapper.find('[data-testid="next-badge-card"]').exists()).toBe(true)
+
+    leafletMocks.markerInstances[0].handlers.click()
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="next-badge-card"]').exists()).toBe(false)
+    const opportunity = wrapper.get('.map-badge-opportunity')
+    expect(opportunity.text()).toContain('Trailblazer')
+    expect(opportunity.text()).toContain('2/3 completed')
+    expect(opportunity.text()).toContain('1 to go')
+
+    await wrapper.get('.map-activity-card__close').trigger('click')
+    await nextTick()
+    expect(wrapper.find('[data-testid="next-badge-card"]').exists()).toBe(true)
   })
 
   it('replaces an in-progress flight and card when another marker is selected', async () => {

@@ -6,19 +6,42 @@ import { useAuthStore } from '@/stores/auth'
 import { savePreferences } from '@/services/preferences'
 import { logOut } from '@/services/auth'
 import PreferencesForm from '@/components/PreferencesForm.vue'
+import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 const saving = ref(false)
 const error = ref('')
+const logoutOpen = ref(false)
+const loggingOut = ref(false)
+const logoutError = ref('')
 
 // Full name, since splitting off a "first name" breaks names like "En Min Seah".
 const name = auth.profile?.displayName || auth.user?.displayName || ''
 
 // Lets someone leave the questionnaire, e.g. if they picked the wrong Google account.
-async function onLogOut() {
-  await logOut()
-  router.replace({ name: 'auth' })
+function requestLogOut() {
+  logoutError.value = ''
+  logoutOpen.value = true
+}
+
+async function confirmLogOut() {
+  if (loggingOut.value) return
+  loggingOut.value = true
+  logoutError.value = ''
+  try {
+    await logOut()
+  } catch {
+    if (auth.isLoggedIn) {
+      logoutError.value = 'Couldn’t log you out. Please try again.'
+      return
+    }
+  } finally {
+    loggingOut.value = false
+  }
+
+  logoutOpen.value = false
+  await router.replace({ name: 'login' })
 }
 
 async function onSubmit(answers) {
@@ -53,7 +76,7 @@ async function onSubmit(answers) {
             type="button"
             class="btn btn-link btn-sm p-0 align-baseline link-logout"
             data-testid="onboarding-logout"
-            @click="onLogOut"
+            @click="requestLogOut"
           >
             Not you? Log out
           </button>
@@ -69,6 +92,13 @@ async function onSubmit(answers) {
         />
       </section>
     </div>
+    <LogoutConfirmDialog
+      :open="logoutOpen"
+      :busy="loggingOut"
+      :error="logoutError"
+      @cancel="logoutOpen = false"
+      @confirm="confirmLogOut"
+    />
   </main>
 </template>
 

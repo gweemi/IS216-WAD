@@ -44,11 +44,34 @@ const restrictionNotice = computed(() => restrictionMessage(accountRestriction(a
 </template>
 
 <style>
-.app-content { min-height: 100vh; }
-.app-content--with-navigation { padding-bottom: 6.5rem; }
-.app-content--map-layout { padding-bottom: 0; }
+:root {
+  --app-navigation-clearance: 6.5rem;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+  background: var(--gol-bg);
+}
+
+.app-content {
+  min-height: 100dvh;
+}
+
+/*
+ * The navigation is fixed, so reserve room inside each page rather than on
+ * this wrapper. That keeps the page's own background visible behind the nav.
+ * MapView intentionally opts out and continues to fill the full viewport.
+ */
+.app-content--with-navigation > :not(.map-page) {
+  box-sizing: border-box;
+  padding-bottom: var(--app-navigation-clearance);
+}
 
 @media (min-width: 768px) {
-  .app-content--with-navigation { padding-bottom: 7.5rem; }
+  :root {
+    --app-navigation-clearance: 7.5rem;
+  }
 }
 </style>

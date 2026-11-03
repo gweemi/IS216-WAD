@@ -12,8 +12,8 @@
     @click="onClick"
   >
     <span ref="ring" class="ring">
-      <span class="face" :class="'face--' + badge.color">
-        <i class="bi" :class="badge.icon"></i>
+      <span class="face" :style="{ background: presentation.color }">
+        <span class="badge-emoji" aria-hidden="true">{{ presentation.emoji }}</span>
         <span v-if="badge.earned" class="shine"></span>
       </span>
       <span v-if="!badge.earned" class="locked-tag">LOCKED</span>
@@ -43,6 +43,7 @@
 
 <script>
 import { burstFrom } from '../../utils/celebrate.js'
+import { badgePresentation } from '../../stores/gamification(badges).js'
 
 const POP_MS = 700 // how long the pop animation runs
 const OPEN_DELAY_MS = 420 // open the details while the sparkles are still flying
@@ -60,6 +61,9 @@ export default {
   computed: {
     percent() {
       return Math.round((this.badge.progress / this.badge.target) * 100)
+    },
+    presentation() {
+      return badgePresentation(this.badge)
     },
   },
   mounted() {
@@ -140,10 +144,7 @@ export default {
   font-size: 1.8rem;
   color: var(--gol-ink);
 }
-.face--yellow { background: var(--gol-yellow); }
-.face--cyan { background: var(--gol-cyan); }
-.face--coral { background: var(--gol-coral); }
-.face--lime { background: var(--gol-lime); }
+.badge-emoji { line-height: 1; }
 
 .name {
   margin-top: 0.55rem;
@@ -155,7 +156,7 @@ export default {
 /* ---------- Earned: pop animation ---------- */
 .popping { position: relative; z-index: 2; } /* sparkles fly over neighbouring badges */
 .popping .ring { animation: badge-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.popping .face i { animation: icon-wiggle 0.6s ease; }
+.popping .badge-emoji { animation: icon-wiggle 0.6s ease; }
 .popping .name { animation: name-bounce 0.6s ease; }
 
 @keyframes badge-pop {
@@ -232,6 +233,7 @@ export default {
   border-color: transparent;
   color: #b3abc2;
 }
+.locked .badge-emoji { filter: grayscale(1); opacity: 0.58; }
 .locked .name { color: var(--gol-muted); }
 .locked-tag {
   position: absolute;
@@ -259,7 +261,7 @@ export default {
    no spinning or flying confetti, but the badge still glows and shines. */
 @media (prefers-reduced-motion: reduce) {
   .popping .ring { animation: glow-pulse 0.7s ease; }
-  .popping .face i,
+  .popping .badge-emoji,
   .popping .name { animation: none; }
   .big-entrance .ring { animation: soft-fade-in 0.3s ease both; }
   .big-entrance.popping .ring { animation: glow-pulse 0.7s ease; }

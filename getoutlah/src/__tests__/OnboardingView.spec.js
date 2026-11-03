@@ -32,11 +32,15 @@ describe('OnboardingView', () => {
     expect(wrapper.text()).toContain('enmin.seah.2025@smu.edu.sg')
   })
 
-  it('lets the user log out and go back to the log-in page', async () => {
-    const wrapper = mount(OnboardingView)
+  it('confirms before logging out and going back to the log-in page', async () => {
+    const wrapper = mount(OnboardingView, { global: { stubs: { Teleport: true } } })
     await wrapper.find('[data-testid="onboarding-logout"]').trigger('click')
+
+    expect(calls.logOut).toBe(0)
+    expect(wrapper.get('[role="dialog"]').text()).toContain('Are you sure you want to log out?')
+    await wrapper.get('[data-testid="logout-confirm"]').trigger('click')
     await flushPromises()
     expect(calls.logOut).toBe(1)
-    expect(calls.routes).toContainEqual({ name: 'auth' })
+    expect(calls.routes).toContainEqual({ name: 'login' })
   })
 })
