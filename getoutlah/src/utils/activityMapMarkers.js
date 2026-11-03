@@ -18,9 +18,9 @@ function escapeTooltipText(value) {
   }[character]))
 }
 
-export function createActivityMarker(L, activity, { onSelect } = {}) {
+export function createActivityMarker(L, activity, { onSelect, isHuntEligible } = {}) {
   const markerContent = document.createElement('div')
-  render(h(ActivityMapMarker, { activity }), markerContent)
+  render(h(ActivityMapMarker, { activity, huntEligible: Boolean(isHuntEligible?.(activity)) }), markerContent)
   const icon = L.divIcon({
     className: 'gol-activity-marker-wrapper',
     html: markerContent,
@@ -31,6 +31,7 @@ export function createActivityMarker(L, activity, { onSelect } = {}) {
 
   const marker = L.marker([Number(activity.lat), Number(activity.lng)], { icon, title: activity.title })
   marker.__activityId = activity.id
+  marker.__activity = activity
   marker.bindTooltip?.(
     `<strong>${escapeTooltipText(activity.title || 'Activity')}</strong><span>${escapeTooltipText(activity.category || 'Activity')}</span>`,
     { className: 'gol-activity-tooltip', direction: 'top', offset: [0, -24], opacity: 1 },
@@ -43,6 +44,13 @@ export function createActivityMarker(L, activity, { onSelect } = {}) {
   return marker
 }
 
+export function setActivityMarkerHuntEligible(marker, eligible, { animate = false } = {}) {
+  const element = marker?.getElement?.()?.querySelector('.gol-activity-marker')
+  if (!element) return
+  element.classList.toggle('gol-activity-marker--hunt', eligible)
+  element.classList.remove('gol-activity-marker--hunt-animate')
+}
+
 export function setActivityMarkerSelected(marker, selected) {
   marker?.setZIndexOffset?.(selected ? 1000 : 0)
   marker?.getElement?.()
@@ -50,17 +58,20 @@ export function setActivityMarkerSelected(marker, selected) {
     ?.classList.toggle('gol-activity-marker--selected', selected)
 }
 
-export function createClusterIcon(L, cluster) {
+export function createClusterIcon(L, cluster, isHuntEligible) {
   const count = cluster.getChildCount()
+  const eligible = cluster.getAllChildMarkers?.().some((marker) => isHuntEligible?.(marker.__activity))
 
   return L.divIcon({
     className: 'gol-cluster-marker-wrapper',
     html: `
-      <div class="gol-cluster-marker" aria-label="${count} activities">
+      <div class="gol-cluster-marker${eligible ? ' gol-cluster-marker--hunt' : ''}" aria-label="${count} activities">
+        <div class="gol-cluster-marker__inner">
         <span class="gol-cluster-marker__layer gol-cluster-marker__layer--back"></span>
         <span class="gol-cluster-marker__layer gol-cluster-marker__layer--middle"></span>
         <span class="gol-cluster-marker__front"><i class="bi bi-map" aria-hidden="true"></i></span>
         <span class="gol-cluster-marker__count">${count}</span>
+        </div>
       </div>
     `,
     iconSize: [62, 62],
@@ -68,15 +79,23 @@ export function createClusterIcon(L, cluster) {
   })
 }
 
-export function createActivityClusterLayer(L) {
-  return L.markerClusterGroup({
+export function createActivityClusterLayer(L, { isHuntEligible } = {}) {
+  const layer = L.markerClusterGroup({
     animate: true,
     maxClusterRadius: 60,
     showCoverageOnHover: false,
     spiderfyOnMaxZoom: true,
     zoomToBoundsOnClick: true,
-    iconCreateFunction: (cluster) => createClusterIcon(L, cluster),
+    iconCreateFunction: (cluster) => createClusterIcon(L, cluster, layer.__isHuntEligible),
   })
+  layer.__isHuntEligible = isHuntEligible
+  return layer
+}
+
+export function refreshActivityClusterEligibility(clusterLayer, isHuntEligible) {
+  if (!clusterLayer) return
+  clusterLayer.__isHuntEligible = isHuntEligible
+  clusterLayer.refreshClusters?.()
 }
 
 export function clearActivityClusterLayer(clusterLayer) {

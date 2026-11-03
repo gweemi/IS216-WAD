@@ -20,7 +20,7 @@ import { useOpenJioStore } from '@/stores/openjio'
 const route = useRoute()
 const back = computed(() => (route.query.from === 'map' ? { to: '/map', label: 'Back to map' } : { to: '/activities', label: 'Back to activities' }))
 const { request } = useGeolocation()
-const message = ref(''), friendsDid = ref([]), showInvite = ref(false)
+const message = ref(''), friendsDid = ref([]), showInvite = ref(false), earnedBadges = ref([])
 const BADGE_ENERGY = { low: 'calm', medium: 'moderate', high: 'high' } 
 
 onMounted(loadActivities)
@@ -53,16 +53,22 @@ const jioSuspended = computed(() =>
 watchEffect(async () => { if (activity.value) friendsDid.value = await friendsWhoDid(activity.value.id) })
 
 async function run(fn, ok) { message.value = ''; try { await fn(); message.value = ok } catch (e) { message.value = e.message } }
-const doCheckIn = () => run(async () => {
-  const a = activity.value
-  const r = await checkInToActivity({
+const doCheckIn = async () => {
+  message.value = ''
+  earnedBadges.value = []
+  try {
+    const a = activity.value
+    const r = await checkInToActivity({
     id: a.id, title: a.title, category: a.category, region: a.region, lat: a.lat, lng: a.lng,
     energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openjio', hostedByMe: !!a.hostedByMe,
-  }, await request())
-  if (!r.ok) throw new Error(r.message)
-  await removePlan(a.id).catch(() => {})   
-  recordCheckIn(a.id).catch(() => {})   
-}, 'Checked in!')
+    }, await request())
+    if (!r.ok) throw new Error(r.message)
+    await removePlan(a.id).catch(() => {})
+    recordCheckIn(a.id).catch(() => {})
+    message.value = r.message
+    earnedBadges.value = r.newBadges ?? []
+  } catch (error) { message.value = error.message }
+}
 const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'Removed from your plans.' : 'Added to My plans on your Profile.')
 </script>
 
@@ -148,6 +154,7 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
               :prefill="prefillFromActivity(activity)" />
           </div>
           <p v-if="message" class="det-msg">{{ message }}</p>
+          <p v-if="earnedBadges.length" class="det-msg"><i class="bi bi-trophy-fill"></i> New badge{{ earnedBadges.length > 1 ? 's' : '' }}: {{ earnedBadges.map((badge) => badge.name).join(', ') }} · <router-link :to="{ name: 'badges' }">View Badge</router-link></p>
         </div>
       </div>
       <p v-else class="mt-4 fw-bold">Activity not found (or still loading).</p>

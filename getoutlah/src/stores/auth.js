@@ -13,6 +13,8 @@ export const useAuthStore = defineStore('auth', {
     user: null, // Firebase user (kept raw so Vue doesn't wrap Firebase internals)
     profile: null, // their document from Firestore: users/{uid}
     ready: false, // true once Firebase has told us whether someone is logged in
+    mapIntroPending: false, // consumed once when Map opens after an explicit sign-in
+    badgeWelcomePending: false, // explicit-login only; never queued by Firebase restoration
   }),
 
   getters: {
@@ -57,7 +59,31 @@ export const useAuthStore = defineStore('auth', {
     /** Update straight away after signing in, without waiting for Firebase's listener. */
     setUser(user) {
       this.user = user ? markRaw(user) : null
-      if (!user) this.profile = null
+      if (!user) {
+        this.profile = null
+        this.mapIntroPending = false
+        this.badgeWelcomePending = false
+      }
+    },
+
+    /** Queue the map introduction for the first Map visit after Google sign-in. */
+    queueMapIntro() {
+      this.mapIntroPending = true
+    },
+
+    /** Queue the one-time badge selector after an intentional Google login. */
+    queueBadgeWelcome() { this.badgeWelcomePending = true },
+    consumeBadgeWelcome() {
+      const pending = this.badgeWelcomePending
+      this.badgeWelcomePending = false
+      return pending
+    },
+
+    /** Return and clear the current login session's pending map introduction. */
+    consumeMapIntro() {
+      const pending = this.mapIntroPending
+      this.mapIntroPending = false
+      return pending
     },
 
     setProfile(profile) {
