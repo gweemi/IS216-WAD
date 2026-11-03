@@ -12,12 +12,16 @@ import { getOrganisers } from './organisers'
 // When the daily GitHub Action last finished. "Sync now" doesn't change it, so it shows the 6am run is working.
 export async function getLastDailySync() {
   const snap = await getDoc(doc(db, 'config', 'eventbriteSync'))
-  return snap.data()?.lastDailySyncAt ?? null
+  if (!snap.exists()) {
+    return null // the daily sync has never run
+  }
+  return snap.data().lastDailySyncAt ?? null
 }
 
 // The token is typed on the admin page, so it never has to be baked into the website.
 export async function syncEventbriteToFirestore({ token } = {}) {
-  if (useAuthStore().profile?.role !== 'admin') throw new Error('Admins only')
+  const profile = useAuthStore().profile
+  if (!profile || profile.role !== 'admin') throw new Error('Admins only')
   if (!token) throw new Error('Enter the Eventbrite token first.')
   const ids = (await getOrganisers()).map((o) => o.id)
   if (!ids.length) throw new Error('Add at least one organiser first.')

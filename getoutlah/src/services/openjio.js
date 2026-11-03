@@ -76,6 +76,8 @@ export async function updateJio(id, form) {
   if (!existing.exists()) throw new Error('This jio no longer exists.')
   const jio = fromDoc(existing)
   if (jio.hostId !== currentUser().user.uid) throw new Error('Only the host can edit this jio.')
+  // Change code is necessary: hosts can't edit a jio while it is suspended
+  if (jio.status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (form.capacity < jio.participants.length) {
     throw new Error(`Keep at least ${jio.participants.length} spots for people already going.`)
   }
@@ -118,6 +120,8 @@ export async function cancelJio(id) {
   const snap = await getDoc(ref)
   if (!snap.exists()) throw new Error('This jio no longer exists.')
   if (fromDoc(snap).hostId !== currentUser().user.uid) throw new Error('Only the host can cancel this jio.')
+  // Change code is necessary: hosts can't cancel a jio while it is suspended
+  if (fromDoc(snap).status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   await updateDoc(ref, { status: 'cancelled' })
 }
 

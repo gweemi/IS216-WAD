@@ -28,7 +28,7 @@ async function run(fn, done) {
 
 function openForm(activity) {
   Object.assign(form, emptyCurated(), activity ? { ...activity, url: activity.url ?? '', description: activity.description ?? '' } : {})
-  editingId.value = activity?.id ?? null
+  editingId.value = activity ? activity.id : null   
   problems.value = []; places.value = []; placeQuery.value = ''; placeError.value = ''
   formOpen.value = true
 }
