@@ -60,11 +60,18 @@ const activities = computed(() => {
   return oneCardPerEvent(nearby)
 })
 const categories = computed(() => [{ id: 'all', label: 'All', emoji: '✦', color: '#7541EC' }, ...INTERESTS])
+const selectedCategories = computed(() => categories.value.filter((category) =>
+  category.id !== 'all' && filters.value.categories.includes(category.id),
+))
 const selectedCategory = computed(() => {
   const selectedId = filters.value.categories.length === 1 ? filters.value.categories[0] : 'all'
   return categories.value.find((category) => category.id === selectedId) ?? categories.value[0]
 })
-const collapsedCategoryLabel = computed(() => selectedCategory.value.id === 'all' ? 'All Categories' : selectedCategory.value.label)
+const hasMultipleCategoriesSelected = computed(() => selectedCategories.value.length > 1)
+const collapsedCategoryLabel = computed(() => {
+  if (hasMultipleCategoriesSelected.value) return `${selectedCategories.value.length} categories selected`
+  return selectedCategory.value.id === 'all' ? 'All Categories' : selectedCategory.value.label
+})
 const categoryCardStyle = computed(() => categoryCardWidth.value ? { width: `${categoryCardWidth.value}px` } : {})
 const selectedWeather = computed(() => selectedActivity.value ? weatherAt(selectedActivity.value) : null)
 const selectedImage = computed(() => selectedActivity.value?.imageLargeUrl ?? selectedActivity.value?.imageUrl ?? null)
@@ -374,13 +381,20 @@ function openSelectedActivity() {
 }
 
 function selectCategory(categoryId) {
-  filters.value.categories = categoryId === 'all' ? [] : [categoryId]
+  if (categoryId === 'all') {
+    filters.value.categories = []
+    return
+  }
+
+  filters.value.categories = filters.value.categories.includes(categoryId)
+    ? filters.value.categories.filter((id) => id !== categoryId)
+    : [...filters.value.categories, categoryId]
 }
 
 function isCategorySelected(categoryId) {
   return categoryId === 'all'
     ? filters.value.categories.length === 0
-    : filters.value.categories.length === 1 && filters.value.categories[0] === categoryId
+    : filters.value.categories.includes(categoryId)
 }
 
 function updateCategoryCardWidth() {
@@ -393,7 +407,7 @@ function toggleCategories() {
   categoriesCollapsed.value = !categoriesCollapsed.value
 }
 
-watch([categoriesCollapsed, selectedCategory], async () => {
+watch([categoriesCollapsed, collapsedCategoryLabel], async () => {
   nextTick(updateCategoryCardWidth)
 })
 
@@ -493,7 +507,7 @@ onBeforeUnmount(() => {
       @wheel.stop
       @touchstart.stop
     >
-      <output class="map-zoom-control__value" for="map-zoom-range" aria-live="polite">{{ mapZoom }}</output>
+      <span class="map-zoom-control__marker" aria-hidden="true">+</span>
       <label class="visually-hidden" for="map-zoom-range">Map zoom level</label>
       <input
         id="map-zoom-range"
@@ -508,6 +522,7 @@ onBeforeUnmount(() => {
         data-testid="map-zoom-slider"
         @input="setMapZoom"
       />
+      <span class="map-zoom-control__marker" aria-hidden="true">−</span>
     </div>
 
     <div v-if="showHeader || showDiscoveryControls" ref="mapOverlay" class="map-overlay">
@@ -587,16 +602,15 @@ onBeforeUnmount(() => {
         @wheel.stop
         @touchstart.stop
       >
-        <div v-show="!categoriesCollapsed" class="map-category-rail" role="radiogroup" aria-label="Filter activities by category">
+        <div v-show="!categoriesCollapsed" class="map-category-rail" role="group" aria-label="Filter activities by category">
           <button
             v-for="category in categories"
             :key="category.id"
             class="map-category"
             :class="{ 'map-category--selected': isCategorySelected(category.id), 'map-category--all': category.id === 'all' }"
             type="button"
-            role="radio"
-            :aria-checked="isCategorySelected(category.id)"
-            :aria-label="category.id === 'all' ? 'Show all activity categories' : `Show ${category.label} activities`"
+            :aria-pressed="isCategorySelected(category.id)"
+            :aria-label="category.id === 'all' ? 'Show all activity categories' : `Toggle ${category.label} activities`"
             :data-testid="`map-category-${category.id}`"
             @click="selectCategory(category.id)"
           >
@@ -605,7 +619,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
         <div v-show="categoriesCollapsed" ref="collapsedCategory" class="map-category-summary">
-          <span class="map-category-summary__icon" :style="{ background: selectedCategory.color }" aria-hidden="true">{{ selectedCategory.emoji }}</span>
+          <span v-if="!hasMultipleCategoriesSelected" class="map-category-summary__icon" :style="{ background: selectedCategory.color }" aria-hidden="true">{{ selectedCategory.emoji }}</span>
           <span>{{ collapsedCategoryLabel }}</span>
         </div>
         <button
@@ -663,7 +677,7 @@ onBeforeUnmount(() => {
     <FilterSheet
       v-if="showMapControls"
       :open="filtersOpen"
-      single-category
+      :show-categories="false"
       :result-count="activities.length"
       @close="filtersOpen = false"
     />
@@ -944,8 +958,8 @@ onBeforeUnmount(() => {
 
 .map-category__label { min-height: 1.5rem; display: grid; align-items: start; }
 .map-category--all .map-category__icon { color: #fff; }
-.map-category--selected { background: rgba(255, 255, 255, .8); }
-.map-category--selected .map-category__icon { outline: 3px solid var(--gol-purple); outline-offset: 3px; animation: map-category-pop .42s cubic-bezier(.34, 1.56, .64, 1); }
+.map-category--selected { background: var(--gol-purple); color: #fff; }
+.map-category--selected .map-category__icon { animation: map-category-pop .42s cubic-bezier(.34, 1.56, .64, 1); }
 .map-category:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; }
 .map-category:active .map-category__icon { transform: translateY(2px) scale(.94); }
 
@@ -1132,7 +1146,8 @@ onBeforeUnmount(() => {
   .map-search-toolbar :deep(.gol-search-bar):hover { transform: translateY(-1px); }
   .map-nearby-switch:hover,.map-radius-control:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(35, 25, 65, .18); }
   .map-category:hover .map-category__icon { transform: translateY(-3px) rotate(4deg); }
-  .map-category-toggle:hover,.map-activity-card__close:hover { transform: translateY(-2px); }
+  .map-category-toggle:hover { transform: translateY(calc(-50% - 3px)); }
+  .map-activity-card__close:hover { transform: translateY(-2px); }
   .map-activity-card__directions:hover,.map-activity-card__view:hover { transform: translateY(-2px); filter: brightness(1.03); }
 }
 
@@ -1169,28 +1184,30 @@ onBeforeUnmount(() => {
   display: grid;
   width: 3.1rem;
   justify-items: center;
-  gap: .45rem;
-  padding: .5rem .35rem .65rem;
+  gap: .3rem;
+  padding: .45rem .35rem;
   border: 1px solid var(--gol-card-edge);
   border-radius: 999px;
   background: rgba(255, 253, 248, .97);
   box-shadow: 0 4px 14px rgba(35, 25, 65, .16);
   touch-action: none;
 }
-.map-zoom-control__value {
+.map-zoom-control__marker {
   display: grid;
-  width: 1.75rem;
-  height: 1.5rem;
+  width: 1.4rem;
+  height: 1.25rem;
   place-items: center;
-  border-radius: 999px;
-  background: var(--gol-purple);
-  color: #fff;
-  font: 900 .72rem/1 var(--gol-font);
+  color: var(--gol-purple);
+  font: 900 1.1rem/1 var(--gol-font);
 }
 .map-zoom-control__range {
-  width: 1.55rem;
+  --zoom-track-width: .35rem;
+  --zoom-thumb-size: 1.2rem;
+  display: block;
+  width: var(--zoom-thumb-size);
   height: 10.25rem;
-  margin: 0;
+  margin: 0 auto;
+  padding: 0;
   appearance: slider-vertical;
   accent-color: var(--gol-purple);
   cursor: ns-resize;
@@ -1198,9 +1215,9 @@ onBeforeUnmount(() => {
   writing-mode: vertical-lr;
 }
 .map-zoom-control__range:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; border-radius: 999px; }
-.map-zoom-control__range::-webkit-slider-runnable-track { width: .35rem; border-radius: 999px; background: #e6ddf9; }
-.map-zoom-control__range::-webkit-slider-thumb { width: 1.2rem; height: 1.2rem; margin-left: -.42rem; appearance: none; border: 3px solid #fff; border-radius: 50%; background: var(--gol-purple); box-shadow: 0 2px 5px rgba(35, 25, 65, .25); }
-.map-zoom-control__range::-moz-range-track { width: .35rem; border-radius: 999px; background: #e6ddf9; }
+.map-zoom-control__range::-webkit-slider-runnable-track { width: var(--zoom-track-width); border-radius: 999px; background: #e6ddf9; }
+.map-zoom-control__range::-webkit-slider-thumb { width: var(--zoom-thumb-size); height: var(--zoom-thumb-size); margin-left: calc((var(--zoom-track-width) - var(--zoom-thumb-size)) / 2); appearance: none; border: 3px solid #fff; border-radius: 50%; background: var(--gol-purple); box-shadow: 0 2px 5px rgba(35, 25, 65, .25); }
+.map-zoom-control__range::-moz-range-track { width: var(--zoom-track-width); border-radius: 999px; background: #e6ddf9; }
 .map-zoom-control__range::-moz-range-thumb { width: 1.05rem; height: 1.05rem; border: 3px solid #fff; border-radius: 50%; background: var(--gol-purple); box-shadow: 0 2px 5px rgba(35, 25, 65, .25); }
 
 @media (max-width: 767.98px) {
@@ -1219,8 +1236,7 @@ onBeforeUnmount(() => {
   .map-category { flex-basis: 4.2rem; font-size: .64rem; }
   .map-category__icon { width: 2.5rem; height: 2.5rem; font-size: 1.05rem; }
   .map-category-toggle { right: .45rem; width: 2.1rem; height: 2.1rem; }
-  .map-zoom-control { top: calc(.75rem + env(safe-area-inset-top)); right: .75rem; width: 2.8rem; padding: .45rem .25rem .55rem; }
-  .map-zoom-control__range { height: 8.75rem; }
+  .map-zoom-control { display: none; }
   .map-activity-card { bottom: calc(5.75rem + env(safe-area-inset-bottom)); left: .75rem; width: calc(100% - 1.5rem); padding: 1rem; border-radius: 24px; }
   .map-activity-card__main { gap: .75rem; padding-right: 1rem; }
   .map-activity-card__image { width: 5.75rem; height: 5.75rem; border-radius: 18px; font-size: 2.4rem; }
