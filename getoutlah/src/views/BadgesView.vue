@@ -1,8 +1,4 @@
-<!--
-  Badges tab: "Your trophy shelf" (matches Figma).
-  Add to your router:  { path: '/badges', name: 'badges', component: BadgesView }
-  The top "GetOutLah!" bar and bottom nav come from your team's App layout.
--->
+
 <template>
   <main class="gol-page">
     <div class="container py-3 py-md-4 page-inner">
@@ -26,8 +22,7 @@
           <span class="earned-count">{{ earnedCount }} of {{ badges.length }} earned</span>
         </div>
 
-        <!-- X-factor: Vue <TransitionGroup>. Badges fade up one by one when the
-             page loads, and a newly earned badge slides over to the earned group. -->
+        <!-- To make badges fade in -->
         <TransitionGroup tag="div" name="badge-list" appear class="row row-cols-3 row-cols-md-4 row-cols-xl-6 g-3">
           <div v-for="(b, i) in badges" :key="b.id" class="col" :style="{ '--i': i }">
             <BadgeTile :badge="b" @select="selected = b" />
@@ -86,7 +81,7 @@ export default {
     }
   },
   computed: {
-    // Earned badges first, then locked ones (closest to unlocking first)
+    // show earned badges first, then locked ones at the back 
     badges() {
       return badgeList().sort((a, b) => {
         if (a.earned !== b.earned) return a.earned ? -1 : 1
@@ -118,11 +113,10 @@ export default {
 .sheet-badge :deep(.progress-wrap) { display: none; }
 .detail-text { color: var(--gol-muted); font-weight: 600; }
 
-/* <TransitionGroup> animations for the badge grid */
 .badge-list-enter-active,
 .badge-list-appear-active {
   transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transition-delay: calc(var(--i) * 70ms); /* one after another */
+  transition-delay: calc(var(--i) * 70ms); 
 }
 .badge-list-enter-from,
 .badge-list-appear-from {

@@ -1,10 +1,4 @@
-<!--
-  Floating "How was it?" banner that appears after a check-in.
-  Put it ONCE in App.vue, under <RouterView />:
-    <ReflectionPrompt />
-  It works on every page, so a check-in from the Map page still asks
-  for a reflection.
--->
+
 <template>
   <div>
     <Transition name="prompt">
@@ -26,9 +20,8 @@
 import ReflectionSheet from './ReflectionSheet.vue'
 import { reflections, dismissPrompt } from '../../stores/reflections.js'
 
-// Wait this long after check-in before asking (0 = straight away, good for demos).
-// Set to e.g. 60 so students are asked after the activity, not when they arrive.
-const ASK_AFTER_MINUTES = 0
+
+const ASK_AFTER_MINUTES = 0 //0 so check in starts straight away 
 
 export default {
   name: 'ReflectionPrompt',
@@ -44,7 +37,7 @@ export default {
   },
   computed: {
     current() {
-      if (!this.store.promptsOn) return null // turned off in Settings
+      if (!this.store.promptsOn) return null 
       return (
         this.store.pending.find(
           (p) =>
@@ -70,11 +63,9 @@ export default {
   },
   methods: {
     snooze() {
-      // Hide it (remembered); it stays in "My reflections" so they can do it later
       if (this.current) dismissPrompt(this.current.activityId)
     },
     openActivity(activity) {
-      // If a teammate made an activity details page named 'activity', go there
       if (this.$router && this.$router.hasRoute('activity')) {
         this.$router.push({ name: 'activity', params: { id: activity.id } })
       }
@@ -90,7 +81,7 @@ export default {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(90px + env(safe-area-inset-bottom)); /* sits above the bottom nav */
+  bottom: calc(90px + env(safe-area-inset-bottom)); 
   z-index: 1040;
   width: min(440px, calc(100% - 24px));
   display: flex;
@@ -133,7 +124,7 @@ export default {
   flex-shrink: 0;
 }
 
-/* Slide up from the bottom */
+/* animation to slide up from bottom */
 .prompt-enter-active,
 .prompt-leave-active { transition: opacity 0.3s ease, translate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .prompt-enter-from,

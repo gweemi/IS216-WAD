@@ -1,10 +1,4 @@
-<!--
-  One round badge on the trophy shelf (earned or locked).
-  <BadgeTile :badge="b" @select="openBadge(b)" />
-  Earned badges pop + burst sparkles when tapped, then emit "select".
-  Add :celebrate="true" to play the animation as soon as it appears
-  (used for the big badge inside the details pop-up).
--->
+
 <template>
   <button
     class="badge-tile"
@@ -18,7 +12,7 @@
       </span>
       <span v-if="!badge.earned" class="locked-tag">LOCKED</span>
 
-      <!-- Sparkle burst: 10 little bits flying outwards -->
+      <!-- animation part when click -->
       <span v-if="popping" class="burst" aria-hidden="true">
         <span
           v-for="n in 10"
@@ -44,8 +38,8 @@
 <script>
 import { burstFrom } from '../../utils/celebrate.js'
 
-const POP_MS = 700 // how long the pop animation runs
-const OPEN_DELAY_MS = 420 // open the details while the sparkles are still flying
+const POP_MS = 700 
+const OPEN_DELAY_MS = 420 
 
 export default {
   name: 'BadgeTile',
@@ -64,7 +58,6 @@ export default {
   },
   mounted() {
     if (this.celebrate && this.badge.earned) {
-      // wait for the pop-up to slide in, then burst
       this.timers.push(setTimeout(() => this.pop(), 350))
     }
   },
@@ -74,7 +67,6 @@ export default {
   methods: {
     pop() {
       this.popping = false
-      // next frame so the animation restarts if tapped again quickly
       requestAnimationFrame(() => {
         this.popping = true
         this.timers.push(setTimeout(() => (this.popping = false), POP_MS))
@@ -85,10 +77,10 @@ export default {
         this.$emit('select', this.badge)
         return
       }
-      if (this.popping) return // ignore double taps
+      if (this.popping) return 
       this.pop()
       try {
-        burstFrom(this.$refs.ring) // canvas-confetti bursts out of the badge
+        burstFrom(this.$refs.ring) 
       } catch (e) {
         /* decoration only */
       }
@@ -152,8 +144,7 @@ export default {
   line-height: 1.2;
 }
 
-/* ---------- Earned: pop animation ---------- */
-.popping { position: relative; z-index: 2; } /* sparkles fly over neighbouring badges */
+.popping { position: relative; z-index: 2; } /* sparkles fly around the badges */
 .popping .ring { animation: badge-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .popping .face i { animation: icon-wiggle 0.6s ease; }
 .popping .name { animation: name-bounce 0.6s ease; }
@@ -217,7 +208,6 @@ export default {
   100% { opacity: 0; transform: rotate(var(--angle)) translateY(-62px) scale(1) rotate(180deg); }
 }
 
-/* Big badge in the details pop-up spins in */
 .big-entrance .ring { animation: spin-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 .big-entrance.popping .ring { animation: badge-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
 @keyframes spin-in {
@@ -225,7 +215,6 @@ export default {
   to { transform: scale(1) rotate(0); opacity: 1; }
 }
 
-/* ---------- Locked look ---------- */
 .locked .ring { background: var(--gol-locked); box-shadow: none; }
 .locked .face {
   background: #f6f3fa !important;
@@ -255,8 +244,6 @@ export default {
   color: var(--gol-muted);
 }
 
-/* Gentle version for devices with "reduce motion" / animations turned off:
-   no spinning or flying confetti, but the badge still glows and shines. */
 @media (prefers-reduced-motion: reduce) {
   .popping .ring { animation: glow-pulse 0.7s ease; }
   .popping .face i,
