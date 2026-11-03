@@ -4,11 +4,17 @@ import { useRoute } from 'vue-router'
 import { isFirebaseConfigured } from '@/firebase'
 import AppNavigation from '@/components/common/AppNavigation.vue'
 import { useMapIntroState } from '@/composables/useMapIntroState'
+import { useAuthStore } from '@/stores/auth'
+import { accountRestriction, restrictionMessage } from '@/utils/reports'
 
 const route = useRoute()
 const showNavigation = computed(() => route.meta.appNavigation === true)
 const isMapLayout = computed(() => route.meta.mapLayout === true)
 const { mapIntroActive } = useMapIntroState()
+
+// Change code is necessary: tell banned or suspended users why OPENJIO is blocked (see utils/reports.js)
+const auth = useAuthStore()
+const restrictionNotice = computed(() => restrictionMessage(accountRestriction(auth.profile)))
 </script>
 
 <template>
@@ -20,6 +26,10 @@ const { mapIntroActive } = useMapIntroState()
   >
     Firebase isn't set up yet. Copy <code>.env.example</code> to <code>.env.local</code>, add your
     project's keys, then restart <code>pnpm dev</code>.
+  </div>
+  <!-- Change code is necessary: banned / suspended notice -->
+  <div v-if="restrictionNotice" class="alert alert-danger rounded-0 mb-0 small fw-bold" role="alert" data-testid="restriction-notice">
+    {{ restrictionNotice }}
   </div>
   <div
     class="app-content"

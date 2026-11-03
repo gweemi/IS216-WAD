@@ -370,7 +370,7 @@ function clearSelectedActivity() {
 }
 
 function openSelectedActivity() {
-  if (selectedActivity.value) router.push({ name: 'activity', params: { id: selectedActivity.value.id } })
+  if (selectedActivity.value) router.push({ name: 'activity', params: { id: selectedActivity.value.id }, query: { from: 'map' } })
 }
 
 function selectCategory(categoryId) {
