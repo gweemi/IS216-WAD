@@ -4,7 +4,7 @@ import { ACTIVITY_SOURCES } from '@/utils/activitySource'
 // activitiesStore.seedFirestore(); Activities, Map, and wellbeing all read this shape.
 // `category` is one canonical interest ID. `type` is a separate filter dimension.
 export const categories = INTERESTS.map((i) => i.id)
-export const activityTypes = ['events', 'outdoor', 'volunteering', 'paid', 'openjio']
+export const activityTypes = ['events', 'outdoor', 'volunteering', 'paid', 'openJio']
 
 export const seedActivities = [
   { id: 's1', title: 'Neon Pottery Jam', description: 'Shape your own bowl or mug on the wheel under glowing neon lights. No experience needed, and your piece is fired and ready to collect.', category: 'workshops', type: 'paid', cost: 45, durationHrs: 2, setting: 'Indoor', energyLevel: 'low', area: 'Bras Basah', region: 'central', lat: 1.2966, lng: 103.8510, groupFriendly: true, source: 'curated' },

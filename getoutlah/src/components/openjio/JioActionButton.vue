@@ -46,10 +46,10 @@ export default {
     ...mapStores(useOpenJioStore),
     // The jio passed in, or the live one from the store
     current() {
-      return this.jio ?? this.openjioStore.all.find((j) => j.id === this.jioId) ?? null
+      return this.jio ?? this.openJioStore.all.find((j) => j.id === this.jioId) ?? null
     },
     me() {
-      return this.uid || this.openjioStore.uid
+      return this.uid || this.openJioStore.uid
     },
     // Change code is necessary: added suspended
     suspended() {
@@ -68,7 +68,7 @@ export default {
     },
   },
   mounted() {
-    if (!this.jio) this.openjioStore.start() // needed when only an id was given
+    if (!this.jio) this.openJioStore.start() // needed when only an id was given
   },
   beforeUnmount() {
     clearTimeout(this.timer)

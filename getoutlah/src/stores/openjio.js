@@ -16,7 +16,7 @@ let stopListening = null
 const notEnded = (j) => statusOf(j) !== 'ended'
 const live = (j) => j.status !== 'cancelled' && notEnded(j)
 
-export const useOpenJioStore = defineStore('openjio', {
+export const useOpenJioStore = defineStore('openJio', {
   state: () => ({
     all: [], // every upcoming jio from Firestore, soonest first
     loading: false,

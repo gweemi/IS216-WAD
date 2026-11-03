@@ -203,7 +203,7 @@ describe('fitting in with the Activities page', () => {
     expect(a).toMatchObject({
       id: 'jio-j1',
       jioId: 'j1',
-      type: 'openjio',
+      type: 'openJio',
       source: 'openJio',
       visibility: 'public',
       category: 'sports',

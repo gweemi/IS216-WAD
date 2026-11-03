@@ -221,7 +221,7 @@ export function toActivity(jio, uid) {
     jioId: jio.id,
     title: jio.title,
     category: jio.category,
-    type: 'openjio',
+    type: 'openJio',
     source: ACTIVITY_SOURCES.OPEN_JIO,
     // Keep the server-owned discovery visibility when this Jio is rendered
     // through the shared Activities pipeline.

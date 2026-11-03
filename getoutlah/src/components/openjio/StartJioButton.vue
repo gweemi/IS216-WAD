@@ -2,7 +2,7 @@
   Drop-in "Start a jio" button for any page. It opens the create form itself.
     <StartJioButton />
     <StartJioButton label="OpenJio this" :prefill="{ title: a.title, location: a.location }" />
-    <StartJioButton label="OpenJio at this time" :prefill="{ startAt: slotStart, visibility: 'friends' }" />
+    <StartJioButton label="OpenJio at this time" :prefill="{ startAt: slotStart, visibility: 'invite_only' }" />
   Emits `created` with the new jio's id.
 -->
 <template>

@@ -48,7 +48,7 @@ const saved = computed(() => (activity.value ? isSaved(activity.value.id) : fals
 const planned = computed(() => (activity.value ? isPlanned(activity.value.id) : false))   
 const jios = useOpenJioStore()
 const jioSuspended = computed(() =>
-  activity.value?.type === 'openjio' && jios.all.find((j) => j.id === activity.value.jioId)?.status === 'suspended')
+  activity.value?.type === 'openJio' && jios.all.find((j) => j.id === activity.value.jioId)?.status === 'suspended')
 
 watchEffect(async () => { if (activity.value) friendsDid.value = await friendsWhoDid(activity.value.id) })
 
@@ -60,7 +60,7 @@ const doCheckIn = async () => {
     const a = activity.value
     const r = await checkInToActivity({
     id: a.id, title: a.title, category: a.category, region: a.region, lat: a.lat, lng: a.lng,
-    energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openjio', hostedByMe: !!a.hostedByMe,
+    energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openJio', hostedByMe: !!a.hostedByMe,
     }, await request())
     if (!r.ok) throw new Error(r.message)
     await removePlan(a.id).catch(() => {})
@@ -130,8 +130,8 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
             <i class="bi bi-people"></i> Friends who have done this: {{ friendsDid.map((f) => f.name).join(', ') }}
           </p>
 
-          <JioActionButton v-if="activity.type === 'openjio'" :jio-id="activity.jioId" class="mt-3" />
-          <ReportJioButton v-if="activity.type === 'openjio'" :jio-id="activity.jioId" class="mt-2" />
+          <JioActionButton v-if="activity.type === 'openJio'" :jio-id="activity.jioId" class="mt-3" />
+          <ReportJioButton v-if="activity.type === 'openJio'" :jio-id="activity.jioId" class="mt-2" />
 
           <div class="det-actions">
             <a v-if="booking" :href="booking.href" target="_blank" rel="noopener" class="gol-btn-primary det-link det-book">
@@ -150,7 +150,7 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
             <a v-if="directions" :href="directions" target="_blank" rel="noopener" class="gol-btn-soft det-link">
               <i class="bi bi-signpost-split"></i> Get directions
             </a>
-            <StartJioButton v-if="activity.type !== 'openjio'" label="OpenJio this" variant="soft"
+            <StartJioButton v-if="activity.type !== 'openJio'" label="OpenJio this" variant="soft"
               :prefill="prefillFromActivity(activity)" />
           </div>
           <p v-if="message" class="det-msg">{{ message }}</p>

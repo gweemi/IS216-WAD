@@ -87,8 +87,8 @@ describe('JioCard', () => {
     expect(card({}, 'me').find('[data-testid="view-jio-attendees"]').exists()).toBe(false)
   })
 
-  it('shows who invited you to a friends-only jio', () => {
-    const w = card({ visibility: 'friends', invited: ['me'] })
+  it('shows who invited you to an invite-only jio', () => {
+    const w = card({ visibility: 'invite_only', invited: ['me'] })
     expect(w.find('[data-testid="jio-invited"]').text()).toContain('Micah invited you')
     expect(button(w).text()).toBe('Join')
   })

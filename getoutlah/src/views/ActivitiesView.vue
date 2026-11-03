@@ -28,10 +28,12 @@ const sourcePills = [
   { value: ACTIVITY_SOURCES.EXTERNAL, label: SOURCE_LABELS[ACTIVITY_SOURCES.EXTERNAL] },
   { value: ACTIVITY_SOURCES.OPEN_JIO, label: SOURCE_LABELS[ACTIVITY_SOURCES.OPEN_JIO] },
 ]
+// "Ways to explore": explains where activities come from. Not clickable on purpose;
+// the "Browse activities" pills below are the filters.
 const sourceCards = [
-  { source: ACTIVITY_SOURCES.PICKS, icon: 'ph-star-four', title: 'GetOutLah Picks', text: 'Handpicked ideas for a good break in Singapore.' },
-  { source: ACTIVITY_SOURCES.EXTERNAL, icon: 'ph-compass', title: 'External Listings', text: 'Events and things to do from trusted external providers.' },
-  { source: ACTIVITY_SOURCES.OPEN_JIO, icon: 'ph-users-three', title: 'OPENJIO!', text: 'Plans hosted by students looking for people to join.' },
+  { source: ACTIVITY_SOURCES.PICKS, icon: 'ph-sparkle', title: 'GetOutLah Picks', text: 'Handpicked activities by our team.' },
+  { source: ACTIVITY_SOURCES.EXTERNAL, icon: 'ph-calendar-dots', title: 'External Listings', text: 'Events from trusted platforms.' },
+  { source: ACTIVITY_SOURCES.OPEN_JIO, icon: 'ph-users', title: 'OPENJIO!', text: 'Plans hosted by fellow students.' },
 ]
 const resultsHeading = computed(() => ({
   [ACTIVITY_SOURCES.PICKS]: 'GetOutLah Picks',
@@ -93,15 +95,19 @@ onMounted(loadActivities)
     <div class="container py-4 col-lg-12">
       <p class="gol-eyebrow act-location-eyebrow">Explore Singapore</p>
       <h1 class="gol-title">Where we going?</h1>
-      <p class="act-intro">Find something that fits your mood—from GetOutLah’s own picks and external listings to student-hosted OPENJIO plans.</p>
+      <p class="act-intro">From curated finds to student-hosted plans, there’s something for everyone.</p>
 
-      <section class="source-cards" aria-label="Where activities come from">
-        <article v-for="card in sourceCards" :key="card.source" class="source-card" :class="`source-card--${card.source}`">
-          <i :class="['ph', card.icon]" aria-hidden="true"></i>
-          <div><h2>{{ card.title }}</h2><p>{{ card.text }}</p></div>
-        </article>
+      <section class="source-info" aria-labelledby="ways-to-explore">
+        <h2 id="ways-to-explore" class="act-label">Ways to explore</h2>
+        <ul class="source-cards">
+          <li v-for="card in sourceCards" :key="card.source" class="source-card" :class="`source-card--${card.source}`">
+            <span class="source-icon" aria-hidden="true"><i :class="['ph', card.icon]"></i></span>
+            <div><h3>{{ card.title }}</h3><p>{{ card.text }}</p></div>
+          </li>
+        </ul>
       </section>
 
+      <h2 class="act-label act-label--browse">Browse activities</h2>
       <div class="source-pills" role="tablist" aria-label="Activity source">
         <button v-for="pill in sourcePills" :key="pill.label" type="button" role="tab"
           :aria-selected="selectedSource === pill.value" :class="{ on: selectedSource === pill.value }"
@@ -117,7 +123,7 @@ onMounted(loadActivities)
         </div>
         <button class="act-filter-btn" aria-label="Filters" @click="filtersOpen = true"><i class="ph ph-sliders-horizontal" aria-hidden="true"></i></button>
       </div>
-      <div v-if="selectedSource === ACTIVITY_SOURCES.OPEN_JIO" class="openjio-visibility-filter" role="tablist" aria-label="OPENJIO visibility">
+      <div v-if="selectedSource === ACTIVITY_SOURCES.OPEN_JIO" class="openjio-visibility-filter source-pills source-pills--small" role="tablist" aria-label="OPENJIO visibility">
         <span class="openjio-visibility-label">Visibility:</span>
         <button v-for="option in [{ id: 'all', label: 'All Jios' }, { id: 'public', label: 'Public' }, { id: 'friends_only', label: 'Friends Only' }, { id: 'invited', label: 'Invited' }]"
           :key="option.id" type="button" role="tab" :aria-selected="openJioVisibility === option.id"
@@ -175,21 +181,29 @@ onMounted(loadActivities)
 <style scoped>
 .act-intro { max-width: 44rem; margin: .25rem 0 1.1rem; color: var(--gol-muted); font-weight: 650; }
 .act-location-eyebrow { margin-bottom: .22rem; }
-.source-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1rem; }
-.source-card { display: flex; align-items: flex-start; gap: .65rem; padding: .9rem; border: 2px solid #282047; border-radius: 18px; background: #fff; box-shadow: 0 3px 0 #282047; }
-.source-card > i { display: grid; flex: 0 0 2.25rem; width: 2.25rem; height: 2.25rem; place-items: center; border-radius: 12px; background: var(--gol-purple); color: white; font-size: 1.3rem; }
-.source-card--externalListings > i { background: var(--gol-cyan); color: #282047; }
-.source-card--openJio > i { background: var(--gol-coral); color: #282047; }
-.source-card h2 { margin: 0; font: 900 1rem var(--gol-font); color: #282047; }
-.source-card p { margin: .18rem 0 0; color: var(--gol-muted); font-size: .82rem; line-height: 1.3; }
-.source-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin: 1.2rem 0; }
-.source-pills button { border: 2px solid #282047; border-radius: 999px; padding: .45rem .85rem; background: #fff; box-shadow: 0 2px 0 #282047; color: #282047; font: 800 .88rem var(--gol-font); transition: transform .16s ease, background .16s ease, color .16s ease; }
-.source-pills button:hover, .source-pills button:focus-visible { transform: translateY(-2px); }
-.source-pills button.on { background: var(--gol-purple); color: #fff; }
-.openjio-visibility-filter { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: .7rem; margin: .7rem 0 .9rem; }
+
+/* Section labels: "Ways to explore", "Browse activities" */
+.act-label { margin: 0 0 .7rem; font: 900 1.02rem var(--gol-font); color: var(--gol-ink); }
+
+/* "Ways to explore": plain info rows, no border or shadow, so they don't look like buttons */
+.source-info { padding-bottom: 1.1rem; margin-bottom: 1.1rem; border-bottom: 1px solid rgba(34, 26, 59, .1); }
+.source-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.source-card { display: flex; align-items: center; gap: .9rem; }
+.source-icon { display: grid; flex: 0 0 3.2rem; width: 3.2rem; height: 3.2rem; place-items: center; border-radius: 14px; font-size: 1.55rem; }
+.source-card--getoutlahPicks .source-icon { background: var(--gol-purple-soft); color: var(--gol-purple); }
+.source-card--externalListings .source-icon { background: #dff6fa; color: #1f6f7d; }
+.source-card--openJio .source-icon { background: #ffe6e0; color: #b4382f; }
+.source-card h3 { margin: 0; font: 900 1.05rem var(--gol-font); color: var(--gol-ink); }
+.source-card p { margin: .15rem 0 0; color: var(--gol-muted); font-size: .86rem; font-weight: 650; line-height: 1.3; }
+
+/* "Browse activities" pills and the OPENJIO visibility pills: outline, purple when selected */
+.source-pills { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .55rem; margin: 0 0 1.2rem; }
+.source-pills button { border: 1.5px solid rgba(34, 26, 59, .35); border-radius: 999px; padding: .5rem 1.1rem; background: transparent; color: var(--gol-ink); font: 800 .9rem var(--gol-font); transition: background .16s ease, border-color .16s ease, color .16s ease; }
+.source-pills button:hover, .source-pills button:focus-visible { border-color: var(--gol-purple); color: var(--gol-purple); }
+.source-pills button.on { border-color: var(--gol-purple); background: var(--gol-purple); color: #fff; }
+.source-pills--small { align-items: center; margin: .7rem 0 .9rem; }
+.source-pills--small button { padding: .35rem .85rem; font-size: .8rem; }
 .openjio-visibility-label { color: var(--gol-muted); font-size: .83rem; font-weight: 900; }
-.openjio-visibility-filter button { border: 2px solid #282047; border-radius: 999px; padding: .35rem .75rem; background: #fff; color: #282047; font: 800 .8rem var(--gol-font); }
-.openjio-visibility-filter button.on { background: var(--gol-purple); color: #fff; }
 .openjio-visibility-help { margin: -.25rem 0 .95rem; color: var(--gol-muted); font-size: .82rem; font-weight: 650; }
 .openjio-visibility-help p { display: flex; align-items: flex-start; gap: .35rem; max-width: 52rem; margin: 0 0 .3rem; }
 .openjio-visibility-help i { flex: 0 0 auto; margin-top: .1rem; color: var(--gol-purple); font-size: 1rem; }
@@ -213,5 +227,5 @@ onMounted(loadActivities)
 @media (prefers-reduced-motion: reduce) {
   .activity-card-enter-active, .activity-card-leave-active, .activity-card-move { transition: none; }
 }
-@media (max-width: 767px) { .source-cards { grid-template-columns: 1fr; } .source-pills { justify-content: center; } .openjio-visibility-filter { gap: .6rem; } }
+@media (max-width: 767px) { .source-cards { grid-template-columns: 1fr; gap: .8rem; } }
 </style>
