@@ -25,6 +25,8 @@ vi.mock('@/stores/auth', async () => {
   })
   return { useAuthStore: () => authStore.value }
 })
+vi.mock('@/services/privacy', () => ({ savePrivacy: async () => {} }))
+vi.mock('@/services/preferences', () => ({ savePreferences: async () => {} }))
 vi.mock('@/stores/openjio', () => ({ useOpenJioStore: () => ({ start: () => {}, visible: [] }) }))
 vi.mock('@/services/auth', () => ({
   ensureUserProfile: vi.fn(),
@@ -110,6 +112,18 @@ describe('ProfileView', () => {
 
   it('has the private reflections section', () => {
     expect(mountPage().text()).toContain('My reflections')
+  })
+
+  it('shows the My vibe and Privacy cards', () => {
+    const w = mountPage()
+    expect(w.find('[data-testid="preferences-card"]').exists()).toBe(true)
+    expect(w.find('[data-testid="privacy-card"]').exists()).toBe(true)
+  })
+
+  it('keeps the log-out icon and text as separate pieces', () => {
+    const btn = mountPage().find('[data-testid="logout"]')
+    expect(btn.find('i.ph-sign-out').exists()).toBe(true)
+    expect(btn.find('span').text()).toBe('Log out')
   })
 
   it('asks for confirmation before logging out', async () => {

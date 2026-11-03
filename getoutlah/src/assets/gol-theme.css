@@ -183,3 +183,12 @@
   box-shadow: 0 0 0 0.2rem rgba(107, 66, 227, 0.25);
   border-color: var(--gol-purple);
 }
+
+/* Phones: leave a comfortable gap at both sides of every page (20px instead of 12px).
+   Bootstrap's .container padding is half of --bs-gutter-x. */
+@media (max-width: 575.98px) {
+  .container,
+  .container-fluid {
+    --bs-gutter-x: 2.5rem;
+  }
+}

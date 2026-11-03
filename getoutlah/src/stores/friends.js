@@ -6,6 +6,7 @@
 // =============================================================
 import { reactive, computed } from 'vue'
 import { otherMember, overlaps, toMillis } from '@/utils/friends'
+import { privacyOf, visibleProfile } from '@/config/privacy'
 
 function emptyState() {
   return {
@@ -27,12 +28,13 @@ export function resetFriendsState() {
 
 function withProfile(f) {
   const uid = otherMember(f, friendsState.uid)
-  const p = friendsState.profiles[uid] || {}
+  const raw = friendsState.profiles[uid] || {}
+  const p = visibleProfile(raw) // hides what they switched off in Profile → Privacy
   return {
     id: f.id,
     uid,
     name: p.displayName || f.names?.[uid] || 'Someone',
-    photoURL: p.photoURL || f.photos?.[uid] || null,
+    photoURL: privacyOf(raw).showPhoto ? p.photoURL || f.photos?.[uid] || null : null,
     universityName: p.universityName || null,
     freeWindows: p.freeWindows || [],
     checkedIn: p.checkedInActivityIds || [],

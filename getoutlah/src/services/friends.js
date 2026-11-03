@@ -21,6 +21,7 @@ import { useAuthStore } from '@/stores/auth'
 import { friendsState, resetFriendsState, relationshipWith } from '@/stores/friends'
 import { freeWindows } from '@/stores/ports'
 import { pairId, otherMember, upcomingWindows, toMillis } from '@/utils/friends'
+import { privacyOf, visibleProfile } from '@/config/privacy'
 
 let unsubs = [] // my friendships, my notifications, my profile
 const profileUnsubs = {} // uid → unsubscribe, one per friend / requester
@@ -107,7 +108,8 @@ function me() {
   return {
     uid: auth.user.uid,
     name: auth.profile?.displayName || auth.user.displayName || auth.email.split('@')[0],
-    photo: auth.profile?.photoURL || auth.user.photoURL || null,
+    // Respect my own Profile → Privacy setting when my photo is copied into requests and notifications
+    photo: privacyOf(auth.profile).showPhoto ? auth.profile?.photoURL || auth.user.photoURL || null : null,
   }
 }
 
@@ -124,7 +126,10 @@ export async function findUserByEmail(email) {
   const clean = email.trim().toLowerCase()
   if (!clean) return null
   const snap = await getDocs(query(collection(db, 'users'), where('email', '==', clean), limit(1)))
-  return snap.empty ? null : { uid: snap.docs[0].id, ...snap.docs[0].data() }
+  if (snap.empty) return null
+  const person = { uid: snap.docs[0].id, ...visibleProfile(snap.docs[0].data()) }
+  // "Let people find me" switched off: act as if they aren't on GetOutLah!
+  return person.discoverable || relationshipWith(person.uid) !== 'none' ? person : null
 }
 
 /** A few students from my university that I'm not connected to yet. */
@@ -132,8 +137,8 @@ export async function suggestedPeople(universityId, max = 6) {
   if (!universityId) return []
   const snap = await getDocs(query(collection(db, 'users'), where('universityId', '==', universityId), limit(30)))
   return snap.docs
-    .map((d) => ({ uid: d.id, ...d.data() }))
-    .filter((p) => p.uid !== friendsState.uid && relationshipWith(p.uid) === 'none')
+    .map((d) => ({ uid: d.id, ...visibleProfile(d.data()) }))
+    .filter((p) => p.discoverable && p.uid !== friendsState.uid && relationshipWith(p.uid) === 'none')
     .slice(0, max)
 }
 
