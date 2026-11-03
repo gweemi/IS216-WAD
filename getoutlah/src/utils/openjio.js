@@ -88,8 +88,10 @@ export const slotsLeft = (jio) => jio.slotsLeft ?? Math.max(0, jio.capacity - (j
 
 export const endTime = (jio) => new Date(jio.startAt.getTime() + jio.durationMins * 60000)
 
-/** 'cancelled' | 'ended' | 'full' | 'open' */
+/** 'suspended' | 'cancelled' | 'ended' | 'full' | 'open' */
 export function statusOf(jio, now = new Date()) {
+  // Change code is necessary: reported jios are suspended until an admin reviews them (see utils/reports.js)
+  if (jio.status === 'suspended') return 'suspended'
   if (jio.status === 'cancelled') return 'cancelled'
   if (endTime(jio) <= now) return 'ended'
   if (slotsLeft(jio) === 0) return 'full'
@@ -132,6 +134,7 @@ export function canSee(jio, uid, friendIds = []) {
 function mustBeActive(jio, uid, now) {
   if (!canSee(jio, uid)) throw new Error('This jio is for invited friends only.')
   const status = statusOf(jio, now)
+  if (status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (status === 'cancelled') throw new Error('This jio was cancelled by the host.')
   if (status === 'ended') throw new Error('This jio has already ended.')
   return status
@@ -162,6 +165,7 @@ export function applyChope(jio, uid, now = new Date()) {
  * gets the freed spot automatically.
  */
 export function applyLeave(jio, uid) {
+  if (jio.status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (jio.status === 'cancelled') throw new Error('This jio was cancelled, so there is nothing to leave.')
   if (jio.hostId === uid) throw new Error("Hosts can't leave. Cancel the jio instead.")
   if (!jio.participants.includes(uid)) throw new Error("You're not in this jio.")
@@ -176,6 +180,7 @@ export function applyLeave(jio, uid) {
 
 /** Give up your place in the queue. */
 export function applyLeaveQueue(jio, uid) {
+  if (jio.status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (jio.status === 'cancelled') throw new Error('This jio was cancelled, so there is no queue.')
   if (!jio.waitlist.includes(uid)) throw new Error("You're not in the queue.")
   return { participants: jio.participants, waitlist: jio.waitlist.filter((id) => id !== uid) }
@@ -189,7 +194,8 @@ export function statusLabel(jio, now = new Date()) {
     const n = slotsLeft(jio)
     return `Open · ${n} spot${n === 1 ? '' : 's'} left`
   }
-  return { full: 'Full', ended: 'Ended', cancelled: 'Cancelled' }[s]
+  // Change code is necessary: added suspended
+  return { full: 'Full', ended: 'Ended', cancelled: 'Cancelled', suspended: 'Suspended' }[s]
 }
 
 export const priceText = (jio) => (jio.cost === 0 ? 'Free' : `$${jio.cost}`)

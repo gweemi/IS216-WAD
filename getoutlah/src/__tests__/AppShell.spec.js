@@ -3,6 +3,8 @@ import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 vi.mock('@/firebase', () => ({ isFirebaseConfigured: true }))
+// Change code is necessary: App.vue now reads the logged-in profile for the banned / suspended notice
+vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ profile: null }) }))
 
 const { default: App } = await import('@/App.vue')
 

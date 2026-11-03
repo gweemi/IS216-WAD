@@ -62,7 +62,7 @@
             <div class="small detail-text">Bonus: +{{ selected.bonus }} points (counts towards your weekly cap)</div>
           </div>
           <p class="small detail-text mb-3">No deadline. Go at your own pace.</p>
-          <button class="gol-btn-primary" @click="selected = null">Got it</button>
+          <button v-if="!selected.earned && selected.qualifies" class="gol-btn-primary me-2" @click="trackOnMap(selected)"><i class="bi bi-map"></i> Track on Map</button>
         </div>
       </template>
     </BottomSheet>
@@ -75,6 +75,9 @@ import PointsCard from '../components/badges/PointsCard.vue'
 import BadgeTile from '../components/badges/BadgeTile.vue'
 import BottomSheet from '../components/common/BottomSheet.vue'
 import { game, badgeList } from '../stores/gamification(badges).js'
+import { useBadgeHunt } from '@/composables/useBadgeHunt'
+
+const { selectTrackedBadge } = useBadgeHunt()
 
 export default {
   name: 'BadgesView',
@@ -101,6 +104,11 @@ export default {
   methods: {
     formatDate(iso) {
       return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    },
+    trackOnMap(badge) {
+      selectTrackedBadge(badge.id)
+      this.selected = null
+      this.$router.push({ name: 'map' })
     },
   },
 }

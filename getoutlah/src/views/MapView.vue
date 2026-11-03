@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster'
@@ -9,25 +9,29 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import FilterButton from '@/components/common/FilterButton.vue'
 import FilterSheet from '@/components/FilterSheet.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
-import { filtered, filters, loadActivities, oneCardPerEvent, weatherAt } from '@/stores/activities'
+import { allActivities, filtered, filters, loadActivities, oneCardPerEvent, weatherAt } from '@/stores/activities'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { useMapIntroState } from '@/composables/useMapIntroState'
-import { completeMapOnboarding } from '@/services/mapOnboarding'
 import { useAuthStore } from '@/stores/auth'
 import { INTERESTS } from '@/config/preferences'
-import { clearActivityClusterLayer, createActivityClusterLayer, populateActivityClusterLayer, setActivityMarkerSelected } from '@/utils/activityMapMarkers'
+import { clearActivityClusterLayer, createActivityClusterLayer, populateActivityClusterLayer, refreshActivityClusterEligibility, setActivityMarkerSelected, setActivityMarkerHuntEligible } from '@/utils/activityMapMarkers'
 import { focusMapOnActivity } from '@/utils/mapActivityFocus'
 import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, priceText } from '@/utils/activityStyle'
 import { distanceMeters } from '@/utils/geo'
+import { badgeOpportunities, canActivityProgressBadge } from '@/stores/gamification(badges).js'
+import { useBadgeHunt } from '@/composables/useBadgeHunt'
+import BadgeHuntSheet from '@/components/badges/BadgeHuntSheet.vue'
 
 const router = useRouter()
-const route = useRoute()
 const auth = useAuthStore()
 const { setMapIntroActive } = useMapIntroState()
+const { trackedBadgeId, trackedBadge, selectTrackedBadge } = useBadgeHunt()
 const mapElement = ref(null)
 const filtersOpen = ref(false)
 const categoriesCollapsed = ref(false)
+const huntSheetOpen = ref(false)
+const selectedHuntId = ref(null)
 const selectedActivity = ref(null)
 const selectedImageBroken = ref(false)
 const nearMeEnabled = ref(false)
@@ -44,27 +48,41 @@ const categoryCard = ref(null)
 const collapsedCategory = ref(null)
 const categoryCardWidth = ref(null)
 const { coords: locationCoords, error: locationError, loading: locationLoading, request: requestLocation, clear: clearLocation } = useGeolocation()
-const replayOnboarding = import.meta.env.DEV && route.query.replayIntro === '1'
-const onboardingEligible = Boolean(auth.isLoggedIn && (replayOnboarding || !auth.profile?.mapOnboardingCompleted))
+const onboardingEligible = Boolean(auth.isLoggedIn && auth.consumeMapIntro())
 if (!onboardingEligible) onboardingStage.value = 'completed'
 const onboardingActive = computed(() => onboardingStage.value !== 'completed')
 const showActivityMarkers = computed(() => onboardingStage.value === 'completed' || discoveryStep.value >= 1)
 const showHeader = computed(() => onboardingStage.value === 'completed' || discoveryStep.value >= 2)
 const showDiscoveryControls = computed(() => onboardingStage.value === 'completed' || discoveryStep.value >= 3)
 const showMapControls = computed(() => onboardingStage.value === 'completed' || discoveryStep.value >= 4)
-const activities = computed(() => {
-  const ungrouped = filtered.value
-  const nearby = !nearMeEnabled.value || !locationCoords.value
-    ? ungrouped
-    : ungrouped.filter((activity) => activity.lat != null && activity.lng != null && distanceMeters(locationCoords.value, activity) <= nearbyRadiusKm.value * 1000)
-  return oneCardPerEvent(nearby)
+const allDiscoverableActivities = computed(() => oneCardPerEvent(allActivities.value))
+const allMapActivities = computed(() => oneCardPerEvent(filtered.value))
+const activities = computed(() => !nearMeEnabled.value || !locationCoords.value
+  ? allMapActivities.value
+  : allMapActivities.value.filter((activity) => activity.lat != null && activity.lng != null && distanceMeters(locationCoords.value, activity) <= nearbyRadiusKm.value * 1000))
+const recommendedBadgeOpportunities = computed(() => badgeOpportunities(allDiscoverableActivities.value))
+const visibleHuntOpportunities = computed(() => badgeOpportunities(activities.value))
+const activeHuntOpportunity = computed(() => visibleHuntOpportunities.value.find((badge) => badge.id === trackedBadgeId.value) ?? null)
+const huntLocationText = computed(() => {
+  if (!trackedBadge.value) return ''
+  if (!nearMeEnabled.value) return 'Showing all eligible activities · Turn on Near Me to focus nearby'
+  const count = activeHuntOpportunity.value?.eligibleActivities.length ?? 0
+  return count ? `${count} nearby within ${nearbyRadiusKm.value} km` : `No nearby matches within ${nearbyRadiusKm.value} km`
 })
+const selectedBadgeOpportunity = computed(() => selectedActivity.value && trackedBadgeId.value && canActivityProgressBadge(trackedBadgeId.value, selectedActivity.value) ? trackedBadge.value : null)
 const categories = computed(() => [{ id: 'all', label: 'All', emoji: '✦', color: '#7541EC' }, ...INTERESTS])
+const selectedCategories = computed(() => categories.value.filter((category) =>
+  category.id !== 'all' && filters.value.categories.includes(category.id),
+))
 const selectedCategory = computed(() => {
   const selectedId = filters.value.categories.length === 1 ? filters.value.categories[0] : 'all'
   return categories.value.find((category) => category.id === selectedId) ?? categories.value[0]
 })
-const collapsedCategoryLabel = computed(() => selectedCategory.value.id === 'all' ? 'All Categories' : selectedCategory.value.label)
+const hasMultipleCategoriesSelected = computed(() => selectedCategories.value.length > 1)
+const collapsedCategoryLabel = computed(() => {
+  if (hasMultipleCategoriesSelected.value) return `${selectedCategories.value.length} categories selected`
+  return selectedCategory.value.id === 'all' ? 'All Categories' : selectedCategory.value.label
+})
 const categoryCardStyle = computed(() => categoryCardWidth.value ? { width: `${categoryCardWidth.value}px` } : {})
 const selectedWeather = computed(() => selectedActivity.value ? weatherAt(selectedActivity.value) : null)
 const selectedImage = computed(() => selectedActivity.value?.imageLargeUrl ?? selectedActivity.value?.imageUrl ?? null)
@@ -78,6 +96,7 @@ const selectedDirections = computed(() => selectedActivity.value?.lat != null &&
 const MIN_MAP_ZOOM = 11
 const MAX_MAP_ZOOM = 18
 const mapZoom = ref(12)
+const showDesktopZoomControl = ref(typeof window === 'undefined' ? true : !isMobileViewport())
 let map
 let clusterLayer
 let userLocationMarker
@@ -124,15 +143,6 @@ function showTemporaryLocationMarker() {
   }).addTo(map)
 }
 
-async function persistOnboardingCompletion() {
-  if (replayOnboarding) return
-  try {
-    await completeMapOnboarding()
-  } catch {
-    // The completed visual state remains usable. A later visit may retry saving.
-  }
-}
-
 function revealDiscovery() {
   const runId = onboardingRunId
   onboardingStage.value = 'discoveryReveal'
@@ -156,7 +166,6 @@ function revealDiscovery() {
       discoveryStep.value = 4
       onboardingStage.value = 'completed'
       setMapIntroActive(false)
-      persistOnboardingCompletion()
     })
 }
 
@@ -199,7 +208,6 @@ function skipOnboarding() {
   onboardingStage.value = 'completed'
   renderActivityMarkers(activities.value)
   setMapIntroActive(false)
-  persistOnboardingCompletion()
 }
 
 async function startOnboarding() {
@@ -216,6 +224,11 @@ async function startOnboarding() {
 
 function isMobileViewport() {
   return window.matchMedia?.('(max-width: 767.98px)').matches ?? false
+}
+
+function updateResponsiveMapControls() {
+  showDesktopZoomControl.value = !isMobileViewport()
+  updateCategoryCardWidth()
 }
 
 function syncMapZoom() {
@@ -346,9 +359,64 @@ function disableNearby() {
 
 function renderActivityMarkers(items) {
   if (!clusterLayer || !showActivityMarkers.value) return
-  const markers = populateActivityClusterLayer(L, clusterLayer, items, { onSelect: selectActivity })
+  const markers = populateActivityClusterLayer(L, clusterLayer, items, {
+    onSelect: selectActivity,
+    isHuntEligible: (activity) => Boolean(trackedBadgeId.value && canActivityProgressBadge(trackedBadgeId.value, activity)),
+  })
   activityMarkers = new Map(markers.map((marker) => [marker.__activityId, marker]))
   if (selectedActivity.value) setActivityMarkerSelected(activityMarkers.get(selectedActivity.value.id), true)
+}
+
+function refreshHuntMarkers(animate = false) {
+  applyHuntStateToMarkers([...activityMarkers.values()], animate)
+  refreshActivityClusterEligibility(clusterLayer, (activity) => Boolean(trackedBadgeId.value && canActivityProgressBadge(trackedBadgeId.value, activity)))
+}
+
+function applyHuntStateToMarkers(markers, animate = false) {
+  markers.forEach((marker) => {
+    const activity = marker.__activity ?? activities.value.find((item) => item.id === marker.__activityId)
+    setActivityMarkerHuntEligible(marker, Boolean(activity && trackedBadgeId.value && canActivityProgressBadge(trackedBadgeId.value, activity)), { animate })
+  })
+}
+
+// MarkerCluster inserts the individual marker DOM only after spiderfying/zooming.
+// Reapply the inner marker class on its lifecycle frame so Leaflet's outer
+// coordinate transform remains untouched while eligible children keep bouncing.
+function syncHuntAfterClusterLifecycle(event = {}) {
+  requestAnimationFrame(() => {
+    applyHuntStateToMarkers(event.markers?.length ? event.markers : [...activityMarkers.values()])
+    refreshActivityClusterEligibility(clusterLayer, (activity) => Boolean(trackedBadgeId.value && canActivityProgressBadge(trackedBadgeId.value, activity)))
+  })
+}
+
+function openHuntSelector() {
+  selectedHuntId.value = trackedBadgeId.value ?? recommendedBadgeOpportunities.value[0]?.id ?? null
+  huntSheetOpen.value = true
+}
+function selectRecommendedBadge(id) {
+  if (!id) return
+  selectTrackedBadge(id)
+  selectedHuntId.value = id
+  huntSheetOpen.value = false
+}
+
+function ensureRecommendedBadge() {
+  const opportunities = recommendedBadgeOpportunities.value
+  if (!opportunities.length) {
+    if (trackedBadgeId.value) selectTrackedBadge(null)
+    return
+  }
+  if (!trackedBadgeId.value || !opportunities.some((badge) => badge.id === trackedBadgeId.value)) {
+    selectTrackedBadge(opportunities[0].id)
+  }
+}
+
+function maybeOpenBadgeWelcome() {
+  if (onboardingActive.value || selectedActivity.value || filtersOpen.value || nearbyPromptOpen.value || huntSheetOpen.value) return
+  if (!recommendedBadgeOpportunities.value.length || !auth.consumeBadgeWelcome?.()) return
+  ensureRecommendedBadge()
+  selectedHuntId.value = trackedBadgeId.value ?? recommendedBadgeOpportunities.value[0]?.id ?? null
+  huntSheetOpen.value = Boolean(selectedHuntId.value)
 }
 
 function selectActivity(activity) {
@@ -370,17 +438,24 @@ function clearSelectedActivity() {
 }
 
 function openSelectedActivity() {
-  if (selectedActivity.value) router.push({ name: 'activity', params: { id: selectedActivity.value.id } })
+  if (selectedActivity.value) router.push({ name: 'activity', params: { id: selectedActivity.value.id }, query: { from: 'map' } })
 }
 
 function selectCategory(categoryId) {
-  filters.value.categories = categoryId === 'all' ? [] : [categoryId]
+  if (categoryId === 'all') {
+    filters.value.categories = []
+    return
+  }
+
+  filters.value.categories = filters.value.categories.includes(categoryId)
+    ? filters.value.categories.filter((id) => id !== categoryId)
+    : [...filters.value.categories, categoryId]
 }
 
 function isCategorySelected(categoryId) {
   return categoryId === 'all'
     ? filters.value.categories.length === 0
-    : filters.value.categories.length === 1 && filters.value.categories[0] === categoryId
+    : filters.value.categories.includes(categoryId)
 }
 
 function updateCategoryCardWidth() {
@@ -393,24 +468,39 @@ function toggleCategories() {
   categoriesCollapsed.value = !categoriesCollapsed.value
 }
 
-watch([categoriesCollapsed, selectedCategory], async () => {
+watch([categoriesCollapsed, collapsedCategoryLabel], async () => {
   nextTick(updateCategoryCardWidth)
 })
 
 watch(onboardingStage, (stage) => {
   if (stage === 'locationPrompt') nextTick(() => introEnableButton.value?.focus())
+  if (stage === 'completed') nextTick(() => {
+    ensureRecommendedBadge()
+    maybeOpenBadgeWelcome()
+  })
 })
 
 watch(nearbyPromptOpen, (open) => {
   if (open) nextTick(() => nearbyEnableButton.value?.focus())
 })
 
+watch([filtersOpen, nearbyPromptOpen], ([filtersAreOpen, nearbyPromptIsOpen]) => {
+  if (!filtersAreOpen && !nearbyPromptIsOpen) nextTick(maybeOpenBadgeWelcome)
+})
+
 watch([nearMeEnabled, nearbyRadiusKm, locationCoords], () => {
   updateNearbyRadiusCircle()
 })
 
+watch(trackedBadgeId, () => nextTick(() => refreshHuntMarkers(true)))
+watch(recommendedBadgeOpportunities, () => nextTick(ensureRecommendedBadge))
+watch(() => trackedBadge.value?.earned, (earned) => {
+  if (earned) nextTick(ensureRecommendedBadge)
+})
+
 onMounted(async () => {
   map = L.map(mapElement.value, { minZoom: MIN_MAP_ZOOM, maxZoom: MAX_MAP_ZOOM, zoomControl: false }).setView([1.3521, 103.8198], 12)
+  map.attributionControl?.setPosition?.('topright')
   syncMapZoom()
   map.on('zoomend', syncMapZoom)
 
@@ -422,10 +512,13 @@ onMounted(async () => {
     maxZoom: MAX_MAP_ZOOM,
   }).addTo(map)
 
-  clusterLayer = createActivityClusterLayer(L)
+  clusterLayer = createActivityClusterLayer(L, { isHuntEligible: (activity) => Boolean(trackedBadgeId.value && canActivityProgressBadge(trackedBadgeId.value, activity)) })
   clusterLayer.addTo(map)
-  nextTick(updateCategoryCardWidth)
-  window.addEventListener('resize', updateCategoryCardWidth)
+  clusterLayer.on?.('spiderfied', syncHuntAfterClusterLifecycle)
+  clusterLayer.on?.('unspiderfied', syncHuntAfterClusterLifecycle)
+  clusterLayer.on?.('animationend', syncHuntAfterClusterLifecycle)
+  updateResponsiveMapControls()
+  window.addEventListener('resize', updateResponsiveMapControls)
   if (typeof ResizeObserver !== 'undefined' && mapOverlay.value) {
     categoryResizeObserver = new ResizeObserver(updateCategoryCardWidth)
     categoryResizeObserver.observe(mapOverlay.value)
@@ -449,6 +542,8 @@ onMounted(async () => {
   }
   await loadPromise
   if (!onboardingActive.value) renderActivityMarkers(activities.value)
+  ensureRecommendedBadge()
+  maybeOpenBadgeWelcome()
 })
 
 watch(activities, (items) => {
@@ -456,7 +551,15 @@ watch(activities, (items) => {
   if (selectedActivity.value && !items.some((activity) => activity.id === selectedActivity.value.id)) {
     clearSelectedActivity()
   }
+  nextTick(() => {
+    ensureRecommendedBadge()
+    maybeOpenBadgeWelcome()
+  })
 }, { deep: true })
+
+watch(selectedActivity, (activity) => {
+  if (!activity) nextTick(maybeOpenBadgeWelcome)
+})
 
 onBeforeUnmount(() => {
   onboardingRunId += 1
@@ -466,9 +569,12 @@ onBeforeUnmount(() => {
   removeNearbyRadiusCircle()
   setMapIntroActive(false)
   disableNearby()
-  window.removeEventListener('resize', updateCategoryCardWidth)
+  window.removeEventListener('resize', updateResponsiveMapControls)
   categoryResizeObserver?.disconnect()
   if (clusterLayer) clearActivityClusterLayer(clusterLayer)
+  clusterLayer?.off?.('spiderfied', syncHuntAfterClusterLifecycle)
+  clusterLayer?.off?.('unspiderfied', syncHuntAfterClusterLifecycle)
+  clusterLayer?.off?.('animationend', syncHuntAfterClusterLifecycle)
   activityMarkers.clear()
   map?.off('zoomend', syncMapZoom)
   map?.remove()
@@ -484,7 +590,7 @@ onBeforeUnmount(() => {
     <button v-if="onboardingActive" class="map-intro-skip" type="button" @click="skipOnboarding">Skip intro</button>
 
     <div
-      v-if="showMapControls"
+      v-if="showMapControls && showDesktopZoomControl"
       class="map-zoom-control"
       aria-label="Map zoom"
       @pointerdown.stop
@@ -493,7 +599,7 @@ onBeforeUnmount(() => {
       @wheel.stop
       @touchstart.stop
     >
-      <output class="map-zoom-control__value" for="map-zoom-range" aria-live="polite">{{ mapZoom }}</output>
+      <span class="map-zoom-control__marker" aria-hidden="true">+</span>
       <label class="visually-hidden" for="map-zoom-range">Map zoom level</label>
       <input
         id="map-zoom-range"
@@ -508,7 +614,13 @@ onBeforeUnmount(() => {
         data-testid="map-zoom-slider"
         @input="setMapZoom"
       />
+      <span class="map-zoom-control__marker" aria-hidden="true">−</span>
     </div>
+
+    <section v-if="showMapControls && trackedBadge && !selectedActivity" class="map-hunt-active" data-testid="next-badge-card">
+      <button class="map-hunt-active__main" type="button" @click="openHuntSelector"><span class="map-hunt-entry__icon">{{ trackedBadge.emoji ?? '🏆' }}</span><span><small class="map-hunt-active__eyebrow">Your next badge</small><strong>{{ trackedBadge.name }}</strong><small>{{ trackedBadge.progress }}/{{ trackedBadge.target }} completed · {{ trackedBadge.target - trackedBadge.progress }} to go</small><small class="map-hunt-active__location"><i class="bi" :class="nearMeEnabled ? 'bi-geo-alt-fill' : 'bi-globe2'" aria-hidden="true"></i> {{ huntLocationText }}</small><i class="map-hunt-active__progress"><b :style="{ width: `${(trackedBadge.progress / trackedBadge.target) * 100}%` }"></b></i></span></button>
+    </section>
+    <section v-else-if="showMapControls && !selectedActivity && !recommendedBadgeOpportunities.length" class="map-hunt-active map-hunt-active--complete" data-testid="next-badge-complete"><span class="map-hunt-entry__icon">🎉</span><span><small class="map-hunt-active__eyebrow">Badges</small><strong>You’re all caught up!</strong><small>More map badges will appear when new activities are available.</small></span></section>
 
     <div v-if="showHeader || showDiscoveryControls" ref="mapOverlay" class="map-overlay">
       <header v-if="showHeader" class="map-header-card map-overlay__card map-motion map-motion--header" @pointerdown.stop @mousedown.stop @dblclick.stop @touchstart.stop>
@@ -587,16 +699,15 @@ onBeforeUnmount(() => {
         @wheel.stop
         @touchstart.stop
       >
-        <div v-show="!categoriesCollapsed" class="map-category-rail" role="radiogroup" aria-label="Filter activities by category">
+        <div v-show="!categoriesCollapsed" class="map-category-rail" role="group" aria-label="Filter activities by category">
           <button
             v-for="category in categories"
             :key="category.id"
             class="map-category"
             :class="{ 'map-category--selected': isCategorySelected(category.id), 'map-category--all': category.id === 'all' }"
             type="button"
-            role="radio"
-            :aria-checked="isCategorySelected(category.id)"
-            :aria-label="category.id === 'all' ? 'Show all activity categories' : `Show ${category.label} activities`"
+            :aria-pressed="isCategorySelected(category.id)"
+            :aria-label="category.id === 'all' ? 'Show all activity categories' : `Toggle ${category.label} activities`"
             :data-testid="`map-category-${category.id}`"
             @click="selectCategory(category.id)"
           >
@@ -605,7 +716,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
         <div v-show="categoriesCollapsed" ref="collapsedCategory" class="map-category-summary">
-          <span class="map-category-summary__icon" :style="{ background: selectedCategory.color }" aria-hidden="true">{{ selectedCategory.emoji }}</span>
+          <span v-if="!hasMultipleCategoriesSelected" class="map-category-summary__icon" :style="{ background: selectedCategory.color }" aria-hidden="true">{{ selectedCategory.emoji }}</span>
           <span>{{ collapsedCategoryLabel }}</span>
         </div>
         <button
@@ -621,8 +732,8 @@ onBeforeUnmount(() => {
       </section>
     </div>
 
-    <p v-if="showActivityMarkers && !activities.length" class="map-empty" role="status">
-      {{ nearMeEnabled ? `No activities found within ${nearbyRadiusKm} km. Increase the distance, adjust filters, or turn off Near me.` : 'No activities match these filters. Try another category or filter.' }}
+    <p v-if="showActivityMarkers && (!activities.length || (trackedBadge && !activeHuntOpportunity))" class="map-empty" role="status">
+      {{ !activities.length ? (nearMeEnabled ? `No activities found within ${nearbyRadiusKm} km. Increase the distance, adjust filters, or turn off Near me.` : 'No activities match these filters. Try another category or filter.') : (nearMeEnabled ? `No nearby matches for this badge within ${nearbyRadiusKm} km. Increase radius or choose another badge.` : 'No qualifying activities match your current search. Try adjusting your filters or choosing another badge.') }}
     </p>
     <p v-if="onboardingMessage && onboardingStage === 'discoveryReveal'" class="map-intro-message" role="status">{{ onboardingMessage }}</p>
     <Transition name="map-selected-card">
@@ -650,6 +761,14 @@ onBeforeUnmount(() => {
             <p class="map-activity-card__meta">{{ categoryLabel(selectedActivity.category) }} · {{ priceText(selectedActivity) }}</p>
             <p v-if="selectedWeather" class="map-activity-card__weather"><i class="bi bi-cloud-sun" aria-hidden="true"></i> {{ selectedWeather.forecast }}</p>
             <p v-if="selectedDescription" class="map-activity-card__description">{{ selectedDescription }}</p>
+            <section v-if="selectedBadgeOpportunity" class="map-badge-opportunity" :aria-label="`${selectedBadgeOpportunity.name} badge opportunity`">
+              <div class="map-badge-opportunity__heading">
+                <span aria-hidden="true">{{ selectedBadgeOpportunity.emoji ?? '🏆' }}</span>
+                <span><strong>{{ selectedBadgeOpportunity.name }}</strong><small>This activity counts towards this badge.</small></span>
+              </div>
+              <div class="map-badge-opportunity__progress-copy"><span>{{ selectedBadgeOpportunity.progress }}/{{ selectedBadgeOpportunity.target }} completed</span><span>{{ selectedBadgeOpportunity.target - selectedBadgeOpportunity.progress }} to go</span></div>
+              <i class="map-badge-opportunity__progress" aria-hidden="true"><b :style="{ width: `${(selectedBadgeOpportunity.progress / selectedBadgeOpportunity.target) * 100}%` }"></b></i>
+            </section>
           </div>
         </div>
         <div class="map-activity-card__actions">
@@ -663,10 +782,11 @@ onBeforeUnmount(() => {
     <FilterSheet
       v-if="showMapControls"
       :open="filtersOpen"
-      single-category
+      :show-categories="false"
       :result-count="activities.length"
       @close="filtersOpen = false"
     />
+    <BadgeHuntSheet :open="huntSheetOpen" :opportunities="recommendedBadgeOpportunities" :selected-id="selectedHuntId" @select="selectRecommendedBadge" @view-all="huntSheetOpen = false; router.push({ name: 'badges' })" @close="huntSheetOpen = false" />
 
     <div v-if="nearbyPromptOpen" class="map-intro-backdrop">
       <section class="map-intro-dialog" role="dialog" aria-modal="true" aria-labelledby="nearby-location-title">
@@ -709,6 +829,9 @@ onBeforeUnmount(() => {
   min-height: 32rem;
   overflow: hidden;
 }
+.map-hunt-active { position:absolute; z-index:1002; right:1rem; bottom:calc(2.25rem + env(safe-area-inset-bottom)); display:flex; align-items:center; width:min(23rem,calc(100% - 2rem)); padding:.7rem; border:1px solid rgba(35,25,65,.16); border-radius:22px; background:#fffaf0; box-shadow:0 5px 16px rgba(35,25,65,.18); color:var(--gol-ink); font-family:var(--gol-font); }.map-hunt-active__main { display:flex; flex:1; min-width:0; align-items:center; gap:.65rem; padding:0; border:0; background:transparent; color:inherit; text-align:left; }.map-hunt-active__main > span:last-child,.map-hunt-active--complete > span:last-child { display:grid; gap:.15rem; min-width:0; }.map-hunt-entry__icon { display:grid; width:2.15rem; height:2.15rem; place-items:center; flex:0 0 auto; border-radius:11px; background:#ffe58c; font-size:1.2rem; }.map-hunt-active strong { overflow:hidden; color:var(--gol-ink); font-size:.9rem; text-overflow:ellipsis; white-space:nowrap; }.map-hunt-active small { color:var(--gol-muted); font-size:.7rem; font-weight:800; }.map-hunt-active__eyebrow { color:var(--gol-purple) !important; font-size:.62rem !important; letter-spacing:.08em; text-transform:uppercase; }.map-hunt-active__location { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.map-hunt-active__progress { display:block; height:7px; overflow:hidden; margin-top:.15rem; border-radius:99px; background:#e5dcef; }.map-hunt-active__progress b { display:block; height:100%; border-radius:inherit; background:var(--gol-purple); }.map-hunt-active--complete { gap:.65rem; }
+.map-badge-opportunity { display:grid; gap:.4rem; margin:.55rem 0 0; padding:.6rem; border-radius:12px; background:#fff5c8; color:#725400; font-size:.74rem; font-weight:800; line-height:1.35; }
+.map-badge-opportunity__heading { display:flex; align-items:center; gap:.45rem; }.map-badge-opportunity__heading > span:first-child { display:grid; width:1.8rem; height:1.8rem; flex:0 0 auto; place-items:center; border-radius:9px; background:#ffe58c; font-size:1rem; }.map-badge-opportunity__heading > span:last-child { display:grid; gap:.02rem; }.map-badge-opportunity__heading strong { color:var(--gol-ink); }.map-badge-opportunity__heading small { color:#80621d; font-size:.68rem; }.map-badge-opportunity__progress-copy { display:flex; justify-content:space-between; gap:.5rem; color:#725400; font-size:.68rem; }.map-badge-opportunity__progress { display:block; height:6px; overflow:hidden; border-radius:99px; background:rgba(107,66,227,.18); }.map-badge-opportunity__progress b { display:block; height:100%; border-radius:inherit; background:var(--gol-purple); }
 
 .map-intro-skip {
   position: absolute;
@@ -944,8 +1067,8 @@ onBeforeUnmount(() => {
 
 .map-category__label { min-height: 1.5rem; display: grid; align-items: start; }
 .map-category--all .map-category__icon { color: #fff; }
-.map-category--selected { background: rgba(255, 255, 255, .8); }
-.map-category--selected .map-category__icon { outline: 3px solid var(--gol-purple); outline-offset: 3px; animation: map-category-pop .42s cubic-bezier(.34, 1.56, .64, 1); }
+.map-category--selected { background: var(--gol-purple); color: #fff; }
+.map-category--selected .map-category__icon { animation: map-category-pop .42s cubic-bezier(.34, 1.56, .64, 1); }
 .map-category:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; }
 .map-category:active .map-category__icon { transform: translateY(2px) scale(.94); }
 
@@ -1132,7 +1255,8 @@ onBeforeUnmount(() => {
   .map-search-toolbar :deep(.gol-search-bar):hover { transform: translateY(-1px); }
   .map-nearby-switch:hover,.map-radius-control:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(35, 25, 65, .18); }
   .map-category:hover .map-category__icon { transform: translateY(-3px) rotate(4deg); }
-  .map-category-toggle:hover,.map-activity-card__close:hover { transform: translateY(-2px); }
+  .map-category-toggle:hover { transform: translateY(calc(-50% - 3px)); }
+  .map-activity-card__close:hover { transform: translateY(-2px); }
   .map-activity-card__directions:hover,.map-activity-card__view:hover { transform: translateY(-2px); filter: brightness(1.03); }
 }
 
@@ -1161,36 +1285,43 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+/* Keep Leaflet's real, linked attribution visible above the custom controls. */
+:deep(.leaflet-top.leaflet-right) { top: calc(.5rem + env(safe-area-inset-top)); right: .5rem; }
+:deep(.leaflet-top.leaflet-right .leaflet-control-attribution) { margin: 0; padding: .22rem .38rem; border-radius: 9px; background: rgba(255,253,248,.94); box-shadow: 0 2px 8px rgba(35,25,65,.14); font: 600 .62rem/1.25 var(--gol-font); }
+:deep(.leaflet-top.leaflet-right .leaflet-control-attribution a) { color: var(--gol-purple); }
+
 .map-zoom-control {
   position: absolute;
   z-index: 1001;
-  top: 1.5rem;
-  right: 1.5rem;
+  top: 3.25rem;
+  right: .75rem;
   display: grid;
   width: 3.1rem;
   justify-items: center;
-  gap: .45rem;
-  padding: .5rem .35rem .65rem;
+  gap: .3rem;
+  padding: .45rem .35rem;
   border: 1px solid var(--gol-card-edge);
   border-radius: 999px;
   background: rgba(255, 253, 248, .97);
   box-shadow: 0 4px 14px rgba(35, 25, 65, .16);
   touch-action: none;
 }
-.map-zoom-control__value {
+.map-zoom-control__marker {
   display: grid;
-  width: 1.75rem;
-  height: 1.5rem;
+  width: 1.4rem;
+  height: 1.25rem;
   place-items: center;
-  border-radius: 999px;
-  background: var(--gol-purple);
-  color: #fff;
-  font: 900 .72rem/1 var(--gol-font);
+  color: var(--gol-purple);
+  font: 900 1.1rem/1 var(--gol-font);
 }
 .map-zoom-control__range {
-  width: 1.55rem;
+  --zoom-track-width: .35rem;
+  --zoom-thumb-size: 1.2rem;
+  display: block;
+  width: var(--zoom-thumb-size);
   height: 10.25rem;
-  margin: 0;
+  margin: 0 auto;
+  padding: 0;
   appearance: slider-vertical;
   accent-color: var(--gol-purple);
   cursor: ns-resize;
@@ -1198,9 +1329,9 @@ onBeforeUnmount(() => {
   writing-mode: vertical-lr;
 }
 .map-zoom-control__range:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; border-radius: 999px; }
-.map-zoom-control__range::-webkit-slider-runnable-track { width: .35rem; border-radius: 999px; background: #e6ddf9; }
-.map-zoom-control__range::-webkit-slider-thumb { width: 1.2rem; height: 1.2rem; margin-left: -.42rem; appearance: none; border: 3px solid #fff; border-radius: 50%; background: var(--gol-purple); box-shadow: 0 2px 5px rgba(35, 25, 65, .25); }
-.map-zoom-control__range::-moz-range-track { width: .35rem; border-radius: 999px; background: #e6ddf9; }
+.map-zoom-control__range::-webkit-slider-runnable-track { width: var(--zoom-track-width); border-radius: 999px; background: #e6ddf9; }
+.map-zoom-control__range::-webkit-slider-thumb { width: var(--zoom-thumb-size); height: var(--zoom-thumb-size); margin-left: calc((var(--zoom-track-width) - var(--zoom-thumb-size)) / 2); appearance: none; border: 3px solid #fff; border-radius: 50%; background: var(--gol-purple); box-shadow: 0 2px 5px rgba(35, 25, 65, .25); }
+.map-zoom-control__range::-moz-range-track { width: var(--zoom-track-width); border-radius: 999px; background: #e6ddf9; }
 .map-zoom-control__range::-moz-range-thumb { width: 1.05rem; height: 1.05rem; border: 3px solid #fff; border-radius: 50%; background: var(--gol-purple); box-shadow: 0 2px 5px rgba(35, 25, 65, .25); }
 
 @media (max-width: 767.98px) {
@@ -1219,9 +1350,10 @@ onBeforeUnmount(() => {
   .map-category { flex-basis: 4.2rem; font-size: .64rem; }
   .map-category__icon { width: 2.5rem; height: 2.5rem; font-size: 1.05rem; }
   .map-category-toggle { right: .45rem; width: 2.1rem; height: 2.1rem; }
-  .map-zoom-control { top: calc(.75rem + env(safe-area-inset-top)); right: .75rem; width: 2.8rem; padding: .45rem .25rem .55rem; }
-  .map-zoom-control__range { height: 8.75rem; }
-  .map-activity-card { bottom: calc(5.75rem + env(safe-area-inset-bottom)); left: .75rem; width: calc(100% - 1.5rem); padding: 1rem; border-radius: 24px; }
+  .map-hunt-active { right:.75rem; bottom:calc(5.75rem + env(safe-area-inset-bottom)); }
+  .map-hunt-entry__icon { width:1.85rem; height:1.85rem; font-size:1rem; }
+  .map-hunt-active { width:min(16.5rem,calc(100% - 1.5rem)); padding:.55rem; }
+  .map-activity-card { bottom: calc(5.75rem + env(safe-area-inset-bottom)); left: .75rem; width: calc(100% - 1.5rem); max-height:calc(100dvh - 7.25rem - env(safe-area-inset-bottom)); padding: 1rem; overflow-y:auto; overscroll-behavior:contain; border-radius: 24px; }
   .map-activity-card__main { gap: .75rem; padding-right: 1rem; }
   .map-activity-card__image { width: 5.75rem; height: 5.75rem; border-radius: 18px; font-size: 2.4rem; }
   .map-activity-card__content h2 { font-size: 1.1rem; }
