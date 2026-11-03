@@ -11,6 +11,8 @@
     - My reflections              -> private notes after activities (components/wellbeing/ReflectionsCard)
     - Study-break mode            -> pauses the weekly streak (Badges page, setStudyBreak)
     - Admin button                -> only for users with role 'admin', goes to /admin/activities
+    - My vibe                     -> onboarding preferences, editable (services/preferences.js)
+    - Privacy                     -> what other students see (config/privacy.js visibleProfile)
   See PROFILE.md for how the pieces connect.
 -->
 <script setup>
@@ -32,6 +34,8 @@ import ActivityMoodsCard from '@/components/profile/ActivityMoodsCard.vue'
 import WellbeingCard from '@/components/wellbeing/WellbeingCard.vue'
 import ReflectionsCard from '@/components/wellbeing/ReflectionsCard.vue'
 import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog.vue'
+import PreferencesCard from '@/components/profile/PreferencesCard.vue'
+import PrivacyCard from '@/components/profile/PrivacyCard.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -246,6 +250,9 @@ async function confirmLogOut() {
               <span class="tile-count">{{ t.count }} {{ t.count === 1 ? 'activity' : 'activities' }}</span>
             </button>
           </div>
+
+          <PreferencesCard />
+          <PrivacyCard />
         </div>
 
         <!-- Right: how you're doing -->
@@ -285,7 +292,7 @@ async function confirmLogOut() {
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-1">
             <span class="signed-in">Logged in as {{ auth.email }}</span>
             <button class="gol-btn-soft logout" data-testid="logout" @click="requestLogOut">
-              <i class="bi bi-box-arrow-right"></i> Log out
+              <i class="ph ph-sign-out" aria-hidden="true"></i><span>Log out</span>
             </button>
           </div>
         </div>
@@ -480,7 +487,15 @@ async function confirmLogOut() {
 .streak-link .bi-arrow-right { transition: transform 0.15s; }
 
 .signed-in { font-size: 0.8rem; font-weight: 700; color: var(--gol-muted); word-break: break-all; }
-.logout { color: var(--gol-coral-text); background: #ffe9e4; }
+.logout {
+  display: inline-flex; /* keeps the icon and the text apart (it overlapped on some phones) */
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  color: var(--gol-coral-text);
+  background: #ffe9e4;
+}
+.logout .ph { font-size: 1.1rem; flex-shrink: 0; }
 .toast-msg {
   position: fixed;
   left: 50%;

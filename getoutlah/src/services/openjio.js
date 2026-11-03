@@ -7,6 +7,7 @@ import {
 import { db } from '@/firebase'
 import { useAuthStore } from '@/stores/auth'
 import { friendList } from '@/stores/friends'
+import { visibleProfile } from '@/config/privacy'
 import { applyChope, applyJoin, applyLeave, applyLeaveQueue, validateJio } from '@/utils/openjio'
 
 const jiosRef = collection(db, 'openjios')
@@ -146,7 +147,7 @@ export async function getProfiles(uids) {
   return snaps.filter((snap) => snap.exists()).map((snap) => ({
     uid: snap.id,
     displayName: snap.data().displayName || 'GetOutLah! user',
-    photoURL: snap.data().photoURL ?? null,
+    photoURL: visibleProfile(snap.data()).photoURL, // respects Profile → Privacy
   }))
 }
 
