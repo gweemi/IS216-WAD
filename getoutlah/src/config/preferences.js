@@ -14,7 +14,7 @@ export const INTERESTS = [
   { id: 'workshops', label: 'Workshops & crafts', emoji: '🏺', hint: 'Pottery, cooking, art', color: '#FFC976', mapIcon: 'paint-brush' },
   { id: 'events', label: 'Events', emoji: '🎟️', hint: 'Concerts, festivals, markets, pop-ups', color: '#BD9BFF', mapIcon: 'calendar-dots' },
   { id: 'games', label: 'Games & chill', emoji: '🎲', hint: 'Board games, escape rooms', color: '#FFE075', mapIcon: 'game-controller' },
-  { id: 'wellness', label: 'Wellness', emoji: '🧘', hint: 'Yoga, meditation', color: '#6DE4F2', mapIcon: 'heartbeat' },
+  { id: 'wellness', label: 'Wellness', emoji: '🧘', hint: 'Yoga, meditation', color: '#4FAE84', mapIcon: 'heartbeat' },
   { id: 'volunteering', label: 'Volunteering', emoji: '🤝', hint: 'Community events', color: '#8EACFF', mapIcon: 'hand-heart' },
 ]
 

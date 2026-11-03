@@ -30,6 +30,7 @@ vi.mock('firebase/firestore', () => ({
 
 const { signInWithGoogle, friendlyError, isCancelled } = await import('@/services/auth')
 const { useAuthStore } = await import('@/stores/auth')
+const { game, startDemoSession, totalPoints } = await import('@/stores/gamification(badges).js')
 
 function googleUser(email, extra = {}) {
   return {
@@ -47,6 +48,7 @@ function googleUser(email, extra = {}) {
 beforeEach(() => {
   setActivePinia(createPinia())
   fake.savedDocs = {}
+  startDemoSession()
 })
 
 describe('Google sign-in', () => {
@@ -62,6 +64,8 @@ describe('Google sign-in', () => {
       points: 0,
     })
     expect(useAuthStore().isLoggedIn).toBe(true)
+    expect(useAuthStore().mapIntroPending).toBe(true)
+    expect(useAuthStore().badgeWelcomePending).toBe(true)
   })
 
   it('lets a personal Gmail in too, with no university', async () => {
@@ -83,6 +87,19 @@ describe('Google sign-in', () => {
     fake.savedDocs['users/uid-123'] = { displayName: 'En Min', points: 120 }
     await signInWithGoogle()
     expect(fake.savedDocs['users/uid-123'].points).toBe(120)
+  })
+
+  it('restarts the shared badge demo before queuing the map introduction', async () => {
+    game.completed.push({ id: 'extra', title: 'Extra outdoor activity', category: 'outdoors', region: 'east', date: '2026-11-03' })
+    game.ledger.push({ date: '2026-11-03', amount: 50, reason: 'Extra outdoor activity' })
+    fake.user = googleUser('enmin@gmail.com')
+
+    await signInWithGoogle()
+
+    expect(game.completed).toHaveLength(5)
+    expect(game.completed.some((activity) => activity.id === 'extra')).toBe(false)
+    expect(totalPoints()).toBe(350)
+    expect(useAuthStore().mapIntroPending).toBe(true)
   })
 
   it('treats closing the pop-up as a cancel, not an error', () => {

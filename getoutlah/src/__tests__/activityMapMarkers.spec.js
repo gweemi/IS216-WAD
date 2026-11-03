@@ -6,6 +6,7 @@ import {
   createClusterIcon,
   hasValidCoordinates,
   populateActivityClusterLayer,
+  refreshActivityClusterEligibility,
   setActivityMarkerSelected,
 } from '@/utils/activityMapMarkers'
 
@@ -110,6 +111,25 @@ describe('activity map markers', () => {
 
     expect(icon.html).toContain('>7<')
     expect(icon.html).toContain('7 activities')
+  })
+
+  it('marks a mixed cluster as eligible without changing its activity count', () => {
+    const { L } = makeLeaflet()
+    const icon = createClusterIcon(L, {
+      getChildCount: () => 7,
+      getAllChildMarkers: () => [{ __activity: { category: 'arts' } }, { __activity: { category: 'outdoors' } }],
+    }, (activity) => activity.category === 'outdoors')
+
+    expect(icon.html).toContain('gol-cluster-marker--hunt')
+    expect(icon.html).toContain('>7<')
+  })
+
+  it('refreshes cluster icons when Badge Hunt eligibility changes', () => {
+    const layer = { refreshClusters: vi.fn() }
+    const eligible = vi.fn()
+    refreshActivityClusterEligibility(layer, eligible)
+    expect(layer.__isHuntEligible).toBe(eligible)
+    expect(layer.refreshClusters).toHaveBeenCalledOnce()
   })
 
 })

@@ -114,9 +114,7 @@
       </fieldset>
 
       <p v-if="form.visibility === 'friends_only'" class="hint">Your currently accepted friends can discover this Jio. No invitation list is shared.</p>
-      <p v-if="form.visibility === 'friends'" class="hint">
-        This is a legacy invite-only Jio. Its existing invited people are preserved; choose a new visibility mode to change access.
-      </p>
+      <p v-if="form.visibility === 'friends'" class="hint">This is a legacy invite-only Jio. Its existing invited people are preserved; choose a new visibility mode to change access.</p>
       <fieldset v-if="form.visibility === 'invite_only'" class="field" data-testid="jio-invite-list">
         <span>Invite friends ({{ form.invited.length }})</span>
         <p v-if="friendsLoading" class="hint mt-0">Loading your friends…</p>
@@ -288,7 +286,7 @@ export default {
       if (this.pendingJio?.visibility === 'public') return 'Public'
       if (this.pendingJio?.visibility === 'friends_only') return 'Friends only'
       if (this.pendingJio?.visibility === 'friends') return 'Legacy invite only'
-      const count = this.pendingJio.invited?.length ?? 0
+      const count = this.pendingJio?.invited?.length ?? 0
       return `Invite only · ${count} invited`
     },
   },
@@ -323,10 +321,7 @@ export default {
         return
       }
 
-      this.pendingJio = {
-        ...this.jio,
-        invited: [...this.jio.invited],
-      }
+      this.pendingJio = { ...this.jio, invited: [...this.jio.invited] }
       this.confirmationOpen = true
     },
 

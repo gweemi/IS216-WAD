@@ -118,9 +118,9 @@ describe('ActivitiesView source discovery', () => {
       { id: 'friend-circle', source: 'openJio', visibility: 'friends_only', viewerInvited: false, viewerRole: 'none' },
       { id: 'already-going', source: 'openJio', visibility: 'invite_only', viewerInvited: true, viewerRole: 'going' },
     ]
-    const { router, wrapper } = await mountAt('/activities?view=openjio&visibility=invited')
+    const { router, wrapper } = await mountAt('/activities?view=openJio&visibility=invited')
     expect(wrapper.find('.act-count').text()).toBe('2 activities')
     expect(wrapper.text()).toContain('See jios you’ve been personally invited to.')
-    expect(router.currentRoute.value.query.view).toBe('openjio')
+    expect(router.currentRoute.value.query.view).toBe('openJio')
   })
 })
