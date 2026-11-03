@@ -1,7 +1,4 @@
-<!--
-  The 1-minute WHO-5 check-in: intro → 5 questions → result.
-  <CheckInSheet :open="showCheckIn" @close="showCheckIn = false" />
--->
+
 <template>
   <BottomSheet :open="open" label="Wellbeing check-in" @close="close">
     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -11,7 +8,7 @@
       </button>
     </div>
 
-    <!-- STEP 1: Intro (matches Figma) -->
+    <!-- STEP 1: Intro -->
     <div v-if="step === 'intro'" class="text-center">
       <div class="gol-icon-tile hero-tile mx-auto mb-3"><i class="bi bi-heart-pulse"></i></div>
       <h2 class="gol-title mb-2">How have you been?</h2>
@@ -70,7 +67,6 @@
       <span class="gol-pill mb-2" :class="'gol-pill--' + status.tone">{{ status.label }}</span>
       <p class="muted mt-2 mb-3">{{ changeText }}</p>
 
-      <!-- Points for checking in (shown on the Badges page as level + points) -->
       <div v-if="reward" class="points-card text-start mb-3" data-testid="checkin-points">
         <span class="points-badge" :class="{ none: !reward.pointsGiven }">
           {{ reward.pointsGiven ? '+' + reward.pointsGiven : '0' }}<small>pts</small>
@@ -82,7 +78,6 @@
         </div>
       </div>
 
-      <!-- Gentle support note for low scores -->
       <div v-if="status.tone === 'support' || status.tone === 'low'" class="support-card text-start mb-3">
         <div class="fw-bold mb-1"><i class="bi bi-chat-heart me-1"></i> It's okay to not be okay</div>
         <p class="small mb-2">
@@ -95,7 +90,6 @@
         </p>
       </div>
 
-      <!-- "Keep the energy going": a couple of activities to try next -->
       <div v-if="suggestions.length" class="text-start mb-3">
         <h3 class="suggest-title mb-2">{{ status.tone === 'good' || status.tone === 'okay' ? 'Keep the energy going' : 'Something gentle to try' }}</h3>
         <div class="d-grid gap-2">
@@ -144,7 +138,7 @@ export default {
       busy: false,
       answers: [],
       result: null,
-      reward: null, // points given for this check-in
+      reward: null, 
       previous: null,
       questions: WHO5_QUESTIONS,
       options: WHO5_OPTIONS,
@@ -176,14 +170,14 @@ export default {
     },
   },
   watch: {
-    // Reset every time the sheet opens
+    // for reset 
     open(isOpen) {
       if (isOpen) {
         this.step = 'intro'
         this.answers = []
         this.result = null
         this.reward = null
-        loadActivities().catch(() => {}) // for the suggestions at the end
+        loadActivities().catch(() => {}) 
       }
     },
   },
@@ -193,10 +187,10 @@ export default {
       this.step = 0
     },
     choose(value) {
-      if (this.busy) return // ignore double taps
+      if (this.busy) return 
       this.busy = true
       this.answers[this.step] = value
-      // Small pause so the user sees their choice highlight
+      
       setTimeout(() => {
         this.busy = false
         if (this.step < this.questions.length - 1) {

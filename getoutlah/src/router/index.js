@@ -7,7 +7,6 @@ import ActivitiesView from '@/views/ActivitiesView.vue'
 import ActivityDetailView from '@/views/ActivityDetailView.vue'
 import MapView from '@/views/MapView.vue'
 import BadgesView from '@/views/BadgesView.vue'
-import MyFeaturesTestView from '@/views/MyFeaturesTestView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 
 const appRouteMeta = { requiresLogin: true, appNavigation: true }
@@ -107,12 +106,6 @@ const router = createRouter({
           component: () => import('@/views/AdminReportsView.vue'),
         },
       ],
-    },
-    {
-      path: '/test-my-features',
-      name: 'test-my-features',
-      component: MyFeaturesTestView,
-      meta: { requiresLogin: true },
     },
     { path: '/:pathMatch(.*)*', redirect: '/map' },
   ],

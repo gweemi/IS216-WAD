@@ -1,9 +1,4 @@
-<!--
-  Points, level and weekly cap. (Not in the Figma yet, but it's
-  part of the Points System feature. Remove it if your team wants
-  points to stay hidden.)
-  <PointsCard />
--->
+
 <template>
   <section class="gol-card points-card h-100">
     <div class="d-flex align-items-center gap-3 mb-3">
