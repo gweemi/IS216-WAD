@@ -213,12 +213,14 @@ describe('MapView', () => {
     expect(wrapper.get('[data-testid="map-filter-button"]').attributes('aria-label')).toBe(
       'Open activity filters',
     )
-    expect(wrapper.findAll('[role="radio"]')).toHaveLength(10)
-    expect(wrapper.get('[data-testid="map-category-all"]').attributes('aria-checked')).toBe('true')
+    expect(wrapper.get('[role="group"]').attributes('aria-label')).toBe('Filter activities by category')
+    expect(wrapper.get('[data-testid="map-category-all"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="map-category-food"] .map-category__icon').attributes('style')).toContain('rgb(255, 148, 123)')
     const zoom = wrapper.get('[data-testid="map-zoom-slider"]')
     expect(zoom.attributes()).toMatchObject({ min: '11', max: '18', step: '1', orient: 'vertical' })
     expect(zoom.attributes('aria-valuetext')).toBe('Map zoom level 12')
+    expect(wrapper.find('.map-zoom-control__value').exists()).toBe(false)
+    expect(wrapper.findAll('.map-zoom-control__marker').map((marker) => marker.text())).toEqual(['+', '−'])
   })
 
   it('updates the map from the zoom slider and syncs after external zooms', async () => {
@@ -243,15 +245,20 @@ describe('MapView', () => {
     expect(leafletMocks.mapInstance.setZoom).toHaveBeenCalledWith(14, { animate: false })
   })
 
-  it('uses the shared search and a single selected category to filter markers', async () => {
+  it('filters markers with multiple category selections and restores All after the last deselection', async () => {
     const wrapper = mountMap()
 
     await wrapper.get('[data-testid="map-category-events"]').trigger('click')
     await nextTick()
-    expect(wrapper.get('[data-testid="map-category-events"]').attributes('aria-checked')).toBe('true')
-    expect(wrapper.get('[data-testid="map-category-all"]').attributes('aria-checked')).toBe('false')
+    expect(wrapper.get('[data-testid="map-category-events"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="map-category-all"]').attributes('aria-pressed')).toBe('false')
     expect(leafletMocks.addLayers).toHaveBeenLastCalledWith(expect.any(Array))
     expect(leafletMocks.addLayers.mock.calls.at(-1)[0]).toHaveLength(1)
+
+    await wrapper.get('[data-testid="map-category-outdoors"]').trigger('click')
+    await nextTick()
+    expect(filters.value.categories).toEqual(['events', 'outdoors'])
+    expect(leafletMocks.addLayers.mock.calls.at(-1)[0]).toHaveLength(2)
 
     await wrapper.get('[data-testid="map-search-input"]').setValue('does not exist')
     await nextTick()
@@ -259,7 +266,14 @@ describe('MapView', () => {
 
     await wrapper.get('[data-testid="map-category-all"]').trigger('click')
     await nextTick()
-    expect(wrapper.get('[data-testid="map-category-all"]').attributes('aria-checked')).toBe('true')
+    expect(filters.value.categories).toEqual([])
+    expect(wrapper.get('[data-testid="map-category-all"]').attributes('aria-pressed')).toBe('true')
+
+    await wrapper.get('[data-testid="map-category-outdoors"]').trigger('click')
+    await wrapper.get('[data-testid="map-category-outdoors"]').trigger('click')
+    await nextTick()
+    expect(filters.value.categories).toEqual([])
+    expect(wrapper.get('[data-testid="map-category-all"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('collapses to the selected category without changing shared filters', async () => {
@@ -280,17 +294,29 @@ describe('MapView', () => {
 
     await toggle.trigger('click')
     await nextTick()
-    expect(wrapper.get('[data-testid="map-category-outdoors"]').attributes('aria-checked')).toBe('true')
+    expect(wrapper.get('[data-testid="map-category-outdoors"]').attributes('aria-pressed')).toBe('true')
   })
 
-  it('opens the advanced filters in single-category mode', async () => {
+  it('removes category controls from the advanced map filters', async () => {
     const wrapper = mountMap()
 
     await wrapper.get('[data-testid="map-filter-button"]').trigger('click')
 
     expect(document.body.querySelector('[role="dialog"]')).not.toBeNull()
-    expect(wrapper.findComponent({ name: 'FilterSheet' }).props('singleCategory')).toBe(true)
+    expect(wrapper.findComponent({ name: 'FilterSheet' }).props('showCategories')).toBe(false)
+    expect(document.body.querySelector('[role="dialog"]').textContent).not.toContain('Category')
     expect(wrapper.findComponent({ name: 'FilterSheet' }).props('showNearby')).toBe(false)
+  })
+
+  it('summarises multiple selected categories when collapsed', async () => {
+    const wrapper = mountMap()
+    await wrapper.get('[data-testid="map-category-outdoors"]').trigger('click')
+    await wrapper.get('[data-testid="map-category-events"]').trigger('click')
+    await wrapper.get('[data-testid="map-category-toggle"]').trigger('click')
+    await nextTick()
+
+    expect(wrapper.get('.map-category-summary').text()).toBe('2 categories selected')
+    expect(wrapper.find('.map-category-summary__icon').exists()).toBe(false)
   })
 
   it('requests location only when Near me is enabled, then shows a temporary map dot', async () => {
