@@ -11,7 +11,7 @@
   <div v-if="current && button">
     <button
       type="button"
-      :class="button.style"
+      :class="['jio-action-button', button.style]"
       :disabled="busy"
       data-testid="jio-action"
       @click="onClick"
@@ -20,6 +20,10 @@
     </button>
     <p v-if="message" class="jio-msg mt-2 mb-0" role="status" data-testid="jio-message">{{ message }}</p>
   </div>
+  <!-- Change code is necessary: tell people why a reported jio has no buttons -->
+  <p v-else-if="current && suspended" class="jio-suspended mb-0" role="status" data-testid="jio-suspended">
+    <i class="bi bi-flag-fill" aria-hidden="true"></i> Suspended while an admin reviews a report
+  </p>
 </template>
 
 <script>
@@ -42,16 +46,21 @@ export default {
     ...mapStores(useOpenJioStore),
     // The jio passed in, or the live one from the store
     current() {
-      return this.jio ?? this.openjioStore.all.find((j) => j.id === this.jioId) ?? null
+      return this.jio ?? this.openJioStore.all.find((j) => j.id === this.jioId) ?? null
     },
     me() {
-      return this.uid || this.openjioStore.uid
+      return this.uid || this.openJioStore.uid
+    },
+    // Change code is necessary: added suspended
+    suspended() {
+      return statusOf(this.current) === 'suspended'
     },
     button() {
       const status = statusOf(this.current)
       const role = myRole(this.current, this.me)
-      if (status === 'cancelled' || status === 'ended') return null
-      if (role === 'host') return { action: 'cancel', label: 'Cancel jio', style: 'gol-btn-soft w-100' }
+      // Change code is necessary: added suspended (no join / leave / cancel while suspended)
+      if (status === 'cancelled' || status === 'ended' || status === 'suspended') return null
+      if (role === 'host') return { action: 'cancel', label: 'Cancel jio', style: 'jio-cancel-button w-100' }
       if (role === 'going') return { action: 'leave', label: 'Leave', style: 'gol-btn-soft w-100' }
       if (role === 'queued') return { action: 'leaveQueue', label: 'Leave queue', style: 'gol-btn-soft w-100' }
       if (status === 'full') return { action: 'chope', label: 'Chope next spot', style: 'gol-btn-coral w-100' }
@@ -59,7 +68,7 @@ export default {
     },
   },
   mounted() {
-    if (!this.jio) this.openjioStore.start() // needed when only an id was given
+    if (!this.jio) this.openJioStore.start() // needed when only an id was given
   },
   beforeUnmount() {
     clearTimeout(this.timer)
@@ -86,5 +95,12 @@ export default {
 </script>
 
 <style scoped>
+.jio-action-button { min-height: 2.35rem; padding: .45rem .7rem !important; font-size: .8rem !important; line-height: 1.1; }
+.jio-action-button.gol-btn-primary { display: inline-flex; align-items: center; justify-content: center; }
+.jio-cancel-button { border: none; border-radius: 999px; color: #fff; background: #dc4d4d; box-shadow: 0 3px 0 #a83434; font-weight: 850; }
+.jio-cancel-button:hover { filter: brightness(1.05); }
+.jio-cancel-button:active { transform: translateY(2px); box-shadow: 0 1px 0 #a83434; }
 .jio-msg { font-weight: 800; font-size: 0.85rem; color: var(--gol-purple); }
+/* Change code is necessary: suspended message */
+.jio-suspended { grid-column: 1 / -1; padding: .5rem .8rem; border-radius: 12px; background: #ffe1de; color: #b4382f; font-weight: 800; font-size: 0.8rem; }
 </style>

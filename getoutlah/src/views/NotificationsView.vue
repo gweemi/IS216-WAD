@@ -15,6 +15,8 @@ const TEXT = {
   friend_request: 'sent you a friend request',
   friend_accepted: 'accepted your friend request',
   activity_invite: 'invited you to',
+  openjio_invite: 'invited you to an OPENJIO',
+  openjio_join: 'joined your OPENJIO',
 }
 
 async function run(id, fn) {
@@ -33,6 +35,8 @@ async function run(id, fn) {
 function open(n) {
   if (!n.read) markRead([n.id]).catch(() => {})
   if (n.type === 'activity_invite' && n.activityId) router.push({ name: 'activity', params: { id: n.activityId } })
+  else if (n.type === 'openjio_invite') router.push({ name: 'activities', query: { view: 'openJio', visibility: 'invited' } })
+  else if (n.type === 'openjio_join') router.push({ name: 'activities', query: { view: 'openJio' } })
   else if (n.type === 'friend_accepted') router.push({ name: 'friends' })
 }
 
@@ -59,7 +63,7 @@ const requestId = (n) => pairId(n.from, friendsState.uid)
 
       <div v-if="!friendsState.notifications.length" class="gol-card d-flex align-items-center gap-3 text-muted fw-semibold">
         <span class="gol-icon-tile" style="background: var(--gol-yellow)" aria-hidden="true"><i class="bi bi-bell"></i></span>
-        <p class="mb-0">Nothing yet. Friend requests and activity invites will show up here.</p>
+        <p class="mb-0">Nothing yet. Friend requests, activity invites, and OpenJio updates will show up here.</p>
       </div>
 
       <ul v-else class="list-unstyled d-flex flex-column gap-2 mb-0" data-testid="notification-list">
@@ -75,6 +79,8 @@ const requestId = (n) => pairId(n.from, friendsState.uid)
               <span>
                 <strong>{{ n.fromName }}</strong> {{ TEXT[n.type] || 'sent you something' }}
                 <strong v-if="n.type === 'activity_invite'">{{ n.activityTitle }}</strong>
+                <strong v-else-if="n.type === 'openjio_invite'">{{ n.jioTitle }}</strong>
+                <strong v-else-if="n.type === 'openjio_join'">{{ n.jioTitle }}</strong>
               </span>
               <span class="small text-muted fw-bold">{{ timeAgo(toMillis(n.createdAt)) }}</span>
             </span>
@@ -93,6 +99,15 @@ const requestId = (n) => pairId(n.from, friendsState.uid)
           </div>
           <div v-else-if="n.type === 'activity_invite'" class="d-flex align-items-center gap-2 mt-3 ps-sm-5 ms-sm-2">
             <button class="gol-btn-soft" @click="open(n)"><i class="bi bi-stars"></i> View activity</button>
+            <button class="btn btn-sm btn-link text-muted ms-auto" aria-label="Delete notification" @click="run(n.id, () => deleteNotification(n.id))">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
+          <div v-else-if="n.type === 'openjio_invite'" class="d-flex align-items-center gap-2 mt-3 ps-sm-5 ms-sm-2">
+            <button class="gol-btn-soft" @click="open(n)"><i class="ph ph-users-three"></i> View invitation</button>
+          </div>
+          <div v-else-if="n.type === 'openjio_join'" class="d-flex align-items-center gap-2 mt-3 ps-sm-5 ms-sm-2">
+            <button class="gol-btn-soft" @click="open(n)"><i class="bi bi-people"></i> View OpenJio</button>
             <button class="btn btn-sm btn-link text-muted ms-auto" aria-label="Delete notification" @click="run(n.id, () => deleteNotification(n.id))">
               <i class="bi bi-trash3"></i>
             </button>

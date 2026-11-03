@@ -31,6 +31,7 @@ import ProfileListSheet from '@/components/profile/ProfileListSheet.vue'
 import ActivityMoodsCard from '@/components/profile/ActivityMoodsCard.vue'
 import WellbeingCard from '@/components/wellbeing/WellbeingCard.vue'
 import ReflectionsCard from '@/components/wellbeing/ReflectionsCard.vue'
+import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -41,6 +42,9 @@ const sheet = ref(null) // 'saved' | 'completed' | 'plans' | null
 const lastSheet = ref('saved') // keeps the content while the pop-up slides away
 watch(sheet, (s) => s && (lastSheet.value = s))
 const message = ref('')
+const logoutOpen = ref(false)
+const loggingOut = ref(false)
+const logoutError = ref('')
 
 onMounted(async () => {
   if (!auth.profile && auth.user) auth.setProfile(await ensureUserProfile(auth.user))
@@ -150,9 +154,28 @@ async function removeItem(item) {
   }
 }
 
-async function onLogOut() {
-  await logOut()
-  router.replace({ name: 'auth' })
+function requestLogOut() {
+  logoutError.value = ''
+  logoutOpen.value = true
+}
+
+async function confirmLogOut() {
+  if (loggingOut.value) return
+  loggingOut.value = true
+  logoutError.value = ''
+  try {
+    await logOut()
+  } catch {
+    if (auth.isLoggedIn) {
+      logoutError.value = 'Couldn’t log you out. Please try again.'
+      return
+    }
+  } finally {
+    loggingOut.value = false
+  }
+
+  logoutOpen.value = false
+  await router.replace({ name: 'login' })
 }
 </script>
 
@@ -261,7 +284,7 @@ async function onLogOut() {
           <ReflectionsCard />
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-1">
             <span class="signed-in">Logged in as {{ auth.email }}</span>
-            <button class="gol-btn-soft logout" data-testid="logout" @click="onLogOut">
+            <button class="gol-btn-soft logout" data-testid="logout" @click="requestLogOut">
               <i class="bi bi-box-arrow-right"></i> Log out
             </button>
           </div>
@@ -278,6 +301,13 @@ async function onLogOut() {
       :empty-cta="{ to: '/activities', label: 'Find something to do' }"
       @close="sheet = null"
       @remove="removeItem"
+    />
+    <LogoutConfirmDialog
+      :open="logoutOpen"
+      :busy="loggingOut"
+      :error="logoutError"
+      @cancel="logoutOpen = false"
+      @confirm="confirmLogOut"
     />
     <p v-if="message" class="toast-msg" role="status">{{ message }}</p>
   </main>

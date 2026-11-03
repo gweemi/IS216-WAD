@@ -1,25 +1,37 @@
-# OPENJIO! (group activities anyone can start)
+# OPENJIO!
 
-Logged-in users can start a jio, join one, chope (queue for) a full one, and leave.
-Everything updates live, so spot counts change on everyone's screen as people join and leave.
+OPENJIO! lets signed-in users host, edit, join, queue for, leave, cancel, and
+manage group activities. It uses the existing Firestore `openjios` collection
+directly—there is no Cloud Functions deployment required for the feature.
 
-## Where jios show up
+## Visibility
+
+| Value | Meaning in the app |
+| --- | --- |
+| `public` | Every signed-in user can discover and join. |
+| `friends_only` | Accepted friends of the host can discover and join without an invitation. |
+| `invite_only` | Only people selected by the host can discover and join. |
+| `friends` | Legacy invitation-only value. Existing records keep this behaviour. |
 
 | Where | What |
 |---|---|
 | **Activities page** (main list) | Public jios, mixed in with events: `jios.publicUpcoming` |
-| **Activities page → OpenJio! view** | `<OpenJioPanel />`: every jio you can see. Start a jio, **Invites for you**, **My jios**, **Open jios** (public ones to join), with an All / Public / Friends only filter. Link straight to it with `/activities?view=openjio` |
+| **Activities page → OpenJio! view** | `<OpenJioPanel />`: every Jio you can see—start a Jio, view **Invites for you**, **My jios**, and discoverable Jios, with All / Public / Friends only / Invite only filters. Link straight to it with `/activities?view=openJio` |
 | **Friends page** | `<FreeTogetherJios />` lists times you're free with friends, each with an **OpenJio** button. A friend's details also have an OpenJio button per shared time |
 | **Activity details** | `<JioActionButton>`: Join / Chope / Leave on a public jio |
 | `/openjio` | The same panel as its own page (handy for testing) |
 
-- **Public** (globe badge): anyone can see and join. Listed in All activities and under Open jios.
-- **Friends only** (lock badge): the host ticks which friends to invite. Only they see it (under "Invites for you") and only they can join.
-- Every jio card shows a **Public** or **Friends only** badge.
+The Activities page applies those visibility filters when it builds the OPENJIO
+cards. In this lightweight school-project setup, raw Jio documents are readable
+by signed-in users, so visibility is a discovery and interaction rule rather
+than a private-data boundary.
 
-## Where the data is
+## Data shape
 
-Firestore → `openjios/{jioId}`:
+Each `openjios/{id}` document stores its event details, host, participant IDs,
+waitlist IDs, and (for Invite Only/legacy Jios) invited IDs. The host is the
+first participant. The client uses Firestore transactions for Join, Chope,
+Leave, and Decline so two users cannot take the same final slot.
 
 ```js
 {
@@ -33,8 +45,8 @@ Firestore → `openjios/{jioId}`:
   durationMins: 120,
   cost: 5,                     // SGD, 0 = free
   capacity: 6,                 // total spots, including the host
-  visibility: 'public',        // 'public' | 'friends'
-  invited: ['uid', ...],       // friends-only: who the host invited ([] for public)
+  visibility: 'public',        // 'public' | 'friends_only' | 'invite_only' | 'friends' (legacy)
+  invited: ['uid', ...],       // used by invite_only and legacy friends Jios ([] for public/friends_only)
   hostId: 'uid', hostName: 'Li Min',
   participants: ['uid', ...],  // who is going (the host is always first)
   waitlist: ['uid', ...],      // who choped, in order. #1 gets the next free spot
@@ -43,6 +55,10 @@ Firestore → `openjios/{jioId}`:
 }
 ```
 
+Hosts may edit normal event fields while preserving the host, people already
+going, waitlist, status history, and creation time. Capacity cannot be reduced
+below the number of people already going.
+
 ## Files
 
 | File | What it does |
@@ -50,19 +66,19 @@ Firestore → `openjios/{jioId}`:
 | `src/utils/openjio.js` | The rules (validate, join, chope, leave, who can see). No Firebase, easy to test |
 | `src/services/openjio.js` | Firestore calls. Join/chope/leave run in a transaction so a jio can't be overbooked |
 | `src/stores/openjio.js` | Pinia store with the live lists |
-| `src/components/openjio/OpenJioPanel.vue` | The OpenJio! view: start, invites, my jios, open jios, Public / Friends only filter |
+| `src/components/openjio/OpenJioPanel.vue` | The OpenJio! view: start, invites, my Jios, discoverable Jios, and visibility filters |
 | `src/components/openjio/FreeTogetherJios.vue` | "Free with friends" card on the Friends page with OpenJio buttons |
 | `src/components/openjio/JioCard.vue` | One jio card |
 | `src/components/openjio/JioActionButton.vue` | Join / Chope / Leave / Cancel button that does the work itself. Use it anywhere |
 | `src/components/openjio/CreateJioSheet.vue` | "Start a jio" form with the friend picker (accepts `prefill`) |
 | `src/components/openjio/StartJioButton.vue` | Drop-in button that opens the form, for other pages |
 | `src/views/OpenJioView.vue` | `/openjio` page (just wraps the panel) |
-| `firestore.rules` → `openjios` | Database rules: you can only add or remove yourself; friends-only needs an invite |
+| `firestore.rules` → `openjios` | Database rules for visibility, host edits, and participant/waitlist changes |
 
 ## Activities page (Xin Hee): small additions
 
 **1. Public jios in the activities list** (`src/stores/activities.js`). Jios turn into normal
-activities with `type: 'openjio'`, so search, filters, the "OpenJio!" filter chip, the map and
+activities with `type: 'openJio'`, so search, filters, the "OpenJio!" filter chip, the map and
 check-ins already work with them.
 
 ```js
@@ -83,40 +99,36 @@ And in `src/utils/activityStyle.js`, label them:
 
 ```js
 export const sourceLabel = (source) =>
-  source === 'eventbrite' ? 'Eventbrite' : source === 'openjio' ? 'OpenJio!' : 'Curated'
+  source === 'eventbrite' ? 'Eventbrite' : source === 'openJio' ? 'OpenJio!' : 'Curated'
 ```
 
 **2. Join / Chope on the activity details page** (`ActivityDetailView.vue`):
 
 ```vue
-<JioActionButton v-if="activity.type === 'openjio'" :jio-id="activity.jioId" />
+<JioActionButton v-if="activity.type === 'openJio'" :jio-id="activity.jioId" />
 <!-- import JioActionButton from '@/components/openjio/JioActionButton.vue' -->
 ```
 
-**3. A toggle between "All" and "OpenJio!"** (`ActivitiesView.vue`):
+## Local validation
 
-```vue
-<script setup>
-import OpenJioPanel from '@/components/openjio/OpenJioPanel.vue'
-const view = ref('all') // 'all' | 'openjio'
-</script>
-
-<template>
-  <div class="btn-group mb-3">
-    <button class="btn" :class="view === 'all' ? 'btn-dark' : 'btn-outline-dark'" @click="view = 'all'">All</button>
-    <button class="btn" :class="view === 'openjio' ? 'btn-dark' : 'btn-outline-dark'" @click="view = 'openjio'">OpenJio!</button>
-  </div>
-
-  <OpenJioPanel v-if="view === 'openjio'" />
-  <div v-else><!-- the existing search, filters and list --></div>
-</template>
+```sh
+npm run test:unit -- --run
+npm run build
 ```
 
-**4. Optional: "OpenJio this" on an activity's details:**
+## Rules deployment
 
-```vue
-<StartJioButton label="OpenJio this" :prefill="prefillFromActivity(activity)" />
+The repository rules allow the three current visibility values and limit edits
+to hosts or normal spot changes. To make newly created `friends_only` and
+`invite_only` records work in the shared Firebase project, deploy the changed
+rules once after reviewing them:
+
+```sh
+firebase deploy --only firestore:rules
 ```
+
+Existing public Jios keep working immediately because the app again reads the
+original `openjios` collection.
 
 ## Friends page (Eugenia)
 
@@ -126,7 +138,7 @@ Already added to `FriendsView.vue`:
   and each has an **OpenJio** button.
 - In a friend's details, each "Free at the same time as you" time has an **OpenJio** button.
 
-Both open the form with the time filled in, set to friends-only, and those friends ticked:
+Both open the form with the time filled in, set to invite-only, and those friends selected:
 
 ```vue
 <StartJioButton label="OpenJio" :prefill="prefillFromWindow(window, [friend.uid])" />
@@ -148,16 +160,7 @@ so whoever you've added on the Friends page can be invited.
 `prefill` fields (all optional): `title`, `category` (interest id), `location`, `region`, `cost`,
 `capacity`, `visibility`, `invited` (uids), `description`, `startAt` (a JS `Date`), `durationMins`.
 
-## Known limits
-
-- Friends-only jios are hidden in the app, but the database rules still let any signed-in user
-  read them. Joining one without an invite is blocked by the rules.
-
 ## Tests
 
-- `pnpm test:unit`: `openjio.spec.js` (rules, and that `firestore.rules` allows the same categories
-  and regions), `openjioStore.spec.js` (which list a jio goes in),
-  `JioCard.spec.js` (buttons), `CreateJioSheet.spec.js` (form and friend picker).
-- `pnpm test:e2e`: `e2e/openjio.spec.js` (page needs log-in).
-
-After changing `firestore.rules`, re-publish it in the Firebase console (Firestore → Rules).
+- `npm run test:unit -- --run`: unit tests for OpenJio rules, store behaviour, Jio cards, the create form, and free-time suggestions.
+- `npm run test:e2e`: end-to-end OpenJio flow tests (requires log-in).

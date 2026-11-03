@@ -1,9 +1,10 @@
 import { INTERESTS } from '@/config/preferences'
+import { ACTIVITY_SOURCES } from '@/utils/activitySource'
 // The single curated fallback dataset. Admin can upload it to Firestore with
 // activitiesStore.seedFirestore(); Activities, Map, and wellbeing all read this shape.
 // `category` is one canonical interest ID. `type` is a separate filter dimension.
 export const categories = INTERESTS.map((i) => i.id)
-export const activityTypes = ['events', 'outdoor', 'volunteering', 'paid', 'openjio']
+export const activityTypes = ['events', 'outdoor', 'volunteering', 'paid', 'openJio']
 
 export const seedActivities = [
   { id: 's1', title: 'Neon Pottery Jam', description: 'Shape your own bowl or mug on the wheel under glowing neon lights. No experience needed, and your piece is fired and ready to collect.', category: 'workshops', type: 'paid', cost: 45, durationHrs: 2, setting: 'Indoor', energyLevel: 'low', area: 'Bras Basah', region: 'central', lat: 1.2966, lng: 103.8510, groupFriendly: true, source: 'curated' },
@@ -27,3 +28,7 @@ export const seedActivities = [
   { id: 's19', title: 'Weekend Flea Market', description: 'Browse pre-loved clothes, vintage finds and handmade goods at a laid-back weekend market.', category: 'events', type: 'events', cost: 0, durationHrs: 2, setting: 'Outdoor', energyLevel: 'low', area: 'Holland Village', region: 'central', lat: 1.2850, lng: 103.8330, groupFriendly: true, source: 'curated' },
   { id: 's20', title: 'Jurong Lake Gardens Picnic', description: 'Pack some snacks and unwind on the lawns of Jurong Lake Gardens, with lakeside views and plenty of shade.', category: 'outdoors', type: 'outdoor', cost: 0, durationHrs: 1.5, setting: 'Outdoor', energyLevel: 'low', area: 'Jurong Lake Gardens', region: 'west', lat: 1.3378, lng: 103.7283, groupFriendly: true, source: 'curated' },
 ]
+
+// Kept as data literals above for readability; all built-in picks use the
+// canonical source that the Firestore migration writes.
+seedActivities.forEach((activity) => { activity.source = ACTIVITY_SOURCES.PICKS })

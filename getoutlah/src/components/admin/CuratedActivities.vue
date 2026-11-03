@@ -1,5 +1,5 @@
 <script setup>
-// Admin: add, edit and remove admin-picked ("curated") activities. They're saved in Firestore
+// Admin: add, edit and remove GetOutLah Picks. They're saved in Firestore
 // "activities" next to the Eventbrite ones, so users see both together.
 import { ref, reactive, computed, onMounted } from 'vue'
 import { allActivities, loadActivities, reloadActivities, sourceErrors, seedFirestore } from '@/stores/activities'
@@ -18,7 +18,7 @@ const confirming = ref(null)
 
 onMounted(loadActivities)
 const curated = computed(() =>
-  allActivities.value.filter((a) => a.source === 'curated').sort((a, b) => a.title.localeCompare(b.title)))
+  allActivities.value.filter((a) => a.source === 'getoutlahPicks').sort((a, b) => a.title.localeCompare(b.title)))
 
 async function run(fn, done) {
   busy.value = true; message.value = ''
@@ -28,7 +28,7 @@ async function run(fn, done) {
 
 function openForm(activity) {
   Object.assign(form, emptyCurated(), activity ? { ...activity, url: activity.url ?? '', description: activity.description ?? '' } : {})
-  editingId.value = activity?.id ?? null
+  editingId.value = activity ? activity.id : null   
   problems.value = []; places.value = []; placeQuery.value = ''; placeError.value = ''
   formOpen.value = true
 }
@@ -71,7 +71,7 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
 <template>
   <div class="gol-card mt-3">
     <div class="adm-head">
-      <h2 class="gol-section-title">Curated activities</h2>
+      <h2 class="gol-section-title">GetOutLah Picks</h2>
       <button v-if="!formOpen" class="gol-btn-soft" :disabled="busy" @click="openForm()">+ Add activity</button>
     </div>
     <p class="adm-help">Activities you pick. They show alongside Eventbrite events in Activities and on the map.</p>
@@ -173,7 +173,7 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
           </button>
         </div>
       </li>
-      <li v-if="!curated.length" class="adm-help">No curated activities yet. Add one, or load the starter set below.</li>
+      <li v-if="!curated.length" class="adm-help">No GetOutLah Picks yet. Add one, or load the starter set below.</li>
     </ul>
 
     <div class="adm-starter">

@@ -10,6 +10,7 @@ import turfDistance from '@turf/distance' // X-factor: Turf.js geofencing
 import { point } from '@turf/helpers'
 import { celebrateBadge, celebrateCheckIn, celebrateLevelUp } from '../utils/celebrate.js' // X-factor: canvas-confetti
 import { addPendingReflection } from './reflections.js'
+import { getInterest } from '@/config/preferences'
 
 // ---------- Rules (tweak these with your team) ----------
 export const WEEKLY_POINT_CAP = 300      // max points a student can earn per week
@@ -31,10 +32,12 @@ export const BADGES = [
     desc: 'Complete your first verified activity.',
     icon: 'bi-stars',
     color: 'yellow',
+    emoji: '✦',
     target: 1,
     unit: 'activity',
     bonus: 20,
     progress: (s) => s.completed.length,
+    qualifies: () => true,
   },
   {
     id: 'try-everything-trio',
@@ -42,10 +45,12 @@ export const BADGES = [
     desc: 'Try activities from 3 different categories.',
     icon: 'bi-award',
     color: 'cyan',
+    emoji: '🏅',
     target: 3,
     unit: 'categories',
     bonus: 30,
     progress: (s) => new Set(s.completed.map((a) => a.category)).size,
+    qualifies: (a, s) => !s.completed.some((done) => done.category === a.category),
   },
   {
     id: 'crew-energy',
@@ -53,10 +58,12 @@ export const BADGES = [
     desc: 'Join your first OPENJIO!',
     icon: 'bi-people',
     color: 'coral',
+    emoji: '👥',
     target: 1,
     unit: 'OPENJIO',
     bonus: 20,
     progress: (s) => s.completed.filter((a) => a.isOpenJio && !a.hostedByMe).length,
+    qualifies: (a) => Boolean(a.isOpenJio) && !a.hostedByMe,
   },
   {
     id: 'big-host-energy',
@@ -64,10 +71,12 @@ export const BADGES = [
     desc: 'Organise your own OPENJIO!',
     icon: 'bi-person-plus',
     color: 'lime',
+    emoji: '🎉',
     target: 1,
     unit: 'hosted',
     bonus: 30,
     progress: (s) => s.completed.filter((a) => a.hostedByMe).length,
+    qualifies: (a) => Boolean(a.hostedByMe),
   },
   {
     id: 'trailblazer',
@@ -75,10 +84,12 @@ export const BADGES = [
     desc: 'Complete 3 outdoor or trail activities.',
     icon: 'bi-geo-alt',
     color: 'yellow',
+    category: 'outdoors', emoji: '🧭',
     target: 3,
     unit: 'outdoor activities',
     bonus: 30,
     progress: (s) => s.completed.filter((a) => a.category === 'outdoors').length,
+    qualifies: (a) => a.category === 'outdoors',
   },
   {
     id: 'eastie-explorer',
@@ -86,12 +97,30 @@ export const BADGES = [
     desc: 'Complete 5 activities in the east of Singapore.',
     icon: 'bi-map',
     color: 'cyan',
+    emoji: '🗺️',
     target: 5,
     unit: 'east activities',
     bonus: 30,
     progress: (s) => s.completed.filter((a) => a.region === 'east').length,
+    qualifies: (a) => a.region === 'east',
   },
+  { id: 'fitness-fanatic', name: 'Fitness fanatic', desc: 'Complete 3 sports or fitness activities.', icon: 'bi-heart-pulse', emoji: '🏃', category: 'sports', color: 'coral', target: 3, unit: 'sports activities', bonus: 30, progress: (s) => s.completed.filter((a) => a.category === 'sports').length, qualifies: (a) => a.category === 'sports' },
+  { id: 'culture-seeker', name: 'Culture seeker', desc: 'Complete 3 arts and culture activities.', icon: 'bi-palette', emoji: '🎨', category: 'arts', color: 'cyan', target: 3, unit: 'arts activities', bonus: 30, progress: (s) => s.completed.filter((a) => a.category === 'arts').length, qualifies: (a) => a.category === 'arts' },
+  { id: 'creative-explorer', name: 'Creative explorer', desc: 'Complete 2 workshops or craft activities.', icon: 'bi-brush', emoji: '🎨', category: 'workshops', color: 'yellow', target: 2, unit: 'workshops', bonus: 20, progress: (s) => s.completed.filter((a) => a.category === 'workshops').length, qualifies: (a) => a.category === 'workshops' },
+  { id: 'event-chaser', name: 'Event chaser', desc: 'Complete 3 events around Singapore.', icon: 'bi-calendar-event', emoji: '🎟️', category: 'events', color: 'lime', target: 3, unit: 'events', bonus: 30, progress: (s) => s.completed.filter((a) => a.category === 'events').length, qualifies: (a) => a.category === 'events' },
 ]
+
+/**
+ * One shared visual treatment for badges wherever they appear in the app.
+ * Category badges inherit the category's canonical colour; broader goals use
+ * the app's purple accent.
+ */
+export function badgePresentation(badge) {
+  return {
+    emoji: badge?.emoji ?? '🏆',
+    color: getInterest(badge?.category)?.color ?? 'var(--gol-purple)',
+  }
+}
 
 // ---------- Date helpers ----------
 // Weeks start on Monday. A week is identified by its Monday "YYYY-MM-DD".
@@ -127,23 +156,35 @@ function emptyState() {
   }
 }
 
-function demoState() {
+/**
+ * A fresh shared starting point for each explicit demo login.
+ *
+ * Activities are replayed from oldest to newest so completed activities,
+ * badge dates and the points ledger all tell the same story. The two outdoor
+ * activities deliberately leave Trailblazer one check-in away from unlocking.
+ */
+export function createDemoStartingState() {
   const s = emptyState()
   const today = new Date()
   const ago = (weeks) => toISODate(addDays(today, -7 * weeks))
-  s.completed = [
+  const completed = [
     { id: 'demo-1', title: 'Pottery taster class', category: 'workshops', region: 'central', isOpenJio: false, hostedByMe: false, date: ago(4) },
     { id: 'demo-2', title: 'Badminton OPENJIO', category: 'sports', region: 'east', isOpenJio: true, hostedByMe: false, date: ago(3) },
     { id: 'demo-3', title: 'MacRitchie TreeTop Walk', category: 'outdoors', region: 'central', isOpenJio: false, hostedByMe: false, date: ago(2) },
     { id: 'demo-4', title: 'East Coast picnic (hosted)', category: 'outdoors', region: 'east', isOpenJio: true, hostedByMe: true, date: ago(1) },
     { id: 'demo-5', title: 'Art jam at Jurong', category: 'arts', region: 'west', isOpenJio: false, hostedByMe: false, date: ago(0) },
   ]
-  s.ledger = s.completed.map((a) => ({ date: a.date, amount: POINTS_PER_ACTIVITY, reason: a.title }))
-  // Award the badges the demo activities unlock
-  for (const b of BADGES) {
-    if (b.progress(s) >= b.target) {
-      s.earnedBadges[b.id] = s.completed[0].date
-      s.ledger.push({ date: s.completed[0].date, amount: b.bonus, reason: `Badge: ${b.name}` })
+
+  for (const activity of completed) {
+    s.completed.push(activity)
+    s.ledger.push({ date: activity.date, amount: POINTS_PER_ACTIVITY, reason: activity.title })
+
+    // Award each badge on the date the activity actually unlocked it.
+    for (const badge of BADGES) {
+      if (!s.earnedBadges[badge.id] && badge.progress(s) >= badge.target) {
+        s.earnedBadges[badge.id] = activity.date
+        s.ledger.push({ date: activity.date, amount: badge.bonus, reason: `Badge: ${badge.name}` })
+      }
     }
   }
   return s
@@ -156,19 +197,23 @@ function load() {
   } catch (e) {
     /* storage blocked or corrupted — fall through */
   }
-  return USE_DEMO_DATA ? demoState() : emptyState()
+  return USE_DEMO_DATA ? createDemoStartingState() : emptyState()
 }
 
 export const game = reactive(load())
 
+function saveGame(state = game) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch (e) {
+    /* storage may be blocked */
+  }
+}
+
 watch(
   game,
   (val) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
-    } catch (e) {
-      /* ignore */
-    }
+    saveGame(val)
   },
   { deep: true }
 )
@@ -274,6 +319,32 @@ export function badgeList() {
       earnedOn: game.earnedBadges[b.id] || null,
     }
   })
+}
+
+export function badgeById(id) {
+  return badgeList().find((badge) => badge.id === id) ?? null
+}
+
+/** Whether an uncompleted activity can genuinely advance an unfinished badge. */
+export function canActivityProgressBadge(badgeOrId, activity, state = game) {
+  const badge = typeof badgeOrId === 'string' ? BADGES.find((item) => item.id === badgeOrId) : badgeOrId
+  return Boolean(badge && activity?.id && !state.earnedBadges[badge.id]
+    && !state.completed.some((done) => done.id === activity.id)
+    && badge.qualifies?.(activity, state))
+}
+
+/** Map-ready opportunities, ranked by proximity to completion then visible choices. */
+export function badgeOpportunities(activities = [], state = game) {
+  return badgeList()
+    .filter((badge) => !badge.earned)
+    .map((badge, index) => ({
+      ...badge,
+      remaining: Math.max(0, badge.target - badge.progress),
+      eligibleActivities: activities.filter((activity) => canActivityProgressBadge(badge.id, activity, state)),
+      index,
+    }))
+    .filter((badge) => badge.eligibleActivities.length)
+    .sort((a, b) => a.remaining - b.remaining || b.eligibleActivities.length - a.eligibleActivities.length || a.index - b.index)
 }
 
 // Checks every badge and awards any newly unlocked ones. Returns the new badges.
@@ -389,7 +460,13 @@ export function setStudyBreak(on) {
   }
 }
 
+/** Start a new local demo session and persist it before authenticated UI renders. */
+export function startDemoSession() {
+  Object.assign(game, createDemoStartingState())
+  saveGame()
+}
+
 // Handy while testing: wipes everything back to empty (or demo) data
 export function resetGamification(withDemo = false) {
-  Object.assign(game, withDemo ? demoState() : emptyState())
+  Object.assign(game, withDemo ? createDemoStartingState() : emptyState())
 }

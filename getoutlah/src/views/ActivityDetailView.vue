@@ -14,10 +14,13 @@ import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, 
 import JioActionButton from '@/components/openjio/JioActionButton.vue'
 import StartJioButton from '@/components/openjio/StartJioButton.vue'
 import { prefillFromActivity } from '@/utils/openjio'
+import ReportJioButton from '@/components/reports/ReportJioButton.vue'
+import { useOpenJioStore } from '@/stores/openjio'
 
 const route = useRoute()
+const back = computed(() => (route.query.from === 'map' ? { to: '/map', label: 'Back to map' } : { to: '/activities', label: 'Back to activities' }))
 const { request } = useGeolocation()
-const message = ref(''), friendsDid = ref([]), showInvite = ref(false)
+const message = ref(''), friendsDid = ref([]), showInvite = ref(false), earnedBadges = ref([])
 const BADGE_ENERGY = { low: 'calm', medium: 'moderate', high: 'high' } 
 
 onMounted(loadActivities)
@@ -27,48 +30,60 @@ const directions = computed(() => (activity.value?.lat != null ? directionsUrl(a
 const dates = computed(() => (activity.value ? datesOf(activity.value) : []))
 const booking = computed(() => bookingLink(activity.value))
 const heroImage = computed(() => activity.value?.imageLargeUrl ?? activity.value?.imageUrl ?? null)
-const brokenImage = ref(null)   // a picture that didn't load: show the emoji instead
+const brokenImage = ref(null)
+// Change code is necessary: the picture fades in once it has downloaded, instead of popping in
+const loadedImage = ref(null)
 
-// Long descriptions (over 100 words) show the first 100 words and a "Show more" button.
 const SHORT_WORDS = 50
 const showFullDescription = ref(false)
-watch(() => route.params.id, () => { showFullDescription.value = false })   // collapse again on another activity or date
+watch(() => route.params.id, () => { showFullDescription.value = false })  
 const descriptionIsLong = computed(() => (activity.value?.description ?? '').trim().split(/\s+/).length > SHORT_WORDS)
 const shownDescription = computed(() => {
-  const text = activity.value?.description ?? ''
+  const text = activity.value?.description || ''
   if (!descriptionIsLong.value || showFullDescription.value) return text
-  const first100 = text.match(new RegExp(`^(\\s*\\S+){${SHORT_WORDS}}`))[0]   // first 100 words, line breaks kept
+  const first100 = text.match(new RegExp(`^(\\s*\\S+){${SHORT_WORDS}}`))[0]  
   return first100 + '…'
 })
 const saved = computed(() => (activity.value ? isSaved(activity.value.id) : false))
-const planned = computed(() => (activity.value ? isPlanned(activity.value.id) : false))   // "My plans" on Profile
+const planned = computed(() => (activity.value ? isPlanned(activity.value.id) : false))   
+const jios = useOpenJioStore()
+const jioSuspended = computed(() =>
+  activity.value?.type === 'openJio' && jios.all.find((j) => j.id === activity.value.jioId)?.status === 'suspended')
 
 watchEffect(async () => { if (activity.value) friendsDid.value = await friendsWhoDid(activity.value.id) })
 
 async function run(fn, ok) { message.value = ''; try { await fn(); message.value = ok } catch (e) { message.value = e.message } }
-const doCheckIn = () => run(async () => {
-  const a = activity.value
-  const r = await checkInToActivity({
+const doCheckIn = async () => {
+  message.value = ''
+  earnedBadges.value = []
+  try {
+    const a = activity.value
+    const r = await checkInToActivity({
     id: a.id, title: a.title, category: a.category, region: a.region, lat: a.lat, lng: a.lng,
-    energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openjio', hostedByMe: !!a.hostedByMe,
-  }, await request())
-  if (!r.ok) throw new Error(r.message)
-  await removePlan(a.id).catch(() => {})   // moves the activity from My plans to Completed
-  recordCheckIn(a.id).catch(() => {})      // lets friends see “Friends who have done this”
-}, 'Checked in!')
+    energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openJio', hostedByMe: !!a.hostedByMe,
+    }, await request())
+    if (!r.ok) throw new Error(r.message)
+    await removePlan(a.id).catch(() => {})
+    recordCheckIn(a.id).catch(() => {})
+    message.value = r.message
+    earnedBadges.value = r.newBadges ?? []
+  } catch (error) { message.value = error.message }
+}
 const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'Removed from your plans.' : 'Added to My plans on your Profile.')
 </script>
 
 <template>
   <div class="gol-page">
     <div class="container py-4 det-wrap">
-      <router-link to="/activities" class="det-back"><i class="bi bi-arrow-left"></i> Back to activities</router-link>
+      <router-link :to="back.to" class="det-back"><i class="bi bi-arrow-left"></i> {{ back.label }}</router-link>
 
       <div v-if="activity" class="det-layout mt-3">
-        <!-- Left: picture + title -->
         <div class="gol-card det-main">
           <div class="det-hero" :style="{ background: categoryColor(activity.category), color: tileTextColor(activity.category) }">
-            <img v-if="heroImage && heroImage !== brokenImage" :src="heroImage" alt="" @error="brokenImage = heroImage" />
+            <!-- Change code is necessary: added class + @load so the picture fades in -->
+            <img v-if="heroImage && heroImage !== brokenImage" :src="heroImage" alt=""
+              class="det-hero-img" :class="{ 'is-loaded': loadedImage === heroImage }"
+              @load="loadedImage = heroImage" @error="brokenImage = heroImage" />
             <span v-else class="det-emoji">{{ categoryEmoji(activity.category) }}</span>
           </div>
           <div class="gol-eyebrow mt-3">{{ categoryLabel(activity.category) }}</div>
@@ -85,7 +100,6 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
           </section>
         </div>
 
-        <!-- Right: facts + actions -->
         <div class="gol-card det-side">
           <div class="det-grid">
             <div class="det-cell"><i class="bi bi-geo-alt"></i> {{ activity.area || 'Singapore' }}</div>
@@ -95,12 +109,11 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
             <div v-if="activity.startsAt && dates.length <= 1" class="det-cell det-wide"><i class="bi bi-calendar-event"></i> {{ whenText(activity.startsAt) }}</div>
           </div>
 
-          <!-- Repeating event: every upcoming date. Picking one switches the page to that date. -->
           <div v-if="dates.length > 1" class="det-dates">
             <h2 class="det-dates-title"><i class="bi bi-calendar-event"></i> {{ dates.length }} dates</h2>
             <ul>
               <li v-for="d in dates" :key="d.id">
-                <router-link :to="`/activities/${d.id}`" class="det-date" :class="{ on: d.id === activity.id }"
+                <router-link :to="{ path: `/activities/${d.id}`, query: route.query }" class="det-date" :class="{ on: d.id === activity.id }"
                   :aria-current="d.id === activity.id ? 'true' : undefined">
                   {{ whenText(d.startsAt) }}
                   <span v-if="d.slotsLeft != null" class="det-date-slots">{{ d.slotsLeft === 0 ? 'Full' : `${d.slotsLeft} left` }}</span>
@@ -117,30 +130,31 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
             <i class="bi bi-people"></i> Friends who have done this: {{ friendsDid.map((f) => f.name).join(', ') }}
           </p>
 
-          <JioActionButton v-if="activity.type === 'openjio'" :jio-id="activity.jioId" class="mt-3" />
+          <JioActionButton v-if="activity.type === 'openJio'" :jio-id="activity.jioId" class="mt-3" />
+          <ReportJioButton v-if="activity.type === 'openJio'" :jio-id="activity.jioId" class="mt-2" />
 
           <div class="det-actions">
-            <!-- Sign-up happens on Eventbrite (or the activity's own site), in a new tab. -->
             <a v-if="booking" :href="booking.href" target="_blank" rel="noopener" class="gol-btn-primary det-link det-book">
               <i class="bi bi-ticket-perforated"></i> {{ booking.label }} <i class="bi bi-box-arrow-up-right"></i>
             </a>
-            <button v-if="activity.lat != null" class="gol-btn-primary" @click="doCheckIn">Check in</button>
-            <button class="gol-btn-soft" :aria-pressed="planned" @click="doJoin">
-              <i class="bi" :class="planned ? 'bi-calendar-check-fill' : 'bi-calendar-plus'"></i> {{ planned ? 'Joined' : 'Join' }}
+            <button v-if="activity.lat != null && !jioSuspended" class="gol-btn-primary" @click="doCheckIn">Check in</button>
+            <button v-if="!jioSuspended" class="gol-btn-soft" :aria-pressed="planned" @click="doJoin">
+              <i class="bi" :class="planned ? 'bi-calendar-check-fill' : 'bi-calendar-plus'"></i> {{ planned ? 'Added to calendar' : 'Add to calendar' }}
             </button>
             <button class="gol-btn-soft" @click="toggleSaved(activity.id)">
               <i class="bi" :class="saved ? 'bi-bookmark-fill' : 'bi-bookmark'"></i> {{ saved ? 'Saved' : 'Save' }}
             </button>
-            <button class="gol-btn-soft" data-testid="invite-friends" @click="showInvite = true">
+            <button v-if="!jioSuspended" class="gol-btn-soft" data-testid="invite-friends" @click="showInvite = true">
               <i class="bi bi-person-plus"></i> Invite friends
             </button>
             <a v-if="directions" :href="directions" target="_blank" rel="noopener" class="gol-btn-soft det-link">
               <i class="bi bi-signpost-split"></i> Get directions
             </a>
-            <StartJioButton v-if="activity.type !== 'openjio'" label="OpenJio this" variant="soft"
+            <StartJioButton v-if="activity.type !== 'openJio'" label="OpenJio this" variant="soft"
               :prefill="prefillFromActivity(activity)" />
           </div>
           <p v-if="message" class="det-msg">{{ message }}</p>
+          <p v-if="earnedBadges.length" class="det-msg"><i class="bi bi-trophy-fill"></i> New badge{{ earnedBadges.length > 1 ? 's' : '' }}: {{ earnedBadges.map((badge) => badge.name).join(', ') }} · <router-link :to="{ name: 'badges' }">View Badge</router-link></p>
         </div>
       </div>
       <p v-else class="mt-4 fw-bold">Activity not found (or still loading).</p>
@@ -153,3 +167,24 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Change code is necessary: smoother arrival of the activity page */
+
+/* The content fades in and rises a little, instead of appearing all at once */
+.det-layout { animation: det-enter 0.3s ease-out both; }
+@keyframes det-enter {
+  from { opacity: 0; transform: translateY(12px); }   /* start: invisible, a little lower */
+  to { opacity: 1; transform: none; }                 /* end: fully visible, in place */
+}
+
+/* The picture starts invisible and fades in once it has downloaded */
+.det-hero-img { opacity: 0; transition: opacity 0.3s ease-out; }
+.det-hero-img.is-loaded { opacity: 1; }
+
+/* People who turn on "Reduce motion" on their phone get no animation */
+@media (prefers-reduced-motion: reduce) {
+  .det-layout { animation: none; }
+  .det-hero-img { transition: none; }
+}
+</style>

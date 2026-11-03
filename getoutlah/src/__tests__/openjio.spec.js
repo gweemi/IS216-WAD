@@ -203,8 +203,9 @@ describe('fitting in with the Activities page', () => {
     expect(a).toMatchObject({
       id: 'jio-j1',
       jioId: 'j1',
-      type: 'openjio',
-      source: 'openjio',
+      type: 'openJio',
+      source: 'openJio',
+      visibility: 'public',
       category: 'sports',
       area: 'SMU Sports Hall',
       durationHrs: 2,

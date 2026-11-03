@@ -14,7 +14,7 @@
 
     <div v-if="message" class="jio-toast small mb-2" role="status">
       {{ message }}
-      <RouterLink :to="{ name: 'activities', query: { view: 'openjio' } }" class="fw-bolder text-white">See it in OpenJio!</RouterLink>
+      <RouterLink :to="{ name: 'activities', query: { view: 'openJio' } }" class="fw-bolder text-white">See it in OPENJIO!</RouterLink>
     </div>
 
     <p v-if="!times.length" class="text-muted small fw-semibold mb-0">

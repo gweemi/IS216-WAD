@@ -76,16 +76,41 @@ describe('JioCard', () => {
     expect(button(card({}, 'host')).text()).toBe('Cancel jio')
   })
 
-  it('shows who invited you to a friends-only jio', () => {
-    const w = card({ visibility: 'friends', invited: ['me'] })
+  it('only lets the host edit an active OpenJio', () => {
+    expect(card({}, 'host').find('[data-testid="edit-jio"]').exists()).toBe(true)
+    expect(card({ status: 'cancelled' }, 'host').find('[data-testid="edit-jio"]').exists()).toBe(false)
+    expect(card({}, 'me').find('[data-testid="edit-jio"]').exists()).toBe(false)
+  })
+
+  it('only lets the host open the attendee list', () => {
+    expect(card({}, 'host').find('[data-testid="view-jio-attendees"]').exists()).toBe(true)
+    expect(card({}, 'me').find('[data-testid="view-jio-attendees"]').exists()).toBe(false)
+  })
+
+  it('shows who invited you to an invite-only jio', () => {
+    const w = card({ visibility: 'invite_only', invited: ['me'] })
     expect(w.find('[data-testid="jio-invited"]').text()).toContain('Micah invited you')
     expect(button(w).text()).toBe('Join')
   })
 
-  it('labels each jio as Public or Friends only', () => {
+  it('lets a pending invite-only recipient decline without adding a second response step', async () => {
+    const w = card({ visibility: 'invite_only', invited: ['me'] })
+    expect(button(w).text()).toBe('Join')
+    expect(w.find('[data-testid="decline-jio"]').exists()).toBe(true)
+    await w.get('[data-testid="decline-jio"]').trigger('click')
+    await flushPromises()
+    expect(calls).toContainEqual(['decline', 'j1'])
+  })
+
+  it('also allows a pending legacy invite-only recipient to decline', () => {
+    const w = card({ visibility: 'friends', invited: ['me'] })
+    expect(w.find('[data-testid="decline-jio"]').exists()).toBe(true)
+  })
+
+  it('labels legacy invite-only jios without changing their meaning', () => {
     const badge = (w) => w.find('[data-testid="jio-visibility"]').text()
     expect(badge(card({}))).toBe('Public')
-    expect(badge(card({ visibility: 'friends', invited: ['me'] }))).toBe('Friends only')
+    expect(badge(card({ visibility: 'friends', invited: ['me'] }))).toBe('Legacy invite only')
   })
 
   it('shows no button on a cancelled jio', () => {

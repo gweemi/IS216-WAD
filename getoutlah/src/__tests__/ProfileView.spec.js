@@ -60,6 +60,7 @@ const mountPage = () =>
 describe('ProfileView', () => {
   beforeEach(() => {
     resetGamification(true) // the 5 demo activities + badges
+    calls.logOut = 0
     calls.routes = []
   })
 
@@ -111,11 +112,20 @@ describe('ProfileView', () => {
     expect(mountPage().text()).toContain('My reflections')
   })
 
-  it('logs out', async () => {
+  it('asks for confirmation before logging out', async () => {
     const w = mountPage()
     await w.find('[data-testid="logout"]').trigger('click')
+
+    expect(calls.logOut).toBe(0)
+    expect(w.get('[role="dialog"]').text()).toContain('Are you sure you want to log out?')
+
+    await w.get('[data-testid="logout-cancel"]').trigger('click')
+    expect(calls.logOut).toBe(0)
+
+    await w.find('[data-testid="logout"]').trigger('click')
+    await w.get('[data-testid="logout-confirm"]').trigger('click')
     await flushPromises()
     expect(calls.logOut).toBe(1)
-    expect(calls.routes).toContainEqual({ name: 'auth' })
+    expect(calls.routes).toContainEqual({ name: 'login' })
   })
 })

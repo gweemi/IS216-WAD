@@ -1,6 +1,7 @@
 // Checks which jios go where: Activities (public), invites, and "My jios".
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { friendsState, resetFriendsState } from '@/stores/friends'
 
 vi.mock('@/services/openjio', () => ({ watchJios: vi.fn(), friendlyJioError: (e) => e.message }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ user: { uid: 'me' }, profile: {} }) }))
@@ -25,6 +26,8 @@ const jio = (id, changes) => ({
 let store
 beforeEach(() => {
   setActivePinia(createPinia())
+  resetFriendsState()
+  friendsState.uid = 'me'
   store = useOpenJioStore()
   store.all = [
     jio('public'),
@@ -56,7 +59,13 @@ describe('openjio store', () => {
     expect(ids(store.openToJoin)).toEqual(['public'])
   })
 
-  it('never shows friends-only jios you were not invited to', () => {
+  it('never shows invite-only jios you were not invited to', () => {
     expect(ids(store.visible)).not.toContain('not-invited')
+  })
+
+  it('shows a friends-only jio when its host is an accepted friend', () => {
+    friendsState.friendships = [{ id: 'friend_me', members: ['friend', 'me'], status: 'accepted' }]
+    store.all.push(jio('friends-only', { visibility: 'friends_only', hostId: 'friend' }))
+    expect(ids(store.visible)).toContain('friends-only')
   })
 })

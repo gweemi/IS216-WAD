@@ -16,7 +16,7 @@ let stopListening = null
 const notEnded = (j) => statusOf(j) !== 'ended'
 const live = (j) => j.status !== 'cancelled' && notEnded(j)
 
-export const useOpenJioStore = defineStore('openjio', {
+export const useOpenJioStore = defineStore('openJio', {
   state: () => ({
     all: [], // every upcoming jio from Firestore, soonest first
     loading: false,
@@ -36,25 +36,38 @@ export const useOpenJioStore = defineStore('openjio', {
     },
     /** Every jio this user is allowed to see. */
     visible(state) {
-      return state.all.filter((j) => canSee(j, this.uid))
+      return state.all.filter((j) => canSee(j, this.uid, this.friendIds))
     },
-    /** Public jios that are still on. Shown on the Activities page next to events. */
+    /** Jios the current user may discover in the app. */
+    discoverableUpcoming(state) {
+      return state.all.filter((j) => live(j) && canSee(j, this.uid, this.friendIds))
+    },
+    /** Public jios that are still on. */
     publicUpcoming(state) {
       return state.all.filter((j) => j.visibility === 'public' && live(j))
     },
     /** Friends-only jios this user was invited to but hasn't joined yet. */
     invites(state) {
       return state.all.filter(
-        (j) => j.visibility === 'friends' && isInvited(j, this.uid) && myRole(j, this.uid) === 'none' && live(j),
+        (j) => ['invite_only', 'friends'].includes(j.visibility) && isInvited(j, this.uid) && myRole(j, this.uid) === 'none' && live(j),
       )
     },
     /** Jios this user is hosting, going to, or queued for (public and friends-only). */
     mine(state) {
       return state.all.filter((j) => myRole(j, this.uid) !== 'none' && notEnded(j))
     },
+    hosting(state) {
+      return state.all.filter((j) => myRole(j, this.uid) === 'host' && notEnded(j))
+    },
+    going(state) {
+      return state.all.filter((j) => ['going', 'queued'].includes(myRole(j, this.uid)) && notEnded(j))
+    },
     /** Public jios by other people that this user hasn't joined yet. */
     openToJoin(state) {
-      return state.all.filter((j) => j.visibility === 'public' && myRole(j, this.uid) === 'none' && live(j))
+      return state.all.filter((j) => ['public', 'friends_only'].includes(j.visibility)
+        && myRole(j, this.uid) === 'none'
+        && canSee(j, this.uid, this.friendIds)
+        && live(j))
     },
   },
 

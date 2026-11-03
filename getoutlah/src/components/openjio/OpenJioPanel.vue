@@ -1,10 +1,10 @@
 <!--
-  The OPENJIO! tab: every jio you can see, plus a button to start one.
-  Used inside the Activities page ("OpenJio!" view) and on /openjio:
+  The dedicated OPENJIO! management panel: every Jio you can see, plus a button to start one.
+  Used on /activities/openjio:
     <OpenJioPanel />
-  Sections: Invites for you (friends-only), My jios, and Open jios (public ones you can join).
-  The Public / Friends only filter narrows all three. Public jios also show in the
-  main Activities list (useOpenJioStore().publicUpcoming).
+  Sections: Invites for you, My jios, and Open jios you can join.
+  Its visibility filters narrow those sections. Discoverable Jios also appear in
+  the main Activities list.
 -->
 <template>
   <div class="openjio-panel">
@@ -13,13 +13,16 @@
         <h2 class="gol-section-title mb-1">Got a plan? Jio people along.</h2>
         <p class="muted mb-0">
           <span class="vis-tag vis-tag--public"><i class="ph ph-globe-hemisphere-west"></i> Public</span> anyone can join, also shown in All activities.
-          <span class="vis-tag vis-tag--friends ms-1"><i class="ph ph-lock"></i> Friends only</span> only friends you invite.
+          <span class="vis-tag vis-tag--friends ms-1"><i class="ph ph-users-three"></i> Friends only</span> accepted friends can discover and join.
+          <span class="vis-tag vis-tag--invite ms-1"><i class="ph ph-lock-key"></i> Invite only</span> only selected invitees can join.
         </p>
+        <div class="start-jio-action">
+          <StartJioButton label="Start a Jio" :route-to="{ name: 'openjio-create' }" @created="onCreated" />
+        </div>
       </div>
-      <StartJioButton @created="onCreated" />
     </section>
 
-    <div class="vis-filter mb-3" role="tablist" aria-label="Show public or friends-only jios">
+    <div class="vis-filter mb-3" role="tablist" aria-label="Show Jios by visibility">
       <button
         v-for="f in FILTERS"
         :key="f.id"
@@ -40,7 +43,7 @@
     <p v-else-if="jios.error" class="text-danger fw-bold" role="alert">{{ jios.error }}</p>
 
     <template v-else>
-      <section v-if="filter !== 'public'" class="mb-4" data-testid="jio-invites">
+      <section v-if="filter === 'all' || filter === 'invite_only'" class="mb-4" data-testid="jio-invites">
         <h2 class="gol-section-title mb-2">
           Invites for you <span class="count">{{ invites.length }}</span>
         </h2>
@@ -64,17 +67,23 @@
         </TransitionGroup>
       </section>
 
-      <section v-if="filter !== 'friends'" data-testid="jio-open">
+      <section v-if="filter !== 'invite_only'" data-testid="jio-open">
         <h2 class="gol-section-title mb-2">
           Open jios <span class="count">{{ open.length }}</span>
         </h2>
-        <p v-if="!open.length" class="muted">No public jios to join right now. Start one and it shows up here and in All activities.</p>
+        <p v-if="!open.length" class="muted">No Jios to join right now. Start one and it will show up here.</p>
         <TransitionGroup v-else tag="div" name="jio-list" class="row g-3">
           <div v-for="j in open" :key="j.id" class="col-12 col-md-6 col-xl-4">
             <JioCard :jio="j" :uid="jios.uid" />
           </div>
         </TransitionGroup>
       </section>
+      <div class="management-links">
+        <RouterLink :to="{ name: 'activities', query: { view: 'openJio' } }" class="explore-jios">Explore more Jios</RouterLink>
+        <RouterLink v-if="invites.length" :to="{ name: 'activities', query: { view: 'openJio', visibility: 'invited' } }" class="view-invitations">
+          View Invitations <span class="count">{{ invites.length }}</span>
+        </RouterLink>
+      </div>
     </template>
   </div>
 </template>
@@ -88,7 +97,8 @@ import { useOpenJioStore } from '@/stores/openjio'
 const FILTERS = [
   { id: 'all', label: 'All', icon: '' },
   { id: 'public', label: 'Public', icon: 'ph-globe-hemisphere-west' },
-  { id: 'friends', label: 'Friends only', icon: 'ph-lock' },
+  { id: 'friends_only', label: 'Friends only', icon: 'ph-users-three' },
+  { id: 'invite_only', label: 'Invite only', icon: 'ph-lock-key' },
 ]
 
 export default {
@@ -98,9 +108,9 @@ export default {
     return { FILTERS, filter: 'all', message: '' }
   },
   computed: {
-    ...mapStores(useOpenJioStore), // gives this.openjioStore
+    ...mapStores(useOpenJioStore), // gives this.openJioStore
     jios() {
-      return this.openjioStore
+      return this.openJioStore
     },
     invites() {
       return this.pick(this.jios.invites)
@@ -117,7 +127,8 @@ export default {
       return {
         all: every.length,
         public: every.filter((j) => j.visibility === 'public').length,
-        friends: every.filter((j) => j.visibility === 'friends').length,
+        friends_only: every.filter((j) => j.visibility === 'friends_only').length,
+        invite_only: every.filter((j) => ['invite_only', 'friends'].includes(j.visibility)).length,
       }
     },
   },
@@ -131,7 +142,11 @@ export default {
   },
   methods: {
     pick(list) {
-      return this.filter === 'all' ? list : list.filter((j) => j.visibility === this.filter)
+      if (this.filter === 'all') return list
+      if (this.filter === 'invite_only') {
+        return list.filter((j) => ['invite_only', 'friends'].includes(j.visibility))
+      }
+      return list.filter((j) => j.visibility === this.filter)
     },
     onCreated() {
       this.flash('Your OPENJIO is live!')
@@ -149,17 +164,10 @@ export default {
 .muted { color: var(--gol-muted); font-weight: 700; }
 
 .start-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  background: var(--gol-card);
-  border-radius: var(--gol-radius);
-  box-shadow: 0 6px 0 var(--gol-card-edge);
-  padding: 1.1rem 1.25rem;
+  padding: 0;
 }
-
+.start-jio-action { display: flex; margin-top: 1.15rem; }
+.start-jio-action :deep(a) { display: inline-flex; align-items: center; text-decoration: none; }
 .vis-tag {
   display: inline-flex;
   align-items: center;
@@ -171,6 +179,7 @@ export default {
 }
 .vis-tag--public { background: #e3f4ff; color: #1d5f8a; }
 .vis-tag--friends { background: var(--gol-purple-soft); color: var(--gol-purple); }
+.vis-tag--invite { background: #ffd3cb; color: #8d332d; }
 
 .vis-filter { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .vis-filter button {
@@ -192,6 +201,9 @@ export default {
   padding: 0.05rem 0.5rem;
   vertical-align: middle;
 }
+.management-links { display: grid; justify-items: center; gap: .55rem; margin: 1.5rem 0 .5rem; }
+.explore-jios, .view-invitations { color: var(--gol-purple); font: 900 1rem var(--gol-font); text-decoration: underline; text-underline-offset: .2em; }
+.view-invitations { font-size: .86rem; }
 
 .toast-msg {
   background: var(--gol-ink);
