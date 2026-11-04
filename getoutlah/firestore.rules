@@ -63,12 +63,14 @@ service cloud.firestore {
 
     // Activities are GetOutLah Picks (admin-picked) or external listings. The daily GitHub Action
     // writes with the Admin SDK, which skips these rules. Keep in sync with src/utils/curated.js.
+    // 'curated' and 'eventbrite' are the names used before the source rename. They stay allowed
+    // until scripts/migrate-activity-sources.mjs --apply has run, so older activities can still be updated.
     function validActivity(d) {
       return d.title is string && d.title.size() >= 1 && d.title.size() <= 120
-        && d.source in ['getoutlahPicks', 'externalListings']
+        && d.source in ['getoutlahPicks', 'externalListings', 'curated', 'eventbrite']
         && (d.get('cost', null) == null || (d.cost is number && d.cost >= 0))
         && (d.get('description', null) == null || (d.description is string && d.description.size() <= 5000))
-        && (d.source != 'getoutlahPicks' || (
+        && (!(d.source in ['getoutlahPicks', 'curated']) || (
               d.category in ['outdoors', 'sports', 'arts', 'food', 'workshops',
                              'events', 'games', 'wellness', 'volunteering']
               && d.lat is number && d.lng is number
