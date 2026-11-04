@@ -2,7 +2,7 @@
 import '@/assets/discovery.css'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { filters, recommended, loadingActivities, sourceErrors, openJioLoadError, loadActivities } from '@/stores/activities'
+import { filters, recommended, loadingActivities, sourceErrors, activityRefreshRequired, openJioLoadError, loadActivities } from '@/stores/activities'
 import { activeFilterPills } from '@/utils/activeFilters'
 import { ACTIVITY_SOURCES, SOURCE_LABELS, canonicalSource, isActivitySource } from '@/utils/activitySource'
 import ActivityCard from '@/components/ActivityCard.vue'
@@ -75,6 +75,7 @@ function selectOpenJioVisibility(visibility) {
   router.push({ name: 'activities', query: { view: ACTIVITY_SOURCES.OPEN_JIO, ...(visibility === 'all' ? {} : { visibility }) } })
 }
 function clearSourceView() { router.replace({ name: 'activities' }) }
+function reloadPage() { window.location.reload() }
 function clearAdditionalFilters() {
   filters.value.query = ''
   filters.value.categories = []
@@ -147,6 +148,9 @@ onMounted(loadActivities)
       </div>
 
       <p v-if="loadingActivities" class="act-note">Loading activities…</p>
+      <p v-if="activityRefreshRequired" class="act-note act-note--warn" role="status">
+        Activity data has been updated. <button type="button" class="act-refresh" @click="reloadPage">Refresh the page</button> to continue.
+      </p>
       <p v-for="(msg, source) in sourceErrors" :key="source" class="act-note act-note--warn">Could not load {{ source }}: {{ msg }}</p>
       <p v-if="selectedSource === ACTIVITY_SOURCES.OPEN_JIO && openJioLoadError" class="act-note act-note--warn">Could not load OPENJIOs: {{ openJioLoadError }}</p>
 

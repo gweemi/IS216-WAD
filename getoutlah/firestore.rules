@@ -61,25 +61,40 @@ service cloud.firestore {
         && (!(me.get('suspendedUntil', null) is timestamp) || request.time >= me.suspendedUntil);
     }
 
-    // Activities are GetOutLah Picks (admin-picked) or external listings. The daily GitHub Action
-    // writes with the Admin SDK, which skips these rules. Keep in sync with src/utils/curated.js.
-    // 'curated' and 'eventbrite' are the names used before the source rename. They stay allowed
-    // until scripts/migrate-activity-sources.mjs --apply has run, so older activities can still be updated.
-    function validActivity(d) {
+    // Activities are stored in source-owned collections. The daily GitHub Action
+    // uses the Admin SDK and bypasses these rules. Keep this in sync with
+    // src/utils/activitySource.js and src/utils/curated.js.
+    function validActivity(d, expectedSource) {
       return d.title is string && d.title.size() >= 1 && d.title.size() <= 120
-        && d.source in ['getoutlahPicks', 'externalListings', 'curated', 'eventbrite']
+        && d.source == expectedSource
         && (d.get('cost', null) == null || (d.cost is number && d.cost >= 0))
         && (d.get('description', null) == null || (d.description is string && d.description.size() <= 5000))
-        && (!(d.source in ['getoutlahPicks', 'curated']) || (
+        && (expectedSource != 'getoutlahPicks' || (
               d.category in ['outdoors', 'sports', 'arts', 'food', 'workshops',
                              'events', 'games', 'wellness', 'volunteering']
               && d.lat is number && d.lng is number
               && (d.get('description', null) == null || d.description.size() <= 1000)));
     }
 
+    // Final post-cutover rule. During the maintenance window, deploy the
+    // collection rules below first and change this legacy match to read-only
+    // so cached clients cannot make stale writes. Once the new frontend is
+    // live, deny legacy reads as well (this final state).
     match /activities/{id} {
+      allow read, write: if false;
+    }
+
+    match /getoutlahPicks/{id} {
       allow read: if signedIn();
-      allow create, update: if isAdmin() && validActivity(request.resource.data);
+      // request.resource.data is available for creates and updates only.
+      allow create, update: if isAdmin() && validActivity(request.resource.data, 'getoutlahPicks');
+      // Deletes have no request.resource.data, so authorise independently.
+      allow delete: if isAdmin();
+    }
+
+    match /externalListings/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() && validActivity(request.resource.data, 'externalListings');
       allow delete: if isAdmin();
     }
 

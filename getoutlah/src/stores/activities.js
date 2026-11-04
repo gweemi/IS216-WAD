@@ -12,7 +12,7 @@ import { fitsWindow } from '@/utils/freeTime'
 import { useOpenJioStore } from '@/stores/openjio'
 import { toActivity } from '@/utils/openjio'
 import { fitsHours } from '@/utils/activityStyle'
-import { canonicalActivity } from '@/utils/activitySource'
+import { ACTIVITY_COLLECTIONS, ACTIVITY_SOURCES, activityFromCollection } from '@/utils/activitySource'
 
 const defaultFilters = () => ({
   query: '', categories: [], regions: [], sources: [], // empty = all; otherwise canonical activity source values
@@ -28,23 +28,58 @@ export const forecasts = ref([])
 export const trails = ref({ type: 'FeatureCollection', features: [] })
 export const loadingActivities = ref(false)
 export const sourceErrors = ref({})   // which outside source failed, so the screen can say so
+// A cached pre-migration browser bundle may still try to read `activities` after
+// the cutover rule denies it. New bundles normally never hit that rule, but this
+// flag gives any Firestore permission failure a useful recovery message.
+export const activityRefreshRequired = ref(false)
 export const openJioLoadError = computed(() => useOpenJioStore().error)
+
+const storedActivityCollections = Object.freeze([
+  [ACTIVITY_SOURCES.PICKS, ACTIVITY_COLLECTIONS[ACTIVITY_SOURCES.PICKS]],
+  [ACTIVITY_SOURCES.EXTERNAL, ACTIVITY_COLLECTIONS[ACTIVITY_SOURCES.EXTERNAL]],
+])
+
+async function loadActivityCollection(source, collectionName) {
+  const snapshot = await getDocs(collection(db, collectionName))
+  return snapshot.docs.map((d) => activityFromCollection({ id: d.id, ...d.data() }, source))
+}
 
 export async function loadActivities() {
   if (loadingActivities.value || baseActivities.value.length) return
   loadingActivities.value = true
+  sourceErrors.value = {}
 
 
   
   useOpenJioStore().start() // live public OpenJios (see allActivities)
 
-  // GetOutLah Picks and external listings both live in Firestore.
-  // The built-in list only stands in when Firestore can't be reached.
+  // GetOutLah Picks and external listings have separate Firestore collections,
+  // but all downstream UI still receives one list.
+  // The built-in list only stands in when both collections can't be reached.
   let stored = null
-  if (isFirebaseConfigured) try {
-    stored = (await getDocs(collection(db, 'activities'))).docs.map((d) => canonicalActivity({ id: d.id, ...d.data() }))
-  } catch (e) {
-    sourceErrors.value.firestore = e.message
+  activityRefreshRequired.value = false
+  if (isFirebaseConfigured) {
+    const results = await Promise.allSettled(storedActivityCollections.map(([source, collectionName]) => loadActivityCollection(source, collectionName)))
+    const failures = []
+    const records = []
+    results.forEach((result, index) => {
+      const [source] = storedActivityCollections[index]
+      if (result.status === 'fulfilled') records.push(...result.value)
+      else {
+        failures.push(result.reason)
+        sourceErrors.value[source] = result.reason?.message ?? String(result.reason)
+      }
+    })
+    if (failures.length === storedActivityCollections.length) {
+      stored = null
+      const denied = failures.some((error) => error?.code === 'permission-denied' || /permission-denied/i.test(error?.message ?? ''))
+      if (denied) {
+        activityRefreshRequired.value = true
+        sourceErrors.value.activities = 'Activity data was updated. Refresh this page to load the latest version.'
+      }
+    } else {
+      stored = records
+    }
   }
 
   const [weather, trail] = await Promise.allSettled([getForecasts(), getTrails()])
@@ -136,7 +171,7 @@ export const recommended = computed(() => {
 export async function seedFirestore() {
   if (useAuthStore().profile?.role !== 'admin') throw new Error('Admins only')
   const batch = writeBatch(db)
-  seedActivities.forEach(({ id, ...a }) => batch.set(doc(db, 'activities', id), a))
+  seedActivities.forEach(({ id, ...a }) => batch.set(doc(db, ACTIVITY_COLLECTIONS[ACTIVITY_SOURCES.PICKS], id), a))
   await batch.commit()
 }
 

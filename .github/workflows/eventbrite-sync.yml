@@ -1,4 +1,4 @@
-# Copies live Eventbrite events into Firestore "activities" every day.
+# Copies live Eventbrite events into Firestore "externalListings" every day.
 # The organisers to sync are managed on the app's /admin/activities page.
 # Needs two repository secrets (Settings > Secrets and variables > Actions):
 #   EVENTBRITE_TOKEN          Eventbrite private token

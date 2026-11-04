@@ -188,7 +188,7 @@ export async function fetchEvents(token, organiserIds) {
   return { events, failures, failedOrganisers }
 }
 
-// Decides what to write to "activities". New events get our guessed defaults; existing ones only get
+// Decides what to write to "externalListings". New events get our guessed defaults; existing ones only get
 // the Eventbrite-owned fields (merge), so manual edits to category, energy etc. are kept.
 // `existing` maps each stored activity id to its data.
 // Eventbrite activities that have ended, or that Eventbrite no longer lists (cancelled, unpublished),

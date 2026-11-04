@@ -10,6 +10,7 @@ const state = await vi.hoisted(async () => {
     recommended: ref([]),
     loadingActivities: ref(false),
     sourceErrors: ref({}),
+    activityRefreshRequired: ref(false),
     openJioLoadError: ref(''),
     loadActivities: vi.fn(),
     jios: { uid: 'me', all: [] },
@@ -21,6 +22,7 @@ vi.mock('@/stores/activities', () => ({
   recommended: computed(() => state.recommended.value),
   loadingActivities: state.loadingActivities,
   sourceErrors: state.sourceErrors,
+  activityRefreshRequired: state.activityRefreshRequired,
   openJioLoadError: state.openJioLoadError,
   loadActivities: state.loadActivities,
 }))
@@ -48,6 +50,7 @@ beforeEach(() => {
   state.filters.value = { query: '', categories: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false, prioritiseFreeTime: false }
   state.recommended.value = []
   state.loadActivities.mockReset()
+  state.activityRefreshRequired.value = false
   state.openJioLoadError.value = ''
   state.jios.all = []
 })
@@ -59,6 +62,13 @@ describe('ActivitiesView source discovery', () => {
     expect(wrapper.text()).toContain('External Listings')
     expect(wrapper.text()).toContain('OPENJIO!')
     expect(wrapper.findComponent({ name: 'FilterSheet' }).props('showSources')).toBe(false)
+  })
+
+  it('asks the user to refresh after a Firestore permission cutover', async () => {
+    state.activityRefreshRequired.value = true
+    const { wrapper } = await mountAt()
+    expect(wrapper.text()).toContain('Activity data has been updated.')
+    expect(wrapper.get('.act-refresh').text()).toBe('Refresh the page')
   })
 
   it('reads a canonical source from the URL and writes a single shared source filter', async () => {

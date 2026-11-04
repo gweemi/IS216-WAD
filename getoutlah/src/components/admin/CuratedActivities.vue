@@ -1,6 +1,6 @@
 <script setup>
 // Admin: add, edit and remove GetOutLah Picks. They're saved in Firestore
-// "activities" next to the Eventbrite ones, so users see both together.
+// "getoutlahPicks"; the activity store combines them with external listings.
 import { ref, reactive, computed, onMounted } from 'vue'
 import { allActivities, loadActivities, reloadActivities, sourceErrors, seedFirestore } from '@/stores/activities'
 import { saveCurated, removeCurated } from '@/services/api/curated'

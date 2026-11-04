@@ -67,7 +67,11 @@ The app creates a profile at `users/{uid}` after the first successful Google log
 
 ### Deploying Firestore rules
 
-This repository does not yet include Firebase CLI deployment configuration (`firebase.json`). For now, publish [`firestore.rules`](firestore.rules) manually in the Firebase console. Do not use Firestore test mode for a deployed app.
+Firebase CLI configuration is in `firebase.json`. An authorised operator may
+deploy rules with `npx firebase-tools deploy --only firestore:rules`. Do not
+use Firestore test mode for a deployed app. For the activity collection split,
+follow [`MIGRATION_RUNBOOK.md`](MIGRATION_RUNBOOK.md) instead of deploying the
+rules independently.
 
 ## Available commands
 

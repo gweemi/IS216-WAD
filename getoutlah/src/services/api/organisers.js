@@ -3,6 +3,9 @@
 import { doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { DEFAULT_ORGANISERS } from '@/utils/eventbriteMap'
+import { ACTIVITY_COLLECTIONS } from '@/utils/activitySource'
+
+const externalListings = ACTIVITY_COLLECTIONS.externalListings
 
 const configDoc = () => doc(db, 'config', 'eventbrite')
 
@@ -26,7 +29,7 @@ export async function addOrganiser(id, name) {
 export async function removeOrganiser(id) {
   const next = (await getOrganisers()).filter((o) => o.id !== id)
   await setDoc(configDoc(), { organisers: next })
-  const events = await getDocs(query(collection(db, 'activities'), where('organiserId', '==', id)))
+  const events = await getDocs(query(collection(db, externalListings), where('organiserId', '==', id)))
   for (let i = 0; i < events.docs.length; i += 500) {   // a Firestore batch holds up to 500 writes
     const batch = writeBatch(db)
     events.docs.slice(i, i + 500).forEach((d) => batch.delete(d.ref))
