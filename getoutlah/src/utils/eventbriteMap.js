@@ -3,7 +3,7 @@
 
 // Starting list of organisers to sync. Admins change the real list on /admin/activities
 // (saved in Firestore config/eventbrite); this is only used until they do.
-import { ACTIVITY_SOURCES } from '@/utils/activitySource'
+import { ACTIVITY_SOURCES } from './activitySource.js'
 export const DEFAULT_ORGANISERS = [
   { id: '18480976563', name: 'MarketWise ASIA' },
   { id: '26202793543', name: 'Affordable Art Fair Singapore' },
