@@ -6,10 +6,12 @@ import { categories } from '@/data/seedActivities'
 import { categoryLabel, sourceLabel } from '@/utils/activityStyle'
 import { SOURCE_OPTIONS } from '@/utils/activitySource'
 import { BUDGETS, HOURS, ENERGY } from '@/utils/activeFilters'
+import { REGIONS } from '@/config/regions'
 // Works with v-if="open" OR :open="open" (the Map page can use either).
 const props = defineProps({
   open: { type: Boolean, default: true },
   showCategories: { type: Boolean, default: true },
+  showRegions: { type: Boolean, default: false },
   showSources: { type: Boolean, default: true },
   showNearby: { type: Boolean, default: false },
   nearbyEnabled: { type: Boolean, default: false },
@@ -30,6 +32,10 @@ function toggle(key, v) {
 
 function selectCategory(category) {
   toggle('categories', category)
+}
+
+function selectRegion(region) {
+  toggle('regions', region)
 }
 
 function clearFilters() {
@@ -55,6 +61,15 @@ function clearFilters() {
         <button class="fs-chip" :class="{ on: !filters.categories.length }" @click="filters.categories = []">All</button>
         <button v-for="c in categories" :key="c" class="fs-chip" :class="{ on: filters.categories.includes(c) }"
           @click="selectCategory(c)">{{ categoryLabel(c) }}</button>
+      </div>
+    </template>
+
+    <template v-if="showRegions">
+      <h3 class="fs-label">Area</h3>
+      <div class="fs-chips">
+        <button class="fs-chip" :class="{ on: !filters.regions.length }" data-testid="map-area-all" @click="filters.regions = []">All Areas</button>
+        <button v-for="region in REGIONS" :key="region.id" class="fs-chip" :class="{ on: filters.regions.includes(region.id) }"
+          :data-testid="`map-area-${region.id}`" @click="selectRegion(region.id)">{{ region.label }}</button>
       </div>
     </template>
 

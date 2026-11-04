@@ -15,7 +15,7 @@ import { fitsHours } from '@/utils/activityStyle'
 import { canonicalActivity } from '@/utils/activitySource'
 
 const defaultFilters = () => ({
-  query: '', categories: [], sources: [],          // empty = all; otherwise canonical activity source values
+  query: '', categories: [], regions: [], sources: [], // empty = all; otherwise canonical activity source values
   maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false,
   prioritiseFreeTime: false,
 })
@@ -90,6 +90,7 @@ export const filtered = computed(() => {
   return allActivities.value.filter((a) =>
     (!q || `${a.title} ${a.area}`.toLowerCase().includes(q)) &&
     (f.categories.length === 0 || f.categories.includes(a.category)) &&
+    ((f.regions?.length ?? 0) === 0 || f.regions.includes(a.region)) &&
     (f.sources.length === 0 || f.sources.includes(a.source)) &&
     (f.maxCost === null || (a.cost != null && a.cost <= f.maxCost)) &&
     (f.maxHours === null || fitsHours(a, f.maxHours)) &&
