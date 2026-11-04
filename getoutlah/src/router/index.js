@@ -78,6 +78,7 @@ const router = createRouter({
       meta: appRouteMeta,
     },
     { path: '/badges', name: 'badges', component: BadgesView, meta: appRouteMeta },
+    { path: '/badges/vouchers', name: 'vouchers', component: () => import('@/views/VouchersView.vue'), meta: appRouteMeta },
     {
       path: '/profile',
       name: 'profile',
