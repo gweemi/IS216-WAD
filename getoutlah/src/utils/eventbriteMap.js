@@ -70,6 +70,9 @@ export function fromEventbrite(e) {
   const start = Date.parse(utcTime(e.start)), end = Date.parse(utcTime(e.end))
   const lat = parseFloat(venue.latitude) || null, lng = parseFloat(venue.longitude) || null
   return {
+    // Provider identity is source-owned. It lets this synchroniser coexist with
+    // non-Eventbrite records in externalListings.
+    provider: 'eventbrite', contentType: 'event',
     title: eventName(e) || 'Event',
     cost: e.is_free ? 0 : null,
     // 24 hrs or more: Eventbrite doesn't tell us the daily hours, so the app shows "Varied duration".
@@ -86,6 +89,12 @@ export function fromEventbrite(e) {
     organiserId: e.organizer_id || null,   // so removing an organiser can also remove their events
   }
 }
+
+export const isEventbriteListing = (activity, id = '') =>
+  activity?.provider === 'eventbrite'
+  // Existing migrated Eventbrite documents predate provider. Their stable ids
+  // remain a narrow compatibility path until a normal sync backfills metadata.
+  || (activity?.provider == null && String(id).startsWith('eb-'))
 
 // Eventbrite descriptions are HTML. We keep plain text so the app never shows their HTML.
 export const desc_max = 5000   // keep in sync with validActivity() in firestore.rules
@@ -205,7 +214,7 @@ export function planActivityWrites(events, existing, now = Date.now(), failedOrg
     else { plan.writes.push({ id, data: { ...base, ...defaultsFor(base.title, base.lat, base.lng) }, merge: false }); plan.added++ }
   }
   for (const [id, a] of existing) {
-    if (a.source !== ACTIVITY_SOURCES.EXTERNAL || live.has(id)) continue
+    if (!isEventbriteListing(a, id) || live.has(id)) continue
     const end = a.endsAt || a.startsAt   // older activities have no endsAt yet
     const ended = end != null && end < now
     const unlisted = !failedOrganisers.includes(a.organiserId)

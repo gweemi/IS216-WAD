@@ -4,6 +4,7 @@ import { syncEventbriteToFirestore, getLastDailySync } from '@/services/api/even
 import { getOrganisers, addOrganiser, removeOrganiser } from '@/services/api/organisers'
 import { reloadActivities } from '@/stores/activities'
 import CuratedActivities from '@/components/admin/CuratedActivities.vue'
+import NparksTrails from '@/components/admin/NparksTrails.vue'
 import '@/assets/discovery.css'
 
 const token = ref('')
@@ -101,6 +102,7 @@ function remove(o) {
     </div>
 
     <CuratedActivities />
+    <NparksTrails />
 
     <p v-if="message" class="det-msg">{{ message }}</p>
   </div>

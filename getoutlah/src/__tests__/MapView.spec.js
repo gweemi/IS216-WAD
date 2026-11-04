@@ -6,6 +6,7 @@ const leafletMocks = vi.hoisted(() => {
   const handlers = {}
   const mapInstance = {
     flyTo: vi.fn(),
+    fitBounds: vi.fn(),
     getSize: vi.fn(() => ({ x: 1000, y: 800 })),
     getBounds: vi.fn(() => ({ contains: vi.fn(() => false) })),
     getZoom: vi.fn(() => 12),
@@ -31,6 +32,11 @@ const leafletMocks = vi.hoisted(() => {
     divIcon: vi.fn(),
     handlers,
     mapInstance,
+    geoJSON: vi.fn(() => {
+      const layer = { addTo: vi.fn(), getBounds: vi.fn(() => ({ isValid: () => true })) }
+      layer.addTo.mockReturnValue(layer)
+      return layer
+    }),
     markerInstances: [],
     marker: vi.fn(() => {
       const handlers = {}
@@ -124,6 +130,7 @@ vi.mock('leaflet', () => ({
     circle: leafletMocks.circle,
     circleMarker: leafletMocks.circleMarker,
     divIcon: leafletMocks.divIcon,
+    geoJSON: leafletMocks.geoJSON,
   },
 }))
 
@@ -157,6 +164,7 @@ vi.mock('@/stores/activities', async () => {
     allActivities,
     filters,
     filtered,
+    trails: ref({ type: 'FeatureCollection', features: [] }),
     oneCardPerEvent: (items) => {
       const seen = new Set()
       return items.filter((item) => {
@@ -174,7 +182,7 @@ vi.mock('@/stores/activities', async () => {
 })
 
 const { default: MapView } = await import('@/views/MapView.vue')
-const { filters } = await import('@/stores/activities')
+const { allActivities, filters, trails } = await import('@/stores/activities')
 const { geolocationMocks } = await import('@/composables/useGeolocation')
 const { useBadgeHunt } = await import('@/composables/useBadgeHunt')
 const { startDemoSession } = await import('@/stores/gamification(badges).js')
@@ -207,6 +215,8 @@ describe('MapView', () => {
       query: '', categories: [], regions: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any',
       onlySlots: false, prioritiseFreeTime: false,
     }
+    allActivities.value = activityMocks.items
+    trails.value = { type: 'FeatureCollection', features: [] }
     geolocationMocks.coords.value = null
     geolocationMocks.error.value = null
     geolocationMocks.loading.value = false
@@ -619,6 +629,26 @@ describe('MapView', () => {
     expect(wrapper.get('[data-testid="selected-map-activity"]').text()).toContain('Shared event')
     expect(leafletMocks.markerInstances[0].setZIndexOffset).toHaveBeenLastCalledWith(0)
     expect(leafletMocks.markerInstances[1].setZIndexOffset).toHaveBeenLastCalledWith(1000)
+  })
+
+  it('draws and hides the selected NParks route without moving the map when hiding it', async () => {
+    allActivities.value = [{
+      id: 'np-tree-top-walk', title: 'TreeTop Walk', source: 'externalListings', provider: 'nparks', contentType: 'route',
+      category: 'outdoors', cost: 0, durationHrs: 3, lat: 1.36, lng: 103.82,
+      nparks: { datasetId: 'd_84e6db6c43ffb8b17803334ec2b5c95d', featureObjectIds: [1] },
+    }]
+    trails.value = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { OBJECTID: 1 }, geometry: { type: 'LineString', coordinates: [[103.82, 1.36], [103.83, 1.37]] } }] }
+    const wrapper = mountMap()
+    leafletMocks.markerInstances[0].handlers.click()
+    await nextTick()
+
+    await wrapper.get('.map-activity-card__trail').trigger('click')
+    expect(leafletMocks.geoJSON).toHaveBeenCalledTimes(1)
+    expect(leafletMocks.mapInstance.fitBounds).toHaveBeenCalledTimes(1)
+
+    await wrapper.get('.map-activity-card__trail').trigger('click')
+    expect(leafletMocks.mapInstance.removeLayer).toHaveBeenCalledTimes(1)
+    expect(leafletMocks.mapInstance.fitBounds).toHaveBeenCalledTimes(1)
   })
 
   it('adds shared activity-store records to one cluster layer', () => {

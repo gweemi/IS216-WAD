@@ -66,7 +66,7 @@ describe('planActivityWrites', () => {
   it('adds new events with guessed defaults, and only refreshes Eventbrite fields on existing ones', () => {
     const fresh = planActivityWrites([event], new Map(), now)
     expect(fresh).toMatchObject({ added: 1, updated: 0 })
-    expect(fresh.writes[0]).toMatchObject({ id: 'eb-2001113878479', merge: false, data: { source: 'externalListings', needsReview: true } })
+    expect(fresh.writes[0]).toMatchObject({ id: 'eb-2001113878479', merge: false, data: { source: 'externalListings', provider: 'eventbrite', contentType: 'event', needsReview: true } })
 
     const again = planActivityWrites([event], new Map([['eb-2001113878479', { source: 'externalListings' }]]), now)
     expect(again).toMatchObject({ added: 0, updated: 1 })
@@ -101,5 +101,12 @@ describe('planActivityWrites', () => {
   it("doesn't remove upcoming events of an organiser whose fetch failed", () => {
     const existing = new Map([['eb-other', { source: 'externalListings', organiserId: '999', startsAt: Date.parse('2026-12-01T00:00:00Z') }]])
     expect(planActivityWrites([], existing, now, ['999']).deletes).toEqual([])
+  })
+
+  it('never deletes NParks route records in the shared external collection', () => {
+    const existing = new Map([
+      ['np-tree-top-walk', { source: 'externalListings', provider: 'nparks', contentType: 'route', startsAt: Date.parse('2026-10-01T00:00:00Z') }],
+    ])
+    expect(planActivityWrites([], existing, now).deletes).toEqual([])
   })
 })

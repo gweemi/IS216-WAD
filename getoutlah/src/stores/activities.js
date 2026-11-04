@@ -13,6 +13,7 @@ import { useOpenJioStore } from '@/stores/openjio'
 import { toActivity } from '@/utils/openjio'
 import { fitsHours } from '@/utils/activityStyle'
 import { ACTIVITY_COLLECTIONS, ACTIVITY_SOURCES, activityFromCollection } from '@/utils/activitySource'
+import { isNparksRoute } from '@/utils/nparksTrails'
 
 const defaultFilters = () => ({
   query: '', categories: [], regions: [], sources: [], // empty = all; otherwise canonical activity source values
@@ -82,8 +83,14 @@ export async function loadActivities() {
     }
   }
 
-  const [weather, trail] = await Promise.allSettled([getForecasts(), getTrails()])
   baseActivities.value = stored || seedActivities
+  // Route geometry is fairly large. Do not download it until a published NParks
+  // route record actually exists in the combined activity catalog.
+  const hasNparksRoutes = baseActivities.value.some(isNparksRoute)
+  const [weather, trail] = await Promise.allSettled([
+    getForecasts(),
+    hasNparksRoutes ? getTrails() : Promise.resolve({ type: 'FeatureCollection', features: [] }),
+  ])
   
 
   if (weather.status === 'fulfilled') forecasts.value = weather.value; else sourceErrors.value.weather = weather.reason.message

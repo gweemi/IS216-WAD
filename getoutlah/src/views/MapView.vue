@@ -9,7 +9,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import FilterButton from '@/components/common/FilterButton.vue'
 import FilterSheet from '@/components/FilterSheet.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
-import { allActivities, filtered, filters, loadActivities, oneCardPerEvent, weatherAt } from '@/stores/activities'
+import { allActivities, filtered, filters, loadActivities, oneCardPerEvent, trails, weatherAt } from '@/stores/activities'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { useMapIntroState } from '@/composables/useMapIntroState'
 import { useAuthStore } from '@/stores/auth'
@@ -19,6 +19,7 @@ import { clearActivityClusterLayer, createActivityClusterLayer, populateActivity
 import { focusMapOnActivity } from '@/utils/mapActivityFocus'
 import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, priceText } from '@/utils/activityStyle'
+import { isNparksRoute, routeFeatureCollection } from '@/utils/nparksTrails'
 import { distanceMeters } from '@/utils/geo'
 import { badgeOpportunities, canActivityProgressBadge } from '@/stores/gamification(badges).js'
 import { useBadgeHunt } from '@/composables/useBadgeHunt'
@@ -101,6 +102,10 @@ let locationRequestId = 0
 let onboardingRunId = 0
 let tileReadyTimer
 let tileLayer
+let trailLayer
+const showingTrail = ref(false)
+const selectedRoute = computed(() => routeFeatureCollection(selectedActivity.value, trails.value))
+const canShowSelectedTrail = computed(() => isNparksRoute(selectedActivity.value) && selectedRoute.value.features.length > 0)
 
 function prefersReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -430,6 +435,7 @@ function maybeOpenBadgeWelcome() {
 
 function selectActivity(activity) {
   if (selectedActivity.value?.id !== activity.id) {
+    hideSelectedTrail()
     setActivityMarkerSelected(activityMarkers.get(selectedActivity.value?.id), false)
   }
   selectedImageBroken.value = false
@@ -442,8 +448,26 @@ function selectActivity(activity) {
 }
 
 function clearSelectedActivity() {
+  hideSelectedTrail()
   setActivityMarkerSelected(activityMarkers.get(selectedActivity.value?.id), false)
   selectedActivity.value = null
+}
+
+function hideSelectedTrail() {
+  if (trailLayer && map) map.removeLayer(trailLayer)
+  trailLayer = null
+  showingTrail.value = false
+}
+
+function toggleSelectedTrail() {
+  if (showingTrail.value) { hideSelectedTrail(); return }
+  if (!map || !canShowSelectedTrail.value) return
+  trailLayer = L.geoJSON(selectedRoute.value, {
+    style: { color: '#7541ec', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' },
+  }).addTo(map)
+  const bounds = trailLayer.getBounds()
+  if (bounds.isValid()) map.fitBounds(bounds, { padding: [42, 42], animate: !prefersReducedMotion(), maxZoom: 16 })
+  showingTrail.value = true
 }
 
 function openSelectedActivity() {
@@ -574,6 +598,7 @@ onBeforeUnmount(() => {
   window.clearTimeout(tileReadyTimer)
   cancelAnimationFrame(categorySelectorAnimationFrame)
   removeTemporaryLocationMarker()
+  hideSelectedTrail()
   removeNearbyRadiusCircle()
   setMapIntroActive(false)
   disableNearby()
@@ -714,7 +739,10 @@ onBeforeUnmount(() => {
             </section>
           </div>
         </div>
-        <div class="map-activity-card__actions">
+        <div class="map-activity-card__actions" :class="{ 'map-activity-card__actions--route': canShowSelectedTrail }">
+          <button v-if="canShowSelectedTrail" type="button" class="map-activity-card__trail" @click="toggleSelectedTrail">
+            <i class="bi" :class="showingTrail ? 'bi-eye-slash' : 'bi-signpost-2'" aria-hidden="true"></i> {{ showingTrail ? 'Hide Trail' : 'View Trail' }}
+          </button>
           <a v-if="selectedDirections" :href="selectedDirections" target="_blank" rel="noopener" class="map-activity-card__directions">
             <i class="bi bi-signpost-split" aria-hidden="true"></i> Directions
           </a>
@@ -1153,7 +1181,7 @@ onBeforeUnmount(() => {
   bottom: 7.25rem;
   left: 1.5rem;
   width: min(46rem, calc(100% - 3rem));
-  padding: 1.35rem;
+  padding: 1.1rem;
   border-radius: 28px;
   background: rgba(255, 248, 239, .97);
   box-shadow: 0 10px 28px rgba(35, 25, 65, .18);
@@ -1177,8 +1205,8 @@ onBeforeUnmount(() => {
   font-size: 1.2rem;
 }
 .map-activity-card__close:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 2px; }
-.map-activity-card__main { display: flex; gap: 1rem; padding-right: 1.5rem; }
-.map-activity-card__image { display: grid; width: 8.5rem; height: 8.5rem; flex: 0 0 auto; place-items: center; overflow: hidden; border-radius: 22px; color: var(--gol-ink); font-size: 3.25rem; }
+.map-activity-card__main { display: flex; gap: .8rem; padding-right: 1.5rem; }
+.map-activity-card__image { display: grid; width: 7rem; height: 7rem; flex: 0 0 auto; place-items: center; overflow: hidden; border-radius: 18px; color: var(--gol-ink); font-size: 2.8rem; }
 .map-activity-card__image img { width: 100%; height: 100%; object-fit: cover; }
 .map-activity-card__content { min-width: 0; }
 .map-activity-card__area { margin: 0 0 .25rem; color: var(--gol-muted); font-size: .84rem; font-weight: 700; }
@@ -1186,11 +1214,13 @@ onBeforeUnmount(() => {
 .map-activity-card__meta,.map-activity-card__weather,.map-activity-card__description { margin: .42rem 0 0; color: var(--gol-muted); font-weight: 700; line-height: 1.35; }
 .map-activity-card__weather { color: var(--gol-ink); }
 .map-activity-card__description { font-size: .88rem; }
-.map-activity-card__actions { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 1rem; }
-.map-activity-card__directions,.map-activity-card__view { display: inline-flex; min-height: 3.25rem; align-items: center; justify-content: center; gap: .55rem; border-radius: 18px; font: 800 1rem var(--gol-font); text-decoration: none; }
+.map-activity-card__actions { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-top: .8rem; }
+.map-activity-card__actions--route { grid-template-columns: repeat(3, 1fr); }
+.map-activity-card__trail,.map-activity-card__directions,.map-activity-card__view { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .45rem; border-radius: 16px; font: 800 .9rem var(--gol-font); text-decoration: none; }
+.map-activity-card__trail { border: 0; background: #e9defe; color: var(--gol-purple-dark); }
 .map-activity-card__directions { border: 0; background: #fff; color: var(--gol-ink); }
 .map-activity-card__view { border: 0; background: var(--gol-purple); box-shadow: inset 0 -4px 0 var(--gol-purple-dark); color: #fff; }
-.map-activity-card__view:focus-visible,.map-activity-card__directions:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; }
+.map-activity-card__view:focus-visible,.map-activity-card__directions:focus-visible,.map-activity-card__trail:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; }
 .map-selected-card-enter-active,.map-selected-card-leave-active { transition: opacity .24s ease, transform .28s cubic-bezier(.34, 1.56, .64, 1); }
 .map-selected-card-enter-from,.map-selected-card-leave-to { opacity: 0; transform: translateY(28px) scale(.96); }
 
@@ -1201,7 +1231,7 @@ onBeforeUnmount(() => {
   .map-category:hover .map-category__icon { transform: translateY(-3px) rotate(4deg); }
   .map-category-toggle:hover { transform: translateY(calc(-50% - 3px)); }
   .map-activity-card__close:hover { transform: translateY(-2px); }
-  .map-activity-card__directions:hover,.map-activity-card__view:hover { transform: translateY(-2px); filter: brightness(1.03); }
+  .map-activity-card__directions:hover,.map-activity-card__view:hover,.map-activity-card__trail:hover { transform: translateY(-2px); filter: brightness(1.03); }
 }
 
 @keyframes map-overlay-in {
@@ -1302,7 +1332,8 @@ onBeforeUnmount(() => {
   .map-activity-card__image { width: 5.75rem; height: 5.75rem; border-radius: 18px; font-size: 2.4rem; }
   .map-activity-card__content h2 { font-size: 1.1rem; }
   .map-activity-card__description { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .map-activity-card__actions { gap: .55rem; margin-top: .8rem; }
+  .map-activity-card__actions--route { grid-template-columns: 1fr 1fr; }
+  .map-activity-card__actions--route .map-activity-card__trail { grid-column: 1 / -1; }
   .map-activity-card__directions,.map-activity-card__view { min-height: 3rem; font-size: .88rem; }
   .map-intro-backdrop { align-items: end; padding: 1rem 1rem calc(6.75rem + env(safe-area-inset-bottom)); }
   .map-intro-dialog { border-radius: 22px; }
