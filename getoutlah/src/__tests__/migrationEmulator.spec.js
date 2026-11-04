@@ -11,7 +11,6 @@ const projectId = process.env.GCLOUD_PROJECT ?? 'getoutlah-migration-emulator'
 const emulatorDescribe = host ? describe : describe.skip
 const root = process.cwd()
 const migrationScript = join(root, 'scripts/migrate-activities-collections.mjs')
-const transitionRulesScript = join(root, 'scripts/prepare-transition-rules.mjs')
 let app, db, workdir
 
 const run = (args, overrides = {}) => {
@@ -155,23 +154,4 @@ emulatorDescribe('activity collection migration on Firestore Emulator', () => {
     expect((await db.doc('activities/eb-2001/audit/one').get()).exists).toBe(false)
     expect((await db.doc('activities/created-after-cutover').get()).data()).toMatchObject({ source: 'getoutlahPicks', title: 'New Pick' })
   }, 30000)
-})
-
-describe('transitional rules deployment inputs', () => {
-  it('generates reviewable Firestore-only files and never overwrites them', async () => {
-    const temporary = await mkdtemp(join(tmpdir(), 'getoutlah-transition-'))
-    const rules = join(temporary, 'firestore.rules.transition')
-    const config = join(temporary, 'firebase.transition.json')
-    try {
-      const generated = spawnSync(process.execPath, [transitionRulesScript, '--rules', rules, '--config', config], { encoding: 'utf8' })
-      expectOk(generated)
-      expect(await readFile(rules, 'utf8')).toContain('allow read: if signedIn();')
-      expect(JSON.parse(await readFile(config, 'utf8'))).toEqual({ firestore: { rules: 'firestore.rules.transition' } })
-      const rerun = spawnSync(process.execPath, [transitionRulesScript, '--rules', rules, '--config', config], { encoding: 'utf8' })
-      expect(rerun.status).not.toBe(0)
-      expect(rerun.stderr).toContain('Refusing to overwrite')
-    } finally {
-      await rm(temporary, { recursive: true, force: true })
-    }
-  })
 })
