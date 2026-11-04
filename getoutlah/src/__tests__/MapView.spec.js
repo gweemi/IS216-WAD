@@ -37,6 +37,8 @@ const leafletMocks = vi.hoisted(() => {
       const marker = {
         handlers,
         on: vi.fn((event, callback) => { handlers[event] = callback }),
+        openTooltip: vi.fn(),
+        closeTooltip: vi.fn(),
         setZIndexOffset: vi.fn(),
       }
       marker.addTo = vi.fn(() => marker)
@@ -77,6 +79,7 @@ const activityMocks = vi.hoisted(() => ({
       category: 'outdoors',
       cost: 0,
       durationHrs: 1,
+      region: 'central',
       lat: 1.3,
       lng: 103.8,
     },
@@ -89,6 +92,7 @@ const activityMocks = vi.hoisted(() => ({
       lat: 1.32,
       lng: 103.82,
       area: 'Downtown',
+      region: 'east',
       seriesId: 'shared-event-series',
     },
     {
@@ -100,6 +104,7 @@ const activityMocks = vi.hoisted(() => ({
       lat: 1.32,
       lng: 103.82,
       area: 'Downtown',
+      region: 'east',
       seriesId: 'shared-event-series',
     },
   ],
@@ -138,13 +143,14 @@ vi.mock('@/composables/useGeolocation', async () => {
 vi.mock('@/stores/activities', async () => {
   const { computed, ref } = await import('vue')
   const filters = ref({
-    query: '', categories: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any',
+    query: '', categories: [], regions: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any',
     onlySlots: false, prioritiseFreeTime: false,
   })
   const allActivities = ref(activityMocks.items)
   const filtered = computed(() => allActivities.value.filter((activity) =>
     (!filters.value.query || `${activity.title} ${activity.area ?? ''}`.toLowerCase().includes(filters.value.query.toLowerCase())) &&
-    (!filters.value.categories.length || filters.value.categories.includes(activity.category)),
+    (!filters.value.categories.length || filters.value.categories.includes(activity.category)) &&
+    (!filters.value.regions.length || filters.value.regions.includes(activity.region)),
   ))
 
   return {
@@ -179,6 +185,10 @@ const mountMap = () => {
   mountedWrappers.push(wrapper)
   return wrapper
 }
+const expandCategories = async (wrapper) => {
+  await wrapper.get('[data-testid="map-category-toggle"]').trigger('click')
+  await nextTick()
+}
 
 describe('MapView', () => {
   beforeEach(() => {
@@ -194,7 +204,7 @@ describe('MapView', () => {
     leafletMocks.markerInstances.length = 0
     Object.keys(leafletMocks.handlers).forEach((event) => delete leafletMocks.handlers[event])
     filters.value = {
-      query: '', categories: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any',
+      query: '', categories: [], regions: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any',
       onlySlots: false, prioritiseFreeTime: false,
     }
     geolocationMocks.coords.value = null
@@ -227,7 +237,7 @@ describe('MapView', () => {
     vi.useRealTimers()
   })
 
-  it('renders the visual search, filter, and Singapore-focused zoom controls', () => {
+  it('renders the collapsed category pill beside the visual search, filter, and zoom controls', () => {
     const wrapper = mountMap()
 
     expect(wrapper.get('[data-testid="map-search-input"]').attributes('placeholder')).toBe(
@@ -236,9 +246,9 @@ describe('MapView', () => {
     expect(wrapper.get('[data-testid="map-filter-button"]').attributes('aria-label')).toBe(
       'Open activity filters',
     )
-    expect(wrapper.get('[role="group"]').attributes('aria-label')).toBe('Filter activities by category')
-    expect(wrapper.get('[data-testid="map-category-all"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.get('[data-testid="map-category-food"] .map-category__icon').attributes('style')).toContain('rgb(255, 148, 123)')
+    const categoryToggle = wrapper.get('[data-testid="map-category-toggle"]')
+    expect(categoryToggle.attributes('aria-expanded')).toBe('false')
+    expect(categoryToggle.text()).toContain('All Categories')
     const zoom = wrapper.get('[data-testid="map-zoom-slider"]')
     expect(zoom.attributes()).toMatchObject({ min: '11', max: '18', step: '1', orient: 'vertical' })
     expect(zoom.attributes('aria-valuetext')).toBe('Map zoom level 12')
@@ -300,7 +310,7 @@ describe('MapView', () => {
     await nextTick()
 
     expect(badgeHunt.trackedBadgeId.value).toBe('trailblazer')
-    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Your next badge')
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Next badge')
     expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Trailblazer')
   })
 
@@ -325,6 +335,7 @@ describe('MapView', () => {
     badgeHunt.selectTrackedBadge('event-chaser')
     const wrapper = mountMap()
     await nextTick()
+    await expandCategories(wrapper)
 
     await wrapper.get('[data-testid="map-category-outdoors"]').trigger('click')
     await nextTick()
@@ -334,6 +345,7 @@ describe('MapView', () => {
 
   it('filters markers with multiple category selections and restores All after the last deselection', async () => {
     const wrapper = mountMap()
+    await expandCategories(wrapper)
 
     await wrapper.get('[data-testid="map-category-events"]').trigger('click')
     await nextTick()
@@ -363,25 +375,20 @@ describe('MapView', () => {
     expect(wrapper.get('[data-testid="map-category-all"]').attributes('aria-pressed')).toBe('true')
   })
 
-  it('collapses to the selected category without changing shared filters', async () => {
+  it('preserves selected categories after collapsing and reopening the selector', async () => {
     const wrapper = mountMap()
+    await expandCategories(wrapper)
     await wrapper.get('[data-testid="map-category-outdoors"]').trigger('click')
     await wrapper.get('[data-testid="map-search-input"]').setValue('walk')
 
+    await wrapper.get('[data-testid="map-category-collapse"]').trigger('click')
+    await nextTick()
     const toggle = wrapper.get('[data-testid="map-category-toggle"]')
-    expect(toggle.attributes('aria-label')).toBe('Collapse categories')
-    expect(toggle.attributes('aria-expanded')).toBe('true')
-
-    await toggle.trigger('click')
-    await nextTick()
-    expect(toggle.attributes('aria-label')).toBe('Expand categories')
     expect(toggle.attributes('aria-expanded')).toBe('false')
-    expect(wrapper.get('.map-category-summary').text()).toBe('🌳Outdoors & nature')
-    expect(filters.value).toMatchObject({ query: 'walk', categories: ['outdoors'] })
-
-    await toggle.trigger('click')
-    await nextTick()
+    expect(toggle.text()).toContain('Outdoors & nature')
+    await expandCategories(wrapper)
     expect(wrapper.get('[data-testid="map-category-outdoors"]').attributes('aria-pressed')).toBe('true')
+    expect(filters.value).toMatchObject({ query: 'walk', categories: ['outdoors'] })
   })
 
   it('removes category controls from the advanced map filters', async () => {
@@ -392,18 +399,21 @@ describe('MapView', () => {
     expect(document.body.querySelector('[role="dialog"]')).not.toBeNull()
     expect(wrapper.findComponent({ name: 'FilterSheet' }).props('showCategories')).toBe(false)
     expect(document.body.querySelector('[role="dialog"]').textContent).not.toContain('Category')
+    expect(wrapper.findComponent({ name: 'FilterSheet' }).props('showRegions')).toBe(true)
+    expect(document.body.querySelector('[role="dialog"]').textContent).toContain('Area')
     expect(wrapper.findComponent({ name: 'FilterSheet' }).props('showNearby')).toBe(false)
   })
 
-  it('summarises multiple selected categories when collapsed', async () => {
+  it('filters markers by selected area from advanced filters and includes South', async () => {
     const wrapper = mountMap()
-    await wrapper.get('[data-testid="map-category-outdoors"]').trigger('click')
-    await wrapper.get('[data-testid="map-category-events"]').trigger('click')
-    await wrapper.get('[data-testid="map-category-toggle"]').trigger('click')
+    expect(wrapper.find('[data-testid="map-area-east"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="map-filter-button"]').trigger('click')
+    document.body.querySelector('[data-testid="map-area-east"]').click()
     await nextTick()
 
-    expect(wrapper.get('.map-category-summary').text()).toBe('2 categories selected')
-    expect(wrapper.find('.map-category-summary__icon').exists()).toBe(false)
+    expect(filters.value.regions).toEqual(['east'])
+    expect(leafletMocks.addLayers.mock.calls.at(-1)[0]).toHaveLength(1)
+    expect(document.body.querySelector('[data-testid="map-area-south"]')).not.toBeNull()
   })
 
   it('requests location only when Near me is enabled, then shows a temporary map dot', async () => {
@@ -441,7 +451,7 @@ describe('MapView', () => {
     await nearbyToggle.trigger('click')
     await nextTick()
     expect(nearbyToggle.attributes('aria-checked')).toBe('false')
-    expect(wrapper.get('[data-testid="map-nearby-radius"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="map-nearby-radius"]').exists()).toBe(false)
     expect(leafletMocks.mapInstance.removeLayer).toHaveBeenCalled()
   })
 
@@ -561,7 +571,23 @@ describe('MapView', () => {
     expect(leafletMocks.mapInstance.flyTo).toHaveBeenCalledTimes(1)
   })
 
-  it('hides an active Badge Hunt card while a preview is open and shows live progress in an eligible preview', async () => {
+  it('opens a tooltip on the first mobile marker tap and the preview on the second', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((query) => ({
+      matches: query === '(max-width: 767.98px)', addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })))
+    const wrapper = mountMap()
+
+    leafletMocks.markerInstances[0].handlers.click()
+    await nextTick()
+    expect(leafletMocks.markerInstances[0].openTooltip).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="selected-map-activity"]').exists()).toBe(false)
+
+    leafletMocks.markerInstances[0].handlers.click()
+    await nextTick()
+    expect(wrapper.get('[data-testid="selected-map-activity"]').text()).toContain('Shared walk')
+  })
+
+  it('keeps the header badge visible while a preview shows live eligible progress', async () => {
     badgeHunt.selectTrackedBadge('trailblazer')
     const wrapper = mountMap()
 
@@ -570,7 +596,7 @@ describe('MapView', () => {
     leafletMocks.markerInstances[0].handlers.click()
     await nextTick()
 
-    expect(wrapper.find('[data-testid="next-badge-card"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="next-badge-card"]').exists()).toBe(true)
     const opportunity = wrapper.get('.map-badge-opportunity')
     expect(opportunity.text()).toContain('Trailblazer')
     expect(opportunity.text()).toContain('2/3 completed')

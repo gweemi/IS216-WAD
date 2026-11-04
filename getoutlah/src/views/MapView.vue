@@ -14,6 +14,7 @@ import { useGeolocation } from '@/composables/useGeolocation'
 import { useMapIntroState } from '@/composables/useMapIntroState'
 import { useAuthStore } from '@/stores/auth'
 import { INTERESTS } from '@/config/preferences'
+import { REGIONS } from '@/config/regions'
 import { clearActivityClusterLayer, createActivityClusterLayer, populateActivityClusterLayer, refreshActivityClusterEligibility, setActivityMarkerSelected, setActivityMarkerHuntEligible } from '@/utils/activityMapMarkers'
 import { focusMapOnActivity } from '@/utils/mapActivityFocus'
 import { directionsUrl } from '@/services/maps'
@@ -29,7 +30,10 @@ const { setMapIntroActive } = useMapIntroState()
 const { trackedBadgeId, trackedBadge, selectTrackedBadge } = useBadgeHunt()
 const mapElement = ref(null)
 const filtersOpen = ref(false)
-const categoriesCollapsed = ref(false)
+const categorySelectorExpanded = ref(false)
+let categorySelectorAnimationFrame
+let categorySelectorAutoOpened = false
+const activeMobileTooltipId = ref(null)
 const huntSheetOpen = ref(false)
 const selectedHuntId = ref(null)
 const selectedActivity = ref(null)
@@ -43,10 +47,6 @@ const introEnableButton = ref(null)
 const nearbyPromptOpen = ref(false)
 const nearbyPromptMessage = ref('')
 const nearbyEnableButton = ref(null)
-const mapOverlay = ref(null)
-const categoryCard = ref(null)
-const collapsedCategory = ref(null)
-const categoryCardWidth = ref(null)
 const { coords: locationCoords, error: locationError, loading: locationLoading, request: requestLocation, clear: clearLocation } = useGeolocation()
 const onboardingEligible = Boolean(auth.isLoggedIn && auth.consumeMapIntro())
 if (!onboardingEligible) onboardingStage.value = 'completed'
@@ -74,16 +74,10 @@ const categories = computed(() => [{ id: 'all', label: 'All', emoji: '✦', colo
 const selectedCategories = computed(() => categories.value.filter((category) =>
   category.id !== 'all' && filters.value.categories.includes(category.id),
 ))
-const selectedCategory = computed(() => {
-  const selectedId = filters.value.categories.length === 1 ? filters.value.categories[0] : 'all'
-  return categories.value.find((category) => category.id === selectedId) ?? categories.value[0]
+const categoryMenuLabel = computed(() => {
+  if (selectedCategories.value.length > 1) return `${selectedCategories.value.length} Categories`
+  return selectedCategories.value[0]?.label ?? 'All Categories'
 })
-const hasMultipleCategoriesSelected = computed(() => selectedCategories.value.length > 1)
-const collapsedCategoryLabel = computed(() => {
-  if (hasMultipleCategoriesSelected.value) return `${selectedCategories.value.length} categories selected`
-  return selectedCategory.value.id === 'all' ? 'All Categories' : selectedCategory.value.label
-})
-const categoryCardStyle = computed(() => categoryCardWidth.value ? { width: `${categoryCardWidth.value}px` } : {})
 const selectedWeather = computed(() => selectedActivity.value ? weatherAt(selectedActivity.value) : null)
 const selectedImage = computed(() => selectedActivity.value?.imageLargeUrl ?? selectedActivity.value?.imageUrl ?? null)
 const selectedDescription = computed(() => {
@@ -102,7 +96,6 @@ let clusterLayer
 let userLocationMarker
 let nearbyRadiusCircle
 let temporaryLocationMarker
-let categoryResizeObserver
 let activityMarkers = new Map()
 let locationRequestId = 0
 let onboardingRunId = 0
@@ -228,7 +221,6 @@ function isMobileViewport() {
 
 function updateResponsiveMapControls() {
   showDesktopZoomControl.value = !isMobileViewport()
-  updateCategoryCardWidth()
 }
 
 function syncMapZoom() {
@@ -357,10 +349,27 @@ function disableNearby() {
   removeUserLocationMarker()
 }
 
+function handleMarkerSelect(activity) {
+  if (!isMobileViewport()) {
+    selectActivity(activity)
+    return
+  }
+  const marker = activityMarkers.get(activity.id)
+  if (activeMobileTooltipId.value === activity.id) {
+    marker?.closeTooltip?.()
+    activeMobileTooltipId.value = null
+    selectActivity(activity)
+    return
+  }
+  activityMarkers.get(activeMobileTooltipId.value)?.closeTooltip?.()
+  activeMobileTooltipId.value = activity.id
+  marker?.openTooltip?.()
+}
+
 function renderActivityMarkers(items) {
   if (!clusterLayer || !showActivityMarkers.value) return
   const markers = populateActivityClusterLayer(L, clusterLayer, items, {
-    onSelect: selectActivity,
+    onSelect: handleMarkerSelect,
     isHuntEligible: (activity) => Boolean(trackedBadgeId.value && canActivityProgressBadge(trackedBadgeId.value, activity)),
   })
   activityMarkers = new Map(markers.map((marker) => [marker.__activityId, marker]))
@@ -458,19 +467,19 @@ function isCategorySelected(categoryId) {
     : filters.value.categories.includes(categoryId)
 }
 
-function updateCategoryCardWidth() {
-  const expandedWidth = mapOverlay.value?.clientWidth ?? 0
-  const compactWidth = Math.max(collapsedCategory.value?.scrollWidth ?? 0, 166)
-  categoryCardWidth.value = categoriesCollapsed.value ? compactWidth : (expandedWidth || null)
+function toggleCategorySelector() {
+  categorySelectorExpanded.value = !categorySelectorExpanded.value
 }
 
-function toggleCategories() {
-  categoriesCollapsed.value = !categoriesCollapsed.value
+function openCategorySelectorOnEntry(controlsVisible) {
+  if (!controlsVisible || categorySelectorAutoOpened) return
+  categorySelectorAutoOpened = true
+  nextTick(() => {
+    categorySelectorAnimationFrame = requestAnimationFrame(() => {
+      categorySelectorExpanded.value = true
+    })
+  })
 }
-
-watch([categoriesCollapsed, collapsedCategoryLabel], async () => {
-  nextTick(updateCategoryCardWidth)
-})
 
 watch(onboardingStage, (stage) => {
   if (stage === 'locationPrompt') nextTick(() => introEnableButton.value?.focus())
@@ -479,6 +488,8 @@ watch(onboardingStage, (stage) => {
     maybeOpenBadgeWelcome()
   })
 })
+
+watch(showDiscoveryControls, openCategorySelectorOnEntry, { immediate: true })
 
 watch(nearbyPromptOpen, (open) => {
   if (open) nextTick(() => nearbyEnableButton.value?.focus())
@@ -519,10 +530,6 @@ onMounted(async () => {
   clusterLayer.on?.('animationend', syncHuntAfterClusterLifecycle)
   updateResponsiveMapControls()
   window.addEventListener('resize', updateResponsiveMapControls)
-  if (typeof ResizeObserver !== 'undefined' && mapOverlay.value) {
-    categoryResizeObserver = new ResizeObserver(updateCategoryCardWidth)
-    categoryResizeObserver.observe(mapOverlay.value)
-  }
   const loadPromise = loadActivities()
   if (onboardingEligible) {
     // Start after tiles arrive, but never hold the introduction hostage to a slow tile request.
@@ -565,12 +572,12 @@ onBeforeUnmount(() => {
   onboardingRunId += 1
   locationRequestId += 1
   window.clearTimeout(tileReadyTimer)
+  cancelAnimationFrame(categorySelectorAnimationFrame)
   removeTemporaryLocationMarker()
   removeNearbyRadiusCircle()
   setMapIntroActive(false)
   disableNearby()
   window.removeEventListener('resize', updateResponsiveMapControls)
-  categoryResizeObserver?.disconnect()
   if (clusterLayer) clearActivityClusterLayer(clusterLayer)
   clusterLayer?.off?.('spiderfied', syncHuntAfterClusterLifecycle)
   clusterLayer?.off?.('unspiderfied', syncHuntAfterClusterLifecycle)
@@ -617,120 +624,56 @@ onBeforeUnmount(() => {
       <span class="map-zoom-control__marker" aria-hidden="true">−</span>
     </div>
 
-    <section v-if="showMapControls && trackedBadge && !selectedActivity" class="map-hunt-active" data-testid="next-badge-card">
-      <button class="map-hunt-active__main" type="button" @click="openHuntSelector"><span class="map-hunt-entry__icon">{{ trackedBadge.emoji ?? '🏆' }}</span><span><small class="map-hunt-active__eyebrow">Your next badge</small><strong>{{ trackedBadge.name }}</strong><small>{{ trackedBadge.progress }}/{{ trackedBadge.target }} completed · {{ trackedBadge.target - trackedBadge.progress }} to go</small><small class="map-hunt-active__location"><i class="bi" :class="nearMeEnabled ? 'bi-geo-alt-fill' : 'bi-globe2'" aria-hidden="true"></i> {{ huntLocationText }}</small><i class="map-hunt-active__progress"><b :style="{ width: `${(trackedBadge.progress / trackedBadge.target) * 100}%` }"></b></i></span></button>
-    </section>
-    <section v-else-if="showMapControls && !selectedActivity && !recommendedBadgeOpportunities.length" class="map-hunt-active map-hunt-active--complete" data-testid="next-badge-complete"><span class="map-hunt-entry__icon">🎉</span><span><small class="map-hunt-active__eyebrow">Badges</small><strong>You’re all caught up!</strong><small>More map badges will appear when new activities are available.</small></span></section>
+    <div v-if="showHeader || showDiscoveryControls" class="map-overlay">
+      <div class="map-discovery-bar map-motion map-motion--header" @pointerdown.stop @mousedown.stop @dblclick.stop @touchstart.stop>
+        <div class="map-mobile-header-surface">
+          <header v-if="showHeader" class="map-header-card">
+            <p class="gol-eyebrow">Explore Singapore</p>
+            <h1 class="gol-title">Where we going?</h1>
+          </header>
 
-    <div v-if="showHeader || showDiscoveryControls" ref="mapOverlay" class="map-overlay">
-      <header v-if="showHeader" class="map-header-card map-overlay__card map-motion map-motion--header" @pointerdown.stop @mousedown.stop @dblclick.stop @touchstart.stop>
-        <p class="gol-eyebrow">Explore Singapore</p>
-        <h1 class="gol-title">Where we going?</h1>
-      </header>
-
-      <form v-if="showDiscoveryControls" class="map-search-toolbar map-overlay__card map-motion map-motion--search" role="search" @pointerdown.stop @mousedown.stop @dblclick.stop @touchstart.stop @submit.prevent>
-        <SearchBar
-          v-model="filters.query"
-          placeholder="Search activities, places..."
-          label="Search activities and places"
-        />
-        <FilterButton label="Open activity filters" icon="bi-sliders" @click="filtersOpen = true" />
-      </form>
-
-      <section
-        v-if="showDiscoveryControls"
-        class="map-nearby-row map-motion map-motion--nearby"
-        aria-label="Nearby activity controls"
-        @pointerdown.stop
-        @mousedown.stop
-        @dblclick.stop
-        @touchstart.stop
-      >
-        <button
-          class="map-nearby-switch"
-          :class="{ 'map-nearby-switch--active': nearMeEnabled }"
-          type="button"
-          role="switch"
-          :aria-checked="nearMeEnabled"
-          :disabled="locationLoading"
-          :aria-label="nearMeEnabled ? 'Turn off Near me' : 'Turn on Near me'"
-          :aria-valuetext="nearMeEnabled ? `Near me on within ${nearbyRadiusKm} kilometres` : 'Near me off'"
-          data-testid="map-nearby-toggle"
-          @click="toggleNearby"
-        >
-          <span class="map-nearby-switch__label"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> Near me</span>
-          <span class="map-nearby-switch__track" aria-hidden="true"><span></span></span>
-        </button>
-        <label
-          class="map-radius-control"
-          :class="{ 'map-radius-control--disabled': !nearMeEnabled }"
-          :style="{ '--radius-progress': `${((nearbyRadiusKm - 1) / 29) * 100}%` }"
-        >
-          <span class="map-radius-control__heading"><span>Distance</span><strong>{{ nearbyRadiusKm }} km</strong></span>
-          <input
-            :value="nearbyRadiusKm"
-            class="map-radius-control__range"
-            type="range"
-            min="1"
-            max="30"
-            step="1"
-            :disabled="!nearMeEnabled"
-            :aria-label="`Nearby distance: ${nearbyRadiusKm} kilometres`"
-            :aria-valuetext="`${nearbyRadiusKm} kilometres`"
-            data-testid="map-nearby-radius"
-            @input="setNearbyRadius"
-            @pointerdown.stop
-            @mousedown.stop
-            @touchstart.stop
-          />
-        </label>
-      </section>
-
-      <section
-        v-if="showDiscoveryControls"
-        ref="categoryCard"
-        class="map-category-card map-overlay__card map-motion map-motion--categories"
-        :class="{ 'map-category-card--collapsed': categoriesCollapsed }"
-        :style="categoryCardStyle"
-        aria-label="Activity category filters"
-        @pointerdown.stop
-        @mousedown.stop
-        @dblclick.stop
-        @wheel.stop
-        @touchstart.stop
-      >
-        <div v-show="!categoriesCollapsed" class="map-category-rail" role="group" aria-label="Filter activities by category">
-          <button
-            v-for="category in categories"
-            :key="category.id"
-            class="map-category"
-            :class="{ 'map-category--selected': isCategorySelected(category.id), 'map-category--all': category.id === 'all' }"
-            type="button"
-            :aria-pressed="isCategorySelected(category.id)"
-            :aria-label="category.id === 'all' ? 'Show all activity categories' : `Toggle ${category.label} activities`"
-            :data-testid="`map-category-${category.id}`"
-            @click="selectCategory(category.id)"
-          >
-            <span class="map-category__icon" :style="{ background: category.color }" aria-hidden="true">{{ category.emoji }}</span>
-            <span class="map-category__label">{{ category.label }}</span>
-          </button>
+          <section v-if="showMapControls" class="map-next-badge" data-testid="next-badge-card">
+            <button v-if="trackedBadge" class="map-next-badge__main" type="button" @click="openHuntSelector">
+              <span class="map-hunt-entry__icon">{{ trackedBadge.emoji ?? '🏆' }}</span>
+              <span><small>Next badge</small><strong>{{ trackedBadge.name }}</strong><em>{{ trackedBadge.progress }}/{{ trackedBadge.target }} activities completed</em><span class="map-next-badge__remaining">{{ trackedBadge.target - trackedBadge.progress }} more to go!</span><i><b :style="{ width: `${(trackedBadge.progress / trackedBadge.target) * 100}%` }"></b></i></span>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+            <span v-else class="map-next-badge__complete"><span class="map-hunt-entry__icon">🎉</span><span><small>Badges</small><strong>All caught up!</strong></span></span>
+          </section>
         </div>
-        <div v-show="categoriesCollapsed" ref="collapsedCategory" class="map-category-summary">
-          <span v-if="!hasMultipleCategoriesSelected" class="map-category-summary__icon" :style="{ background: selectedCategory.color }" aria-hidden="true">{{ selectedCategory.emoji }}</span>
-          <span>{{ collapsedCategoryLabel }}</span>
+
+        <div v-if="showDiscoveryControls" class="map-control-stack">
+          <form class="map-search-toolbar" role="search" @submit.prevent>
+            <SearchBar v-model="filters.query" placeholder="Search activities, places..." label="Search activities and places" />
+            <FilterButton label="Open activity filters" icon="bi-sliders" @click="filtersOpen = true" />
+          </form>
+
+          <div class="map-category-anchor">
+            <section class="map-category-selector" :class="{ 'map-category-selector--expanded': categorySelectorExpanded }" aria-label="Activity category filters">
+              <button v-if="!categorySelectorExpanded" class="map-category-selector__summary" type="button" :aria-expanded="false" data-testid="map-category-toggle" @click="toggleCategorySelector">
+                <span class="map-category-selector__sparkle" aria-hidden="true">✦</span>
+                <span>{{ categoryMenuLabel }}</span>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+              </button>
+              <template v-else>
+                <div class="map-category-selector__rail" role="group" aria-label="Filter activities by category">
+                  <button v-for="category in categories" :key="category.id" class="map-category" :class="{ 'map-category--selected': isCategorySelected(category.id), 'map-category--all': category.id === 'all' }" type="button" :aria-pressed="isCategorySelected(category.id)" :aria-label="category.id === 'all' ? 'Show all activity categories' : `Toggle ${category.label} activities`" :data-testid="`map-category-${category.id}`" @click="selectCategory(category.id)">
+                    <span class="map-category__icon" :style="{ background: category.color }" aria-hidden="true">{{ category.emoji }}</span>
+                    <span class="map-category__label">{{ category.id === 'all' ? 'All' : category.label }}</span>
+                  </button>
+                </div>
+                <button class="map-category-selector__collapse" type="button" :aria-expanded="true" aria-label="Collapse activity categories" data-testid="map-category-collapse" @click="toggleCategorySelector"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+              </template>
+            </section>
+          </div>
         </div>
-        <button
-          class="map-category-toggle"
-          type="button"
-          :aria-label="categoriesCollapsed ? 'Expand categories' : 'Collapse categories'"
-          :aria-expanded="!categoriesCollapsed"
-          data-testid="map-category-toggle"
-          @click="toggleCategories"
-        >
-          <i class="bi" :class="categoriesCollapsed ? 'bi-chevron-right' : 'bi-chevron-left'" aria-hidden="true"></i>
-        </button>
-      </section>
+      </div>
     </div>
+
+    <section v-if="showDiscoveryControls" class="map-nearby-row map-motion map-motion--nearby" aria-label="Nearby activity controls" @pointerdown.stop @mousedown.stop @dblclick.stop @touchstart.stop>
+      <button class="map-nearby-switch" :class="{ 'map-nearby-switch--active': nearMeEnabled }" type="button" role="switch" :aria-checked="nearMeEnabled" :disabled="locationLoading" :aria-label="nearMeEnabled ? 'Turn off Near me' : 'Turn on Near me'" :aria-valuetext="nearMeEnabled ? `Near me on within ${nearbyRadiusKm} kilometres` : 'Near me off'" data-testid="map-nearby-toggle" @click="toggleNearby"><span class="map-nearby-switch__label"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> Near me</span><span class="map-nearby-switch__track" aria-hidden="true"><span></span></span></button>
+      <label v-if="nearMeEnabled" class="map-radius-control" :style="{ '--radius-progress': `${((nearbyRadiusKm - 1) / 29) * 100}%` }"><span class="map-radius-control__heading"><span>Distance</span><strong>{{ nearbyRadiusKm }} km</strong></span><input :value="nearbyRadiusKm" class="map-radius-control__range" type="range" min="1" max="30" step="1" :aria-label="`Nearby distance: ${nearbyRadiusKm} kilometres`" :aria-valuetext="`${nearbyRadiusKm} kilometres`" data-testid="map-nearby-radius" @input="setNearbyRadius" @pointerdown.stop @mousedown.stop @touchstart.stop /></label>
+    </section>
 
     <p v-if="showActivityMarkers && (!activities.length || (trackedBadge && !activeHuntOpportunity))" class="map-empty" role="status">
       {{ !activities.length ? (nearMeEnabled ? `No activities found within ${nearbyRadiusKm} km. Increase the distance, adjust filters, or turn off Near me.` : 'No activities match these filters. Try another category or filter.') : (nearMeEnabled ? `No nearby matches for this badge within ${nearbyRadiusKm} km. Increase radius or choose another badge.` : 'No qualifying activities match your current search. Try adjusting your filters or choosing another badge.') }}
@@ -783,6 +726,7 @@ onBeforeUnmount(() => {
       v-if="showMapControls"
       :open="filtersOpen"
       :show-categories="false"
+      :show-regions="true"
       :result-count="activities.length"
       @close="filtersOpen = false"
     />
@@ -1205,7 +1149,7 @@ onBeforeUnmount(() => {
 
 .map-activity-card {
   position: absolute;
-  z-index: 1001;
+  z-index: 1003;
   bottom: 7.25rem;
   left: 1.5rem;
   width: min(46rem, calc(100% - 3rem));
@@ -1330,7 +1274,7 @@ onBeforeUnmount(() => {
 }
 .map-zoom-control__range:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; border-radius: 999px; }
 .map-zoom-control__range::-webkit-slider-runnable-track { width: var(--zoom-track-width); border-radius: 999px; background: #e6ddf9; }
-.map-zoom-control__range::-webkit-slider-thumb { width: var(--zoom-thumb-size); height: var(--zoom-thumb-size); margin-left: calc((var(--zoom-track-width) - var(--zoom-thumb-size)) / 2); appearance: none; border: 3px solid #fff; border-radius: 50%; background: var(--gol-purple); box-shadow: 0 2px 5px rgba(35, 25, 65, .25); }
+.map-zoom-control__range::-webkit-slider-thumb { width: var(--zoom-thumb-size); height: var(--zoom-thumb-size); margin-left: calc((var(--zoom-track-width) - var(--zoom-thumb-size)) / 2 + .1rem); appearance: none; border: 3px solid #fff; border-radius: 50%; background: var(--gol-purple); box-shadow: 0 2px 5px rgba(35, 25, 65, .25); }
 .map-zoom-control__range::-moz-range-track { width: var(--zoom-track-width); border-radius: 999px; background: #e6ddf9; }
 .map-zoom-control__range::-moz-range-thumb { width: 1.05rem; height: 1.05rem; border: 3px solid #fff; border-radius: 50%; background: var(--gol-purple); box-shadow: 0 2px 5px rgba(35, 25, 65, .25); }
 
@@ -1368,8 +1312,73 @@ onBeforeUnmount(() => {
   }
 }
 
+/* Discovery controls: separate desktop surfaces, one compact mobile card. */
+.map-overlay { width:min(92rem, calc(100% - 3rem)); }
+.map-discovery-bar { display:flex; align-items:center; gap:.75rem; width:100%; padding:.75rem; border-radius:24px; background:#fff8ef; box-shadow:0 4px 16px rgba(35,25,65,.12); pointer-events:auto; }
+.map-header-card { flex:0 0 auto; padding:0; background:transparent; box-shadow:none; }
+.map-control-stack { flex:1 1 17rem; min-width:0; }
+.map-search-toolbar { width:auto; }
+.map-category-selector { position:relative; display:flex; grid-column:1; width:clamp(10.5rem, 25%, 13rem); min-width:0; min-height:3.375rem; overflow:hidden; align-items:center; border:1px solid rgba(35,25,65,.14); border-radius:999px; background:#fff8ef; box-shadow:0 4px 14px rgba(35,25,65,.12); transition:width .32s cubic-bezier(.22, 1, .36, 1), min-height .28s ease-out, border-radius .28s ease-out, box-shadow .28s ease; }
+.map-category-selector--expanded { width:100%; min-height:5.85rem; border-radius:20px; }
+.map-category-selector__summary { display:flex; width:100%; min-width:0; align-items:center; gap:.5rem; padding:.42rem .5rem .42rem .62rem; border:0; background:transparent; color:var(--gol-ink); font:800 .76rem var(--gol-font); text-align:left; }
+.map-category-selector__summary > span:nth-child(2) { overflow:hidden; flex:1; text-overflow:ellipsis; white-space:nowrap; }
+.map-category-selector__sparkle { display:grid; width:2.1rem; height:2.1rem; flex:0 0 auto; place-items:center; border-radius:50%; background:var(--gol-purple); color:#fff; font-size:1.05rem; }
+.map-category-selector__summary > .bi,.map-category-selector__collapse { display:grid; width:2.1rem; height:2.1rem; flex:0 0 auto; padding:0; place-items:center; border:1px solid rgba(35,25,65,.12); border-radius:50%; background:#fff; color:var(--gol-purple); box-shadow:0 2px 7px rgba(35,25,65,.12); }
+.map-category-selector__rail { display:flex; min-width:0; flex:1; gap:.7rem; padding:.45rem .2rem .35rem .65rem; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; touch-action:pan-x; }
+.map-category-selector__rail::-webkit-scrollbar { display:none; }
+.map-category-selector .map-category { flex:0 0 4.25rem; }
+.map-category-selector .map-category--selected { background:transparent; color:var(--gol-ink); font-weight:800; }
+.map-category-selector .map-category__icon { position:relative; overflow:visible; }
+.map-category-selector .map-category--selected .map-category__icon { box-shadow:2px 3px 0 var(--gol-ink), 0 0 0 2px var(--gol-purple); }
+.map-category-selector .map-category--selected .map-category__icon::after { content:'✓'; position:absolute; z-index:1; top:-.4rem; right:-.4rem; display:grid; width:1.25rem; height:1.25rem; place-items:center; border:2px solid #fff8ef; border-radius:50%; background:var(--gol-purple); box-shadow:0 1px 4px rgba(35,25,65,.24); color:#fff; font:900 .72rem/1 var(--gol-font); }
+.map-category-selector .map-category--selected .map-category__label { color:var(--gol-ink); font-weight:800; }
+.map-category-selector__collapse { margin-right:.55rem; }
+.map-next-badge { display:flex; min-width:11.5rem; padding-left:.75rem; border-left:1px solid rgba(35,25,65,.14); }.map-next-badge__main,.map-next-badge__complete { display:flex; width:100%; min-width:0; align-items:center; gap:.5rem; padding:0; border:0; background:transparent; color:var(--gol-ink); text-align:left; }.map-next-badge__main > span:nth-child(2),.map-next-badge__complete > span:last-child { display:grid; min-width:0; gap:.08rem; }.map-next-badge small { color:var(--gol-purple); font:900 .58rem var(--gol-font); letter-spacing:.08em; text-transform:uppercase; }.map-next-badge strong { overflow:hidden; font:900 .78rem var(--gol-font); text-overflow:ellipsis; white-space:nowrap; }.map-next-badge em { color:var(--gol-muted); font:800 .65rem var(--gol-font); font-style:normal; }.map-next-badge__remaining { color:var(--gol-purple); font:800 .68rem var(--gol-font); }.map-next-badge i:not(.bi) { display:block; height:5px; overflow:hidden; border-radius:99px; background:#e5dcef; }.map-next-badge i:not(.bi) b { display:block; height:100%; border-radius:inherit; background:var(--gol-purple); }.map-next-badge > .bi { color:var(--gol-purple); }
+.map-nearby-row { position:absolute; z-index:1002; bottom:calc(1.5rem + 5.1rem + .75rem); left:max(1rem, calc(50vw - 310px)); width:auto; max-width:calc(100% - 2rem); gap:.45rem; pointer-events:auto; }.map-nearby-switch { min-height:3rem; border:1px solid rgba(35,25,65,.14); border-radius:16px; box-shadow:0 5px 16px rgba(35,25,65,.18); }.map-radius-control { min-width:13rem; min-height:3rem; padding:.35rem .65rem; border:1px solid rgba(35,25,65,.14); border-radius:16px; box-shadow:0 5px 16px rgba(35,25,65,.18); }
+.map-zoom-control { top:auto; right:1rem; bottom:6.75rem; }
+
+@media (min-width: 768px) {
+  .map-mobile-header-surface { display:contents; }
+  .map-overlay { width:auto; max-width:calc(100% - 3rem); }
+  .map-discovery-bar { display:grid; grid-template-columns:max-content clamp(17rem, 35vw, 32rem) max-content; grid-template-areas:'heading controls badge'; align-items:stretch; width:fit-content; max-width:100%; padding:0; border-radius:0; background:transparent; box-shadow:none; }
+  .map-header-card { grid-area:heading; display:flex; flex-direction:column; justify-content:center; align-self:stretch; padding:.8rem 1rem; border-radius:20px; background:#fff8ef; box-shadow:0 4px 16px rgba(35,25,65,.08); }
+  .map-header-card .gol-eyebrow { margin-bottom:.25rem; font-size:.82rem; }
+  .map-header-card .gol-title { font-size:2.28rem; }
+  .map-control-stack { --map-search-control-height:3.375rem; --map-selector-gap:.5rem; grid-area:controls; display:grid; grid-template-columns:minmax(0, 1fr) 3.375rem; min-height:calc(var(--map-search-control-height) * 2 + var(--map-selector-gap)); gap:var(--map-selector-gap) .625rem; align-items:start; }
+  .map-search-toolbar { grid-column:1 / -1; display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:.625rem; width:100%; }
+  .map-category-anchor { position:relative; grid-column:1; height:var(--map-search-control-height); }
+  .map-category-selector { position:absolute; top:0; left:0; z-index:1; }
+  .map-next-badge { grid-area:badge; display:flex; min-width:12.75rem; align-self:stretch; align-items:center; padding:.7rem .8rem; border:1px solid rgba(35,25,65,.14); border-radius:20px; background:#fff8ef; box-shadow:0 4px 16px rgba(35,25,65,.12); }
+  .map-next-badge .map-hunt-entry__icon { width:2.35rem; height:2.35rem; border-radius:11px; font-size:1.2rem; }
+  .map-next-badge small { font-size:.67rem; }
+  .map-next-badge strong { font-size:.92rem; }
+  .map-next-badge em { font-size:.76rem; }
+  .map-next-badge i:not(.bi) { height:6px; }
+  .map-next-badge > .bi { font-size:1.05rem; }
+}
+@media (min-width: 768px) and (max-width: 1099.98px) {
+  .map-overlay { width:calc(100% - 3rem); }
+  .map-discovery-bar { grid-template-columns:minmax(9rem, .85fr) minmax(14rem, 1.25fr) minmax(8rem, .7fr); gap:.6rem; width:100%; }
+  .map-header-card { width:100%; min-width:0; }
+  .map-header-card .gol-title { white-space:normal; overflow-wrap:normal; }
+  .map-control-stack { min-width:0; }
+  .map-next-badge { min-width:0; padding:.6rem; }
+}
+@media (min-width: 768px) and (max-width: 991.98px) { .map-header-card .gol-title { font-size:1.75rem; }.map-next-badge .map-hunt-entry__icon { width:1.95rem; height:1.95rem; font-size:1rem; }.map-next-badge small { font-size:.6rem; }.map-next-badge strong { font-size:.8rem; }.map-next-badge em { font-size:.68rem; } }
+@media (max-width: 767.98px) {
+  .map-overlay { top:calc(2.8rem + env(safe-area-inset-top)); left:.75rem; width:calc(100% - 1.5rem); }
+  .map-discovery-bar { display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; gap:.75rem; padding:0; border-radius:0; background:transparent; box-shadow:none; }
+  .map-mobile-header-surface { display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap:.55rem; padding:.5rem .65rem; border-radius:20px; background:#fff8ef; box-shadow:0 4px 16px rgba(35,25,65,.12); }
+  .map-header-card { display:flex; width:auto; max-width:none; min-width:0; padding:0; flex-direction:column; justify-content:center; border-radius:0; background:transparent; box-shadow:none; transition:none; }.map-header-card:hover { transform:none; box-shadow:none; }.map-header-card .gol-eyebrow { font-size:.59rem; }.map-header-card .gol-title { font-size:1.28rem; }
+  .map-next-badge { min-width:8.2rem; padding-left:.55rem; align-items:center; }.map-next-badge__main > span:nth-child(2) { gap:.04rem; line-height:1.1; }.map-next-badge .map-hunt-entry__icon { width:1.7rem; height:1.7rem; border-radius:8px; font-size:.9rem; }.map-next-badge strong { font-size:.68rem; }.map-next-badge em { font-size:.58rem; }
+  .map-control-stack { --map-search-control-height:3.5rem; --map-selector-gap:.75rem; display:flex; flex:0 0 auto; flex-direction:column; gap:var(--map-selector-gap); width:100%; }.map-search-toolbar { display:grid; grid-template-columns:minmax(0, 1fr) 3rem; gap:.625rem; width:100%; }.map-search-toolbar :deep(.gol-search-bar),.map-search-toolbar :deep(.gol-filter-button) { min-height:var(--map-search-control-height); height:var(--map-search-control-height); }
+  .map-category-anchor { position:relative; height:2.85rem; }.map-category-selector { position:absolute; top:0; left:0; z-index:1; width:fit-content; min-width:10rem; max-width:calc(100% - 3.5rem); min-height:2.85rem; }.map-category-selector--expanded { width:calc(100% - 3.5rem); min-height:5.1rem; border-radius:16px; }.map-category-selector__summary { padding:.35rem .45rem .35rem .5rem; font-size:.7rem; }.map-category-selector__sparkle,.map-category-selector__summary > .bi,.map-category-selector__collapse { width:1.9rem; height:1.9rem; }.map-category-selector__rail { gap:.55rem; padding:.35rem .15rem .28rem .5rem; }.map-category-selector .map-category { flex-basis:3.9rem; font-size:.62rem; }.map-category-selector .map-category__icon { width:2.35rem; height:2.35rem; font-size:1rem; }.map-category-selector .map-category--selected .map-category__icon::after { top:-.32rem; right:-.32rem; width:1.08rem; height:1.08rem; font-size:.62rem; }.map-category-selector__collapse { margin-right:.45rem; }
+  .map-nearby-row { bottom:calc(5.9rem + env(safe-area-inset-bottom)); left:.75rem; width:calc(100% - 1.5rem); max-width:none; gap:.35rem; }.map-nearby-switch { min-height:2.7rem; padding:0 .55rem; font-size:.7rem; }.map-radius-control { min-width:0; min-height:0; gap:.55rem; padding:.75rem 1rem; font-size:.65rem; }
+  .map-activity-card { bottom:calc(6.1rem + env(safe-area-inset-bottom)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .map-category-card,.map-category-toggle,.map-activity-card__close,.map-activity-card__directions,.map-activity-card__view,.map-nearby-switch,.map-radius-control,.map-radius-control__range,.map-nearby-switch__track,.map-nearby-switch__track span { transition: none; }
+  .map-category-card,.map-category-toggle,.map-category-selector,.map-activity-card__close,.map-activity-card__directions,.map-activity-card__view,.map-nearby-switch,.map-radius-control,.map-radius-control__range,.map-nearby-switch__track,.map-nearby-switch__track span { transition: none; }
   .map-motion,.map-category--selected .map-category__icon,:deep(.map-intro-marker),:deep(.map-user-location-marker--intro),.map-intro-dialog { animation: none; }
   .map-selected-card-enter-active,.map-selected-card-leave-active { transition: none; }
 }
