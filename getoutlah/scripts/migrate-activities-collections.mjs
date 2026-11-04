@@ -3,17 +3,15 @@
 // a maintenance window; it never deletes legacy documents in --apply mode.
 //
 // FIRESTORE_EMULATOR_HOST=127.0.0.1:8081 GCLOUD_PROJECT=getoutlah-migration-emulator node scripts/migrate-activities-collections.mjs --preflight
-// FIREBASE_SERVICE_ACCOUNT="$(cat key.json)" node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --preflight
-// FIREBASE_SERVICE_ACCOUNT="$(cat key.json)" node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --backup /secure/activities-backup.json
-// FIREBASE_SERVICE_ACCOUNT="$(cat key.json)" node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --validate
-// FIREBASE_SERVICE_ACCOUNT="$(cat key.json)" node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --apply --confirm-apply --manifest /secure/activities-manifest.json
-// FIREBASE_SERVICE_ACCOUNT="$(cat key.json)" node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --verify
+// ADC: gcloud auth application-default login
+// node scripts/migrate-activities-collections.mjs --production --adc --project getoutlah-4d959 --database '(default)' --preflight
+// Service account: FIREBASE_SERVICE_ACCOUNT="$(cat key.json)" node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --preflight
 //
 // `--restore` and `--reconcile-to-legacy` are recovery commands. Read
 // MIGRATION_RUNBOOK.md before using either against any shared Firestore project.
 import { readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
-import { initializeApp, cert } from 'firebase-admin/app'
+import { initializeApp, cert, applicationDefault } from 'firebase-admin/app'
 import { getFirestore, Timestamp, GeoPoint, DocumentReference } from 'firebase-admin/firestore'
 import { ACTIVITY_COLLECTIONS, ACTIVITY_SOURCES } from '../src/utils/activitySource.js'
 import { classifyLegacyActivity, destinationPathForActivity } from '../src/utils/activityMigration.js'
@@ -33,9 +31,11 @@ if (!mode) throw new Error(`Choose one mode: ${mode.join(', ')}`)
 const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST
 const isEmulator = Boolean(emulatorHost)
 const isProduction = args.includes('--production')
+const usesAdc = args.includes('--adc')
 let firebaseApp
 if (isEmulator && isProduction) throw new Error('Use either FIRESTORE_EMULATOR_HOST or --production, never both.')
 if (!isEmulator && !isProduction) throw new Error('Refusing to select a Firestore target. Set FIRESTORE_EMULATOR_HOST for local rehearsal or pass --production with credentials.')
+if (isEmulator && usesAdc) throw new Error('--adc is only supported with --production. Emulator mode is credential-free.')
 
 if (isEmulator) {
   if (!/^[a-zA-Z0-9.-]+:\d+$/.test(emulatorHost)) throw new Error('FIRESTORE_EMULATOR_HOST must be host:port without a protocol.')
@@ -59,17 +59,32 @@ if (isEmulator) {
   if (requestedDatabase !== PRODUCTION_DATABASE) {
     throw new Error(`Production migration requires --database '${PRODUCTION_DATABASE}'; received ${requestedDatabase ?? '(missing)'}.`)
   }
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT) throw new Error('FIREBASE_SERVICE_ACCOUNT is required with --production.')
-  let serviceAccount
-  try {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-  } catch {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT must contain valid service-account JSON.')
+  if (usesAdc) {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      throw new Error('--adc cannot be combined with FIREBASE_SERVICE_ACCOUNT. Choose exactly one production credential source.')
+    }
+    firebaseApp = initializeApp({ projectId: requestedProject, credential: applicationDefault() })
+    // Resolve ADC before constructing a Firestore client. A missing, expired,
+    // or unusable local user credential therefore fails before any Firestore
+    // read or write. The database target remains explicitly pinned below.
+    try {
+      await firebaseApp.options.credential.getAccessToken()
+    } catch (error) {
+      throw new Error(`Application Default Credentials are unavailable: ${error.message}`)
+    }
+  } else {
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT) throw new Error('FIREBASE_SERVICE_ACCOUNT is required with --production unless --adc is supplied.')
+    let serviceAccount
+    try {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    } catch {
+      throw new Error('FIREBASE_SERVICE_ACCOUNT must contain valid service-account JSON.')
+    }
+    if (serviceAccount.project_id !== requestedProject) {
+      throw new Error(`Service-account project_id ${serviceAccount.project_id ?? '(missing)'} does not match requested project ${requestedProject}.`)
+    }
+    firebaseApp = initializeApp({ projectId: requestedProject, credential: cert(serviceAccount) })
   }
-  if (serviceAccount.project_id !== requestedProject) {
-    throw new Error(`Service-account project_id ${serviceAccount.project_id ?? '(missing)'} does not match requested project ${requestedProject}.`)
-  }
-  firebaseApp = initializeApp({ projectId: requestedProject, credential: cert(serviceAccount) })
   if (firebaseApp.options.projectId !== requestedProject) {
     throw new Error('Firebase Admin SDK project does not match the requested production project.')
   }

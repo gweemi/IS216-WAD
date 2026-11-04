@@ -35,7 +35,9 @@ shared Firebase project without a scheduled maintenance window and approval.
 1. Build and test the exact commit to be deployed.
 2. Confirm the GitHub Action is disabled or otherwise prevented from running.
 3. Announce the maintenance window and pause activity-related admin actions.
-4. Obtain a service-account JSON key outside the repository. Never commit it.
+4. Choose one credential source: local Application Default Credentials (ADC),
+   or a service-account JSON key outside the repository. Never commit either
+   credential material.
 5. Create a secure operator-only directory for the backup and manifest.
 
 All commands below run from `getoutlah/`. Replace `/secure/backups` with an
@@ -43,12 +45,16 @@ access-controlled location. Commands are intentionally shown for operator
 review; do not run them until approved.
 
 ```sh
-export ACTIVITY_MIGRATION_KEY="$(cat /secure/key.json)"
-export FIREBASE_SERVICE_ACCOUNT="$ACTIVITY_MIGRATION_KEY"
-node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --preflight
-node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --backup /secure/backups/activities-before.json
-node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --validate
+# Recommended: authenticate the existing operator identity once with ADC.
+gcloud auth application-default login
+node scripts/migrate-activities-collections.mjs --production --adc --project getoutlah-4d959 --database '(default)' --preflight
+node scripts/migrate-activities-collections.mjs --production --adc --project getoutlah-4d959 --database '(default)' --backup /secure/backups/activities-before.json
+node scripts/migrate-activities-collections.mjs --production --adc --project getoutlah-4d959 --database '(default)' --validate
 ```
+
+Alternatively, omit `--adc` and set `FIREBASE_SERVICE_ACCOUNT` from an
+operator-only key file. ADC and `FIREBASE_SERVICE_ACCOUNT` are deliberately
+mutually exclusive.
 
 Review the preflight and validation reports. They must have no unknown source,
 destination conflict, or subcollection traversal error. Verify the backup
@@ -58,8 +64,10 @@ Firestore project before continuing.
 The production migration accepts only the exact project/database pair above.
 It rejects a missing or different argument, and also rejects a service-account
 `project_id` that does not match the requested project before any Firestore
-operation. Emulator commands remain credential-free and must not include
-`--production`.
+operation. ADC obtains a token before constructing a Firestore client, while
+the explicit project/database arguments prevent it from selecting a default
+project accidentally. Emulator commands remain credential-free and must not
+include `--production` or `--adc`.
 
 ## Rules and deployment order
 
@@ -71,8 +79,8 @@ operation. Emulator commands remain credential-free and must not include
 2. Run the approved copy and verification commands:
 
 ```sh
-node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --apply --confirm-apply --manifest /secure/backups/activities-manifest.json
-node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --verify
+node scripts/migrate-activities-collections.mjs --production --adc --project getoutlah-4d959 --database '(default)' --apply --confirm-apply --manifest /secure/backups/activities-manifest.json
+node scripts/migrate-activities-collections.mjs --production --adc --project getoutlah-4d959 --database '(default)' --verify
 ```
 
 3. Deploy the built frontend and the updated Eventbrite workflow/script. The
@@ -159,7 +167,7 @@ Pause writes and Eventbrite sync, then reconcile current new-collection state
 against the immutable pre-cutover backup:
 
 ```sh
-node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --reconcile-to-legacy /secure/backups/activities-before.json --confirm-reconcile
+node scripts/migrate-activities-collections.mjs --production --adc --project getoutlah-4d959 --database '(default)' --reconcile-to-legacy /secure/backups/activities-before.json --confirm-reconcile
 ```
 
 The command creates/updates current documents in legacy and deletes only
@@ -181,5 +189,5 @@ rollback. It restores documents from a checksum-verified backup but does not
 delete documents absent from that backup. It needs its own confirmation:
 
 ```sh
-node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --restore /secure/backups/activities-before.json --confirm-restore
+node scripts/migrate-activities-collections.mjs --production --adc --project getoutlah-4d959 --database '(default)' --restore /secure/backups/activities-before.json --confirm-restore
 ```

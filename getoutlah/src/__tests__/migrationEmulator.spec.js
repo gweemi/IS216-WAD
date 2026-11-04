@@ -91,6 +91,26 @@ emulatorDescribe('activity collection migration on Firestore Emulator', () => {
     })
     expect(mismatchedCredential.status).not.toBe(0)
     expect(mismatchedCredential.stderr).toContain('does not match requested project')
+
+    const adcWithServiceAccount = run(['--production', '--adc', '--project', 'getoutlah-4d959', '--database', '(default)', '--preflight'], {
+      FIRESTORE_EMULATOR_HOST: undefined,
+      GCLOUD_PROJECT: undefined,
+      FIREBASE_SERVICE_ACCOUNT: JSON.stringify({ project_id: 'getoutlah-4d959' }),
+    })
+    expect(adcWithServiceAccount.status).not.toBe(0)
+    expect(adcWithServiceAccount.stderr).toContain('--adc cannot be combined')
+
+    const adcWithoutCredentials = run(['--production', '--adc', '--project', 'getoutlah-4d959', '--database', '(default)', '--preflight'], {
+      FIRESTORE_EMULATOR_HOST: undefined,
+      GCLOUD_PROJECT: undefined,
+      GOOGLE_APPLICATION_CREDENTIALS: '/path/that-does-not-exist.json',
+    })
+    expect(adcWithoutCredentials.status).not.toBe(0)
+    expect(adcWithoutCredentials.stderr).toContain('Application Default Credentials are unavailable')
+
+    const adcWithEmulator = run(['--adc', '--preflight'])
+    expect(adcWithEmulator.status).not.toBe(0)
+    expect(adcWithEmulator.stderr).toContain('Emulator mode is credential-free')
   })
 
   it('backs up, validates, copies, verifies, retries, restores, and reconciles safely', async () => {
