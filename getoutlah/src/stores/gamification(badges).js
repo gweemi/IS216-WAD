@@ -141,7 +141,8 @@ function emptyState() {
     ledger: [],         
     earnedBadges: {},   
     studyBreak: { active: false, since: null },
-    pausedWeeks: [],    
+    pausedWeeks: [],   
+    redemptions: [],  
   }
 }
 
@@ -433,4 +434,38 @@ export function startDemoSession() {
 // Handy while testing: wipes everything back to empty (or demo) data
 export function resetGamification(withDemo = false) {
   Object.assign(game, withDemo ? createDemoStartingState() : emptyState())
+}
+
+// Partner vouchers (sample list; change names/costs with your team)
+export const VOUCHERS = [
+  { id: 'cafe-5', name: '$5 Café Voucher', cost: 150, icon: '☕' },
+  { id: 'retail-10', name: '10% Retail Discount', cost: 250, icon: '🛍️' },
+  { id: 'event-10', name: '$10 Event Voucher', cost: 300, icon: '🎟️' },
+  { id: 'bike-10', name: '$10 Bike Rental', cost: 400, icon: '🚲' },
+  { id: 'dining-20', name: '$20 Dining Voucher', cost: 500, icon: '🍽️' },
+  { id: 'merch', name: 'Exclusive Merch', cost: 600, icon: '⭐' },
+]
+ 
+// Points you can still spend = all points earned - points spent on vouchers
+export function availablePoints() {
+  const spent = (game.redemptions || []).reduce((sum, r) => sum + r.cost, 0)
+  return Math.max(0, totalPoints() - spent)
+}
+ 
+// Vouchers this user has redeemed, newest first
+export function myVouchers() {
+  return [...(game.redemptions || [])].reverse()
+}
+ 
+// Redeem a voucher. Returns { ok, message, redemption }
+export function redeemVoucher(voucherId) {
+  const v = VOUCHERS.find((x) => x.id === voucherId)
+  if (!v) return { ok: false, message: 'That voucher no longer exists.' }
+  if (availablePoints() < v.cost) return { ok: false, message: 'Not enough points yet.' }
+  const code = 'GOL-' + Math.random().toString(36).slice(2, 6).toUpperCase() + '-' + String(Date.now()).slice(-4)
+  const redemption = { voucherId: v.id, name: v.name, icon: v.icon, cost: v.cost, code, date: toISODate(new Date()) }
+  if (!game.redemptions) game.redemptions = []
+  game.redemptions.push(redemption)
+  try { celebrateBadge() } catch { }
+  return { ok: true, message: `Redeemed ${v.name}!`, redemption }
 }

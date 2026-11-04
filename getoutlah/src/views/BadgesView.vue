@@ -17,9 +17,17 @@
       </div>
 
       <section>
-        <div class="d-flex justify-content-between align-items-baseline mb-3">
-          <h2 class="gol-section-title">Badges</h2>
-          <span class="earned-count">{{ earnedCount }} of {{ badges.length }} earned</span>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <h2 class="gol-section-title mb-0">Badges</h2>
+          <div class="d-flex align-items-center gap-3">
+            
+            <!-- for the redeem voucher page -->
+            <RouterLink :to="{ name: 'vouchers' }" class="btn-voucher">
+              <i class="bi bi-gift-fill"></i> Redeem Voucher
+              <span class="voucher-spark" aria-hidden="true"></span>
+            </RouterLink>
+            <span class="earned-count">{{ earnedCount }} of {{ badges.length }} earned</span>
+          </div>
         </div>
 
         <!-- To make badges fade in -->
@@ -134,4 +142,13 @@ export default {
 .badge-list-move {
   transition: transform 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
+
+/*for the vouchers */
+.btn-voucher { position: relative; display: inline-flex; align-items: center; gap: .45rem; font-family: var(--gol-font); font-weight: 900; font-size: .95rem; color: var(--gol-ink); background: var(--gol-yellow); border: 2px solid var(--gol-ink); border-radius: 14px; padding: .5rem 1.1rem; box-shadow: 0 4px 0 var(--gol-ink); text-decoration: none; transition: translate .1s, box-shadow .1s; }
+.btn-voucher:hover { translate: 0 -2px; box-shadow: 0 6px 0 var(--gol-ink); color: var(--gol-ink); }
+.btn-voucher:active { translate: 0 2px; box-shadow: 0 2px 0 var(--gol-ink); }
+.voucher-spark { position: absolute; right: -14px; top: -14px; width: 20px; height: 20px; }
+.voucher-spark::before, .voucher-spark::after { content: ''; position: absolute; width: 3px; height: 11px; background: var(--gol-yellow); border-radius: 3px; }
+.voucher-spark::before { left: 3px; top: 4px; transform: rotate(-30deg); }
+.voucher-spark::after { left: 12px; top: 9px; transform: rotate(40deg); }
 </style>
