@@ -48,12 +48,20 @@ describe('activity map markers', () => {
       expect.stringContaining('Pottery jam OPENJIO'),
       expect.objectContaining({ direction: 'top', className: 'gol-activity-tooltip' }),
     )
+    expect(marker.bindTooltip.mock.calls[0][0]).toContain('<span>Workshops</span>')
     expect(marker.on).toHaveBeenCalledWith('click', expect.any(Function))
     marker.on.mock.calls[0][1]()
     expect(onSelect).toHaveBeenCalledWith(activity)
     const markerIcon = L.divIcon.mock.calls[0][0]
     expect(markerIcon.html.innerHTML).toContain('🏺')
     expect(markerIcon.html.innerHTML).toContain('--activity-color: #FFC976')
+  })
+
+  it('uses Title Case for multiword category captions in marker tooltips', () => {
+    const { L, marker } = makeLeaflet()
+    createActivityMarker(L, { title: 'Gallery walk', category: 'arts & culture', lat: 1.3, lng: 103.8 })
+
+    expect(marker.bindTooltip.mock.calls[0][0]).toContain('<span>Arts &amp; Culture</span>')
   })
 
   it('clears and repopulates a cluster layer while skipping invalid activities', () => {

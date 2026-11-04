@@ -18,6 +18,12 @@ function escapeTooltipText(value) {
   }[character]))
 }
 
+function titleCaseCategory(value) {
+  return String(value ?? 'Activity')
+    .toLowerCase()
+    .replace(/\b\p{L}/gu, (letter) => letter.toUpperCase())
+}
+
 export function createActivityMarker(L, activity, { onSelect, isHuntEligible } = {}) {
   const markerContent = document.createElement('div')
   render(h(ActivityMapMarker, { activity, huntEligible: Boolean(isHuntEligible?.(activity)) }), markerContent)
@@ -33,7 +39,7 @@ export function createActivityMarker(L, activity, { onSelect, isHuntEligible } =
   marker.__activityId = activity.id
   marker.__activity = activity
   marker.bindTooltip?.(
-    `<strong>${escapeTooltipText(activity.title || 'Activity')}</strong><span>${escapeTooltipText(activity.category || 'Activity')}</span>`,
+    `<strong>${escapeTooltipText(activity.title || 'Activity')}</strong><span>${escapeTooltipText(titleCaseCategory(activity.category))}</span>`,
     { className: 'gol-activity-tooltip', direction: 'top', offset: [0, -24], opacity: 1 },
   )
   // MarkerCluster temporarily removes child markers while recalculating a zoom level.

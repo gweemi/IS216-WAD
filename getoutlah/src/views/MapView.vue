@@ -40,6 +40,8 @@ const huntSheetOpen = ref(false)
 const selectedHuntId = ref(null)
 const selectedActivity = ref(null)
 const selectedImageBroken = ref(false)
+const mobileCardExpanded = ref(false)
+let cardHeaderTouchY = null
 const nearMeEnabled = ref(false)
 const nearbyRadiusKm = ref(5)
 const onboardingStage = ref('checkingEligibility')
@@ -93,6 +95,7 @@ const MIN_MAP_ZOOM = 11
 const MAX_MAP_ZOOM = 18
 const mapZoom = ref(12)
 const showDesktopZoomControl = ref(typeof window === 'undefined' ? true : !isMobileViewport())
+const showSelectedCardDetails = computed(() => showDesktopZoomControl.value || mobileCardExpanded.value)
 let map
 let clusterLayer
 let userLocationMarker
@@ -104,13 +107,10 @@ let onboardingRunId = 0
 let tileReadyTimer
 let tileLayer
 let trailLayer
-const showingTrail = ref(false)
 const selectedRoute = ref(null)
 const trailLoadState = ref('idle')
-const trailLoadError = ref('')
 let trailLoadRequest = 0
 const selectedIsNparksRoute = computed(() => isNparksRoute(selectedActivity.value))
-const canShowSelectedTrail = computed(() => selectedIsNparksRoute.value && trailLoadState.value === 'ready' && !!selectedRoute.value?.features?.length)
 
 function prefersReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -439,9 +439,11 @@ function maybeOpenBadgeWelcome() {
 }
 
 function selectActivity(activity) {
-  if (selectedActivity.value?.id !== activity.id) {
+  const selectionChanged = selectedActivity.value?.id !== activity.id
+  if (selectionChanged) {
     clearSelectedTrail()
     setActivityMarkerSelected(activityMarkers.get(selectedActivity.value?.id), false)
+    mobileCardExpanded.value = !isMobileViewport()
   }
   selectedImageBroken.value = false
   selectedActivity.value = activity
@@ -457,6 +459,31 @@ function clearSelectedActivity() {
   clearSelectedTrail()
   setActivityMarkerSelected(activityMarkers.get(selectedActivity.value?.id), false)
   selectedActivity.value = null
+  mobileCardExpanded.value = false
+}
+
+function toggleMobileCard() {
+  if (!isMobileViewport()) return
+  mobileCardExpanded.value = !mobileCardExpanded.value
+}
+
+function handleCardHeaderKeydown(event) {
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  toggleMobileCard()
+}
+
+function startCardHeaderTouch(event) {
+  cardHeaderTouchY = event.touches?.[0]?.clientY ?? null
+}
+
+function endCardHeaderTouch(event) {
+  if (!isMobileViewport() || cardHeaderTouchY == null) return
+  const endY = event.changedTouches?.[0]?.clientY
+  const distance = Number(endY) - cardHeaderTouchY
+  cardHeaderTouchY = null
+  if (distance <= -40) mobileCardExpanded.value = true
+  if (distance >= 40) mobileCardExpanded.value = false
 }
 
 function clearSelectedTrail() {
@@ -464,7 +491,6 @@ function clearSelectedTrail() {
   hideSelectedTrail()
   selectedRoute.value = null
   trailLoadState.value = 'idle'
-  trailLoadError.value = ''
 }
 
 async function loadSelectedTrail({ retry = false } = {}) {
@@ -472,40 +498,38 @@ async function loadSelectedTrail({ retry = false } = {}) {
   if (!isNparksRoute(activity)) return
   const request = ++trailLoadRequest
   trailLoadState.value = 'loading'
-  trailLoadError.value = ''
   selectedRoute.value = null
+  hideSelectedTrail()
   try {
     const route = await getNparksRoute(activity, { retry })
     // A prior request may finish after the user has selected another activity.
     if (request !== trailLoadRequest || selectedActivity.value?.id !== activity.id) return
     selectedRoute.value = route
     trailLoadState.value = 'ready'
+    showSelectedTrail()
   } catch (error) {
     if (request !== trailLoadRequest || selectedActivity.value?.id !== activity.id) return
     trailLoadState.value = 'error'
-    trailLoadError.value = error.message ?? 'Trail geometry could not be loaded.'
   }
 }
 
 function hideSelectedTrail() {
   if (trailLayer && map) map.removeLayer(trailLayer)
   trailLayer = null
-  showingTrail.value = false
 }
 
-function toggleSelectedTrail() {
-  if (showingTrail.value) { hideSelectedTrail(); return }
-  if (!map || !canShowSelectedTrail.value) return
+function showSelectedTrail() {
+  if (!map || !selectedRoute.value?.features?.length) return
+  hideSelectedTrail()
   trailLayer = L.geoJSON(selectedRoute.value, {
     style: { color: '#7541ec', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' },
   }).addTo(map)
   const bounds = trailLayer.getBounds()
   if (bounds.isValid()) map.fitBounds(bounds, {
-    paddingTopLeft: isMobileViewport() ? [20, 110] : [390, 80],
-    paddingBottomRight: isMobileViewport() ? [20, 290] : [50, 180],
+    paddingTopLeft: isMobileViewport() ? [20, 230] : [390, 80],
+    paddingBottomRight: isMobileViewport() ? [20, 190] : [50, 180],
     animate: !prefersReducedMotion(), maxZoom: 16,
   })
-  showingTrail.value = true
 }
 
 function openSelectedActivity() {
@@ -746,6 +770,7 @@ onBeforeUnmount(() => {
       <section
         v-if="selectedActivity && showMapControls"
         class="map-activity-card"
+        :class="{ 'map-activity-card--mobile-expanded': mobileCardExpanded && !showDesktopZoomControl }"
         aria-label="Selected activity"
         data-testid="selected-map-activity"
         @pointerdown.stop
@@ -753,18 +778,33 @@ onBeforeUnmount(() => {
         @dblclick.stop
         @touchstart.stop
       >
-        <button class="map-activity-card__close" type="button" aria-label="Close selected activity" @click="clearSelectedActivity">
+        <button class="map-activity-card__close" type="button" aria-label="Close selected activity" @pointerdown.stop @touchstart.stop @click.stop="clearSelectedActivity">
           <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
-        <div class="map-activity-card__main">
+        <div
+          class="map-activity-card__header"
+          role="button"
+          tabindex="0"
+          :aria-expanded="showSelectedCardDetails"
+          :aria-label="showSelectedCardDetails ? 'Collapse activity details' : 'Expand activity details'"
+          @click="toggleMobileCard"
+          @keydown="handleCardHeaderKeydown"
+          @touchstart.passive="startCardHeaderTouch"
+          @touchend.passive="endCardHeaderTouch"
+        >
           <div class="map-activity-card__image" :style="{ background: categoryColor(selectedActivity.category) }">
             <img v-if="selectedImage && !selectedImageBroken" :src="selectedImage" alt="" @error="selectedImageBroken = true" />
             <span v-else aria-hidden="true">{{ categoryEmoji(selectedActivity.category) }}</span>
           </div>
+          <i class="map-activity-card__expand bi" :class="showSelectedCardDetails ? 'bi-chevron-down' : 'bi-chevron-up'" aria-hidden="true"></i>
           <div class="map-activity-card__content">
             <p class="map-activity-card__area"><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ selectedActivity.area || 'Singapore' }}</p>
             <h2>{{ selectedActivity.title }}</h2>
             <p class="map-activity-card__meta">{{ categoryLabel(selectedActivity.category) }} · {{ priceText(selectedActivity) }}</p>
+          </div>
+        </div>
+        <div v-show="showSelectedCardDetails" class="map-activity-card__details">
+          <div class="map-activity-card__content">
             <p v-if="selectedWeather" class="map-activity-card__weather"><i class="bi bi-cloud-sun" aria-hidden="true"></i> {{ selectedWeather.forecast }}</p>
             <p v-if="selectedDescription" class="map-activity-card__description">{{ selectedDescription }}</p>
             <section v-if="selectedBadgeOpportunity" class="map-badge-opportunity" :aria-label="`${selectedBadgeOpportunity.name} badge opportunity`">
@@ -776,17 +816,14 @@ onBeforeUnmount(() => {
               <i class="map-badge-opportunity__progress" aria-hidden="true"><b :style="{ width: `${(selectedBadgeOpportunity.progress / selectedBadgeOpportunity.target) * 100}%` }"></b></i>
             </section>
           </div>
-        </div>
-        <div class="map-activity-card__actions" :class="{ 'map-activity-card__actions--route': selectedIsNparksRoute }">
-          <button v-if="selectedIsNparksRoute" type="button" class="map-activity-card__trail" :disabled="trailLoadState === 'loading'" @click="trailLoadState === 'error' ? loadSelectedTrail({ retry: true }) : toggleSelectedTrail()">
-            <i class="bi" :class="showingTrail ? 'bi-eye-slash' : 'bi-signpost-2'" aria-hidden="true"></i> {{ trailLoadState === 'loading' ? 'Loading Trail…' : trailLoadState === 'error' ? 'Retry Trail' : showingTrail ? 'Hide Trail' : 'View Trail' }}
-          </button>
+          <div class="map-activity-card__actions">
           <a v-if="selectedDirections" :href="selectedDirections" target="_blank" rel="noopener" class="map-activity-card__directions">
             <i class="bi bi-signpost-split" aria-hidden="true"></i> Directions
           </a>
           <button type="button" class="map-activity-card__view" @click="openSelectedActivity"><i class="bi bi-arrow-up-right" aria-hidden="true"></i> View Activity</button>
+          </div>
+          <p v-if="selectedIsNparksRoute && trailLoadState === 'error'" class="map-activity-card__trail-error" role="status">Trail is unavailable right now.</p>
         </div>
-        <p v-if="selectedIsNparksRoute && trailLoadState === 'error'" class="map-activity-card__trail-error" role="status">{{ trailLoadError }}</p>
       </section>
     </Transition>
     <FilterSheet
@@ -1230,6 +1267,7 @@ onBeforeUnmount(() => {
 
 .map-activity-card__close {
   position: absolute;
+  z-index: 2;
   top: 1rem;
   right: 1rem;
   display: grid;
@@ -1244,24 +1282,23 @@ onBeforeUnmount(() => {
   font-size: 1.2rem;
 }
 .map-activity-card__close:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 2px; }
-.map-activity-card__main { display: flex; gap: .8rem; padding-right: 1.5rem; }
+.map-activity-card__header { display: flex; gap: .8rem; padding-right: 1.5rem; }
 .map-activity-card__image { display: grid; width: 7rem; height: 7rem; flex: 0 0 auto; place-items: center; overflow: hidden; border-radius: 18px; color: var(--gol-ink); font-size: 2.8rem; }
 .map-activity-card__image img { width: 100%; height: 100%; object-fit: cover; }
 .map-activity-card__content { min-width: 0; }
+.map-activity-card__details { margin-top: .42rem; }
+.map-activity-card__expand { display: none; }
 .map-activity-card__area { margin: 0 0 .25rem; color: var(--gol-muted); font-size: .84rem; font-weight: 700; }
 .map-activity-card__content h2 { margin: 0; padding-right: 1.2rem; font-size: clamp(1.15rem, 3vw, 1.7rem); font-weight: 900; line-height: 1.15; }
 .map-activity-card__meta,.map-activity-card__weather,.map-activity-card__description { margin: .42rem 0 0; color: var(--gol-muted); font-weight: 700; line-height: 1.35; }
 .map-activity-card__weather { color: var(--gol-ink); }
 .map-activity-card__description { font-size: .88rem; }
 .map-activity-card__actions { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-top: .8rem; }
-.map-activity-card__actions--route { grid-template-columns: repeat(3, 1fr); }
-.map-activity-card__trail,.map-activity-card__directions,.map-activity-card__view { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .45rem; border-radius: 16px; font: 800 .9rem var(--gol-font); text-decoration: none; }
-.map-activity-card__trail { border: 0; background: #e9defe; color: var(--gol-purple-dark); }
-.map-activity-card__trail:disabled { cursor: wait; opacity: .65; }
+.map-activity-card__directions,.map-activity-card__view { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .45rem; border-radius: 16px; font: 800 .9rem var(--gol-font); text-decoration: none; }
 .map-activity-card__trail-error { margin: .55rem 0 0; color: var(--gol-coral-text); font-size: .8rem; font-weight: 700; }
 .map-activity-card__directions { border: 0; background: #fff; color: var(--gol-ink); }
 .map-activity-card__view { border: 0; background: var(--gol-purple); box-shadow: inset 0 -4px 0 var(--gol-purple-dark); color: #fff; }
-.map-activity-card__view:focus-visible,.map-activity-card__directions:focus-visible,.map-activity-card__trail:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; }
+.map-activity-card__header:focus-visible,.map-activity-card__view:focus-visible,.map-activity-card__directions:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; }
 .map-selected-card-enter-active,.map-selected-card-leave-active { transition: opacity .24s ease, transform .28s cubic-bezier(.34, 1.56, .64, 1); }
 .map-selected-card-enter-from,.map-selected-card-leave-to { opacity: 0; transform: translateY(28px) scale(.96); }
 
@@ -1272,7 +1309,7 @@ onBeforeUnmount(() => {
   .map-category:hover .map-category__icon { transform: translateY(-3px) rotate(4deg); }
   .map-category-toggle:hover { transform: translateY(calc(-50% - 3px)); }
   .map-activity-card__close:hover { transform: translateY(-2px); }
-  .map-activity-card__directions:hover,.map-activity-card__view:hover,.map-activity-card__trail:hover { transform: translateY(-2px); filter: brightness(1.03); }
+  .map-activity-card__directions:hover,.map-activity-card__view:hover { transform: translateY(-2px); filter: brightness(1.03); }
 }
 
 @keyframes map-overlay-in {
@@ -1368,13 +1405,14 @@ onBeforeUnmount(() => {
   .map-hunt-active { right:.75rem; bottom:calc(5.75rem + env(safe-area-inset-bottom)); }
   .map-hunt-entry__icon { width:1.85rem; height:1.85rem; font-size:1rem; }
   .map-hunt-active { width:min(16.5rem,calc(100% - 1.5rem)); padding:.55rem; }
-  .map-activity-card { bottom: calc(5.75rem + env(safe-area-inset-bottom)); left: .75rem; width: calc(100% - 1.5rem); max-height:calc(100dvh - 7.25rem - env(safe-area-inset-bottom)); padding: 1rem; overflow-y:auto; overscroll-behavior:contain; border-radius: 24px; }
-  .map-activity-card__main { gap: .75rem; padding-right: 1rem; }
+  .map-activity-card { bottom: calc(5.75rem + env(safe-area-inset-bottom)); left: .75rem; display:flex; flex-direction:column; align-items:stretch; width: calc(100% - 1.5rem); max-height:min(25dvh, calc(100dvh - 7.25rem - env(safe-area-inset-bottom))); padding: 1rem; overflow:hidden; border-radius: 24px; transition:max-height .24s ease; }
+  .map-activity-card--mobile-expanded { max-height:calc(100dvh - 7.25rem - env(safe-area-inset-bottom)); }
+  .map-activity-card__header { position:relative; width:100%; flex:0 0 auto; gap: .75rem; padding:1.5rem 2rem 0 0; cursor:pointer; touch-action:pan-y; }
   .map-activity-card__image { width: 5.75rem; height: 5.75rem; border-radius: 18px; font-size: 2.4rem; }
   .map-activity-card__content h2 { font-size: 1.1rem; }
+  .map-activity-card__expand { position:absolute; top:.1rem; left:50%; display:grid; width:1.9rem; height:1.4rem; place-items:center; color:var(--gol-purple); font-size:1.15rem; transform:translateX(-50%); }
+  .map-activity-card__details { min-height:0; margin-top:.7rem; overflow-y:auto; overscroll-behavior:contain; touch-action:pan-y; }
   .map-activity-card__description { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .map-activity-card__actions--route { grid-template-columns: 1fr 1fr; }
-  .map-activity-card__actions--route .map-activity-card__trail { grid-column: 1 / -1; }
   .map-activity-card__directions,.map-activity-card__view { min-height: 3rem; font-size: .88rem; }
   .map-intro-backdrop { align-items: end; padding: 1rem 1rem calc(6.75rem + env(safe-area-inset-bottom)); }
   .map-intro-dialog { border-radius: 22px; }

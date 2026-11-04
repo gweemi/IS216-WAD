@@ -644,7 +644,7 @@ describe('MapView', () => {
     expect(leafletMocks.markerInstances[1].setZIndexOffset).toHaveBeenLastCalledWith(1000)
   })
 
-  it('draws and hides the selected NParks route without moving the map when hiding it', async () => {
+  it('automatically draws an NParks route and removes it when the card closes', async () => {
     allActivities.value = [{
       id: 'np-tree-top-walk', title: 'TreeTop Walk', source: 'externalListings', provider: 'nparks', contentType: 'route',
       category: 'outdoors', cost: 0, durationHrs: 3, lat: 1.36, lng: 103.82,
@@ -655,43 +655,55 @@ describe('MapView', () => {
     await Promise.resolve()
     await nextTick()
 
-    await wrapper.get('.map-activity-card__trail').trigger('click')
     expect(leafletMocks.geoJSON).toHaveBeenCalledTimes(1)
     expect(leafletMocks.mapInstance.fitBounds).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('.map-activity-card__trail').exists()).toBe(false)
 
-    await wrapper.get('.map-activity-card__trail').trigger('click')
+    await wrapper.get('.map-activity-card__close').trigger('click')
     expect(leafletMocks.mapInstance.removeLayer).toHaveBeenCalledTimes(1)
     expect(leafletMocks.mapInstance.fitBounds).toHaveBeenCalledTimes(1)
   })
 
-  it('shows loading and retry states when a local trail asset cannot be fetched', async () => {
+  it('fits an automatically displayed mobile trail below the discovery controls', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((query) => ({
+      matches: query === '(max-width: 767.98px)', addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })))
     allActivities.value = [{
       id: 'np-tree-top-walk', title: 'TreeTop Walk', source: 'externalListings', provider: 'nparks', contentType: 'route',
       category: 'outdoors', cost: 0, durationHrs: 3, lat: 1.36, lng: 103.82,
       nparks: { datasetId: 'd_84e6db6c43ffb8b17803334ec2b5c95d', featureObjectIds: [1] },
     }]
-    let rejectFirst
-    nparksMocks.getNparksRoute
-      .mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject }))
-      .mockImplementation(defaultNparksRoute)
     const wrapper = mountMap()
 
     leafletMocks.markerInstances[0].handlers.click()
-    await nextTick()
-    expect(wrapper.get('.map-activity-card__trail').text()).toContain('Loading Trail')
-    expect(wrapper.get('.map-activity-card__trail').attributes('disabled')).toBeDefined()
-
-    rejectFirst(new Error('Route asset unavailable'))
+    leafletMocks.markerInstances[0].handlers.click()
     await Promise.resolve()
     await nextTick()
-    expect(wrapper.get('.map-activity-card__trail').text()).toContain('Retry Trail')
-    expect(wrapper.get('.map-activity-card__trail-error').text()).toContain('Route asset unavailable')
 
-    await wrapper.get('.map-activity-card__trail').trigger('click')
+    expect(leafletMocks.mapInstance.fitBounds).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      paddingTopLeft: [20, 230],
+      paddingBottomRight: [20, 190],
+    }))
+    wrapper.unmount()
+    mountedWrappers.splice(mountedWrappers.indexOf(wrapper), 1)
+  })
+
+  it('keeps the card open and shows a concise error if local trail geometry cannot load', async () => {
+    allActivities.value = [{
+      id: 'np-tree-top-walk', title: 'TreeTop Walk', source: 'externalListings', provider: 'nparks', contentType: 'route',
+      category: 'outdoors', cost: 0, durationHrs: 3, lat: 1.36, lng: 103.82,
+      nparks: { datasetId: 'd_84e6db6c43ffb8b17803334ec2b5c95d', featureObjectIds: [1] },
+    }]
+    nparksMocks.getNparksRoute.mockRejectedValueOnce(new Error('Route asset unavailable'))
+    const wrapper = mountMap()
+
+    leafletMocks.markerInstances[0].handlers.click()
     await Promise.resolve()
     await nextTick()
-    expect(wrapper.get('.map-activity-card__trail').text()).toContain('View Trail')
-    expect(nparksMocks.getNparksRoute).toHaveBeenLastCalledWith(expect.any(Object), { retry: true })
+    expect(wrapper.get('[data-testid="selected-map-activity"]').exists()).toBe(true)
+    expect(wrapper.get('.map-activity-card__trail-error').text()).toContain('Trail is unavailable')
+    expect(wrapper.find('.map-activity-card__trail').exists()).toBe(false)
+    expect(leafletMocks.geoJSON).not.toHaveBeenCalled()
   })
 
   it('ignores stale geometry when the user selects another NParks route while loading', async () => {
@@ -717,7 +729,7 @@ describe('MapView', () => {
     await Promise.resolve()
     await nextTick()
     expect(wrapper.get('[data-testid="selected-map-activity"]').text()).toContain('Dairy Farm Loop')
-    expect(wrapper.get('.map-activity-card__trail').text()).toContain('Loading Trail')
+    expect(leafletMocks.geoJSON).not.toHaveBeenCalled()
 
     deferred.get(dairyFarm.id)({
       type: 'FeatureCollection',
@@ -725,10 +737,56 @@ describe('MapView', () => {
     })
     await Promise.resolve()
     await nextTick()
-    await wrapper.get('.map-activity-card__trail').trigger('click')
     expect(leafletMocks.geoJSON).toHaveBeenLastCalledWith(expect.objectContaining({
       features: [expect.objectContaining({ properties: { OBJECTID: 2 } })],
     }), expect.any(Object))
+  })
+
+  it('opens the mobile card collapsed and expands or collapses it from its header', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((query) => ({
+      matches: query === '(max-width: 767.98px)', addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })))
+    const wrapper = mountMap()
+
+    leafletMocks.markerInstances[0].handlers.click()
+    leafletMocks.markerInstances[0].handlers.click()
+    await nextTick()
+
+    const card = wrapper.get('[data-testid="selected-map-activity"]')
+    const header = card.get('.map-activity-card__header')
+    expect(card.classes()).not.toContain('map-activity-card--mobile-expanded')
+    expect(header.attributes('aria-expanded')).toBe('false')
+    expect(card.get('.map-activity-card__details').element.style.display).toBe('none')
+
+    await header.trigger('click')
+    await nextTick()
+    expect(card.classes()).toContain('map-activity-card--mobile-expanded')
+    expect(header.attributes('aria-expanded')).toBe('true')
+    expect(card.get('.map-activity-card__details').element.style.display).not.toBe('none')
+
+    await header.trigger('keydown', { key: ' ' })
+    await nextTick()
+    expect(header.attributes('aria-expanded')).toBe('false')
+
+    await header.trigger('touchstart', { touches: [{ clientY: 300 }] })
+    await header.trigger('touchend', { changedTouches: [{ clientY: 230 }] })
+    await nextTick()
+    expect(header.attributes('aria-expanded')).toBe('true')
+  })
+
+  it('closes a mobile card from X instead of changing its expanded state', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((query) => ({
+      matches: query === '(max-width: 767.98px)', addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })))
+    const wrapper = mountMap()
+
+    leafletMocks.markerInstances[0].handlers.click()
+    leafletMocks.markerInstances[0].handlers.click()
+    await nextTick()
+    await wrapper.get('.map-activity-card__close').trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="selected-map-activity"]').exists()).toBe(false)
   })
 
   it('adds shared activity-store records to one cluster layer', () => {
