@@ -48,7 +48,7 @@ export async function loadActivities() {
   }
 
   const [weather, trail] = await Promise.allSettled([getForecasts(), getTrails()])
-  baseActivities.value = stored ?? seedActivities
+  baseActivities.value = stored || seedActivities
   
 
   if (weather.status === 'fulfilled') forecasts.value = weather.value; else sourceErrors.value.weather = weather.reason.message
@@ -70,13 +70,18 @@ export const allActivities = computed(() => {
 export const activityById = (id) => allActivities.value.find((a) => a.id === id)
 
 // Repeats of one event (an Eventbrite series, or the same title at the same place) are shown as ONE card.
-const repeatKey = (a) => (a.seriesId ? `series:${a.seriesId}` : `${(a.title ?? '').trim().toLowerCase()}|${a.area ?? ''}`)
+// An OPENJIO! is always its own event: one started from an activity shares its title and place,
+// and grouping them would hide a card and list the undated activity as an "Invalid Date".
+const repeatKey = (a) => {
+  if (a.type === 'openJio') return `jio:${a.id}`
+  return a.seriesId ? `series:${a.seriesId}` : `${(a.title || '').trim().toLowerCase()}|${a.area || ''}`
+}
 // Every upcoming date of an activity, soonest first. Just [activity] if it doesn't repeat.
 export const datesOf = (activity, list = allActivities.value, now = Date.now()) => {
   const key = repeatKey(activity)
   return list
     .filter((b) => b.id === activity.id || (repeatKey(b) === key && (b.startsAt == null || b.startsAt >= now)))
-    .sort((x, y) => (x.startsAt ?? Infinity) - (y.startsAt ?? Infinity))
+    .sort((x, y) => (x.startsAt || Infinity) - (y.startsAt || Infinity))
 }
 // Keeps the first (best-ranked) date of each repeating event and drops the rest.
 export const oneCardPerEvent = (list) => {
@@ -105,7 +110,7 @@ export const weatherAt = (a) => {
 
 // Personalised order: preferences + weather + balance after a high-energy activity + free time + distance.
 export const recommended = computed(() => {
-  const p = useAuthStore().preferences ?? {}
+  const p = useAuthStore().preferences || {}
   const last = game.completed.at(-1)
   const justDidHighEnergy = last?.energy === 'high' && last.date === new Date().toLocaleDateString('en-CA')
   const score = (a) => {
@@ -117,8 +122,8 @@ export const recommended = computed(() => {
     if (a.setting === 'Outdoor' && weatherAt(a)?.rainy) s -= 3
     if (justDidHighEnergy) s += a.energyLevel === 'low' ? 2 : a.energyLevel === 'high' ? -2 : 0
     if (filters.value.prioritiseFreeTime && freeWindows.value.length) {
-      const fits = a.startsAt ? fitsWindow(freeWindows.value, a.startsAt, a.durationHrs ?? 1)
-        : freeWindows.value.some((w) => w.end - w.start >= (a.durationHrs ?? 1) * 3600000)
+      const fits = a.startsAt ? fitsWindow(freeWindows.value, a.startsAt, a.durationHrs || 1)
+        : freeWindows.value.some((w) => w.end - w.start >= (a.durationHrs || 1) * 3600000)
       s += fits ? 3 : -1
     }
     return s
@@ -134,10 +139,10 @@ export async function seedFirestore() {
   await batch.commit()
 }
 
-export const isSaved = (id) => useAuthStore().profile?.saved?.includes(id) ?? false
+export const isSaved = (id) => useAuthStore().profile?.saved?.includes(id) || false
 export async function toggleSaved(id) {
   const auth = useAuthStore()
-  const saved = auth.profile?.saved ?? []
+  const saved = auth.profile?.saved || []
   const has = saved.includes(id)
   await updateDoc(doc(db, 'users', auth.user.uid), { saved: has ? arrayRemove(id) : arrayUnion(id) })
   auth.setProfile({ ...auth.profile, saved: has ? saved.filter((x) => x !== id) : [...saved, id] })

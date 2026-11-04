@@ -45,7 +45,7 @@ export function guessCategory(title = '') {
 }
 
 const ENERGY = { sports: 'high', outdoors: 'medium', volunteering: 'medium' }
-export const guessEnergy = (category) => ENERGY[category] ?? 'low'
+export const guessEnergy = (category) => ENERGY[category] || 'low'
 
 // Rough Singapore regions from coordinates. Keep this in step with whatever rule the OpenJio code uses.
 export function regionOf(lat, lng) {
@@ -70,20 +70,20 @@ export function fromEventbrite(e) {
   const start = Date.parse(utcTime(e.start)), end = Date.parse(utcTime(e.end))
   const lat = parseFloat(venue.latitude) || null, lng = parseFloat(venue.longitude) || null
   return {
-    title: eventName(e) ?? 'Event',
+    title: eventName(e) || 'Event',
     cost: e.is_free ? 0 : null,
     // 24 hrs or more: Eventbrite doesn't tell us the daily hours, so the app shows "Varied duration".
     durationHrs: start && end && end - start < 86400000 ? Math.round(((end - start) / 3600000) * 10) / 10 : null,
-    area: venue.name ?? address.city ?? '',
-    lat, lng, startsAt: start || null, endsAt: end || null, url: e.url ?? null,
+    area: venue.name || address.city || '',
+    lat, lng, startsAt: start || null, endsAt: end || null, url: e.url || null,
     // The event's picture, straight from Eventbrite's image server. The links are signed, so we can't resize them:
     // imageUrl is their small crop (450x200) for cards, imageLargeUrl the full picture for the activity page.
-    imageUrl: logo.url ?? null,
-    imageLargeUrl: original.url ?? null,
+    imageUrl: logo.url || null,
+    imageLargeUrl: original.url || null,
     // Full description when fetchDescriptions() got it, otherwise the short summary from the event list.
-    description: htmlToText(e.fullDescription ?? description.html) || (e.summary ? e.summary.trim() : '') || null,
-    seriesId: e.series_id ?? null,         // repeating events share this, so the app can show them as one card
-    organiserId: e.organizer_id ?? null,   // so removing an organiser can also remove their events
+    description: htmlToText(e.fullDescription || description.html) || (e.summary ? e.summary.trim() : '') || null,
+    seriesId: e.series_id || null,         // repeating events share this, so the app can show them as one card
+    organiserId: e.organizer_id || null,   // so removing an organiser can also remove their events
   }
 }
 
@@ -131,7 +131,7 @@ export async function fetchOrganiserEvents(token, organiser) {
       throw new Error(`organiser ${organiser}: Eventbrite said ${res.status}${err.error_description ? ` (${err.error_description})` : ''}`)
     }
     const body = await res.json()
-    out.push(...(body.events ?? []))
+    out.push(...(body.events || []))
     if (!body.pagination || !body.pagination.has_more_items) break   // that was the last page
     continuation = body.pagination.continuation
   }
@@ -143,12 +143,12 @@ export async function fetchOrganiserEvents(token, organiser) {
 export async function fetchDescriptions(token, events) {
   const seen = {}   // series (or event) id -> description we already fetched
   for (const e of events) {
-    const key = e.series_id ?? e.id
+    const key = e.series_id || e.id
     if (!(key in seen)) {
       seen[key] = null
       try {
         const res = await fetch(`https://www.eventbriteapi.com/v3/events/${e.id}/description/`, { headers: { Authorization: `Bearer ${token}` } })
-        if (res.ok) seen[key] = (await res.json()).description ?? null
+        if (res.ok) seen[key] = (await res.json()).description || null
       } catch {
         // network problem: keep the summary
       }
@@ -159,8 +159,8 @@ export async function fetchDescriptions(token, events) {
 
 // Events we keep: not a business event and not over yet (one that is happening right now still counts).
 const wanted = (e, now) => {
-  const end = Date.parse(utcTime(e.end) ?? utcTime(e.start))
-  return !EXCLUDE.test(eventName(e) ?? '') && !(end < now)
+  const end = Date.parse(utcTime(e.end) || utcTime(e.start))
+  return !EXCLUDE.test(eventName(e) || '') && !(end < now)
 }
 
 // Eventbrite sends times as { utc: '2026-11-03T10:00:00Z', ... }. Gives the utc text, or undefined if missing.
@@ -206,7 +206,7 @@ export function planActivityWrites(events, existing, now = Date.now(), failedOrg
   }
   for (const [id, a] of existing) {
     if (a.source !== ACTIVITY_SOURCES.EXTERNAL || live.has(id)) continue
-    const end = a.endsAt ?? a.startsAt   // older activities have no endsAt yet
+    const end = a.endsAt || a.startsAt   // older activities have no endsAt yet
     const ended = end != null && end < now
     const unlisted = !failedOrganisers.includes(a.organiserId)
     if (ended || unlisted) { plan.deletes.push(id); plan.removed++ }
