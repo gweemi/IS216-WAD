@@ -1,5 +1,5 @@
 // NParks hiking-route metadata shared by the developer importer, admin screen and map.
-// GeoJSON remains with data.gov.sg; Firestore holds only stable references to its features.
+// Firestore holds only stable NParks feature references; reviewed GeoJSON lives in local assets.
 export const NPARKS_DATASET_ID = 'd_84e6db6c43ffb8b17803334ec2b5c95d'
 export const NPARKS_PROVIDER = 'nparks'
 export const NPARKS_CONTENT_TYPE = 'route'
@@ -10,7 +10,7 @@ export const VERIFIED_NPARKS_TRAILS = Object.freeze([
   {
     id: 'np-tree-top-walk', title: 'HSBC TreeTop Walk', area: 'Central Catchment Nature Reserve',
     sourceTrailName: 'HSBC Tree Top Walk', featureObjectIds: [78618, 78959],
-    lat: 1.3599293, lng: 103.8272626, directionsLabel: 'Windsor Nature Park',
+    lat: 1.3607287, lng: 103.8125215, directionsLabel: 'Windsor Nature Park',
     description: 'A forest hike to the TreeTop Walk suspension bridge. Check NParks opening hours before visiting.',
     category: 'outdoors', energyLevel: 'high', groupFriendly: true, durationHrs: 3.5,
   },

@@ -9,7 +9,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import FilterButton from '@/components/common/FilterButton.vue'
 import FilterSheet from '@/components/FilterSheet.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
-import { allActivities, filtered, filters, loadActivities, oneCardPerEvent, trails, weatherAt } from '@/stores/activities'
+import { allActivities, filtered, filters, loadActivities, oneCardPerEvent, weatherAt } from '@/stores/activities'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { useMapIntroState } from '@/composables/useMapIntroState'
 import { useAuthStore } from '@/stores/auth'
@@ -19,7 +19,8 @@ import { clearActivityClusterLayer, createActivityClusterLayer, populateActivity
 import { focusMapOnActivity } from '@/utils/mapActivityFocus'
 import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, priceText } from '@/utils/activityStyle'
-import { isNparksRoute, routeFeatureCollection } from '@/utils/nparksTrails'
+import { isNparksRoute } from '@/utils/nparksTrails'
+import { getNparksRoute } from '@/services/api/nparks'
 import { distanceMeters } from '@/utils/geo'
 import { badgeOpportunities, canActivityProgressBadge } from '@/stores/gamification(badges).js'
 import { useBadgeHunt } from '@/composables/useBadgeHunt'
@@ -104,8 +105,12 @@ let tileReadyTimer
 let tileLayer
 let trailLayer
 const showingTrail = ref(false)
-const selectedRoute = computed(() => routeFeatureCollection(selectedActivity.value, trails.value))
-const canShowSelectedTrail = computed(() => isNparksRoute(selectedActivity.value) && selectedRoute.value.features.length > 0)
+const selectedRoute = ref(null)
+const trailLoadState = ref('idle')
+const trailLoadError = ref('')
+let trailLoadRequest = 0
+const selectedIsNparksRoute = computed(() => isNparksRoute(selectedActivity.value))
+const canShowSelectedTrail = computed(() => selectedIsNparksRoute.value && trailLoadState.value === 'ready' && !!selectedRoute.value?.features?.length)
 
 function prefersReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -435,11 +440,12 @@ function maybeOpenBadgeWelcome() {
 
 function selectActivity(activity) {
   if (selectedActivity.value?.id !== activity.id) {
-    hideSelectedTrail()
+    clearSelectedTrail()
     setActivityMarkerSelected(activityMarkers.get(selectedActivity.value?.id), false)
   }
   selectedImageBroken.value = false
   selectedActivity.value = activity
+  if (isNparksRoute(activity)) void loadSelectedTrail()
   setActivityMarkerSelected(activityMarkers.get(activity.id), true)
   focusMapOnActivity(map, activity, {
     isMobile: isMobileViewport(),
@@ -448,9 +454,37 @@ function selectActivity(activity) {
 }
 
 function clearSelectedActivity() {
-  hideSelectedTrail()
+  clearSelectedTrail()
   setActivityMarkerSelected(activityMarkers.get(selectedActivity.value?.id), false)
   selectedActivity.value = null
+}
+
+function clearSelectedTrail() {
+  trailLoadRequest += 1
+  hideSelectedTrail()
+  selectedRoute.value = null
+  trailLoadState.value = 'idle'
+  trailLoadError.value = ''
+}
+
+async function loadSelectedTrail({ retry = false } = {}) {
+  const activity = selectedActivity.value
+  if (!isNparksRoute(activity)) return
+  const request = ++trailLoadRequest
+  trailLoadState.value = 'loading'
+  trailLoadError.value = ''
+  selectedRoute.value = null
+  try {
+    const route = await getNparksRoute(activity, { retry })
+    // A prior request may finish after the user has selected another activity.
+    if (request !== trailLoadRequest || selectedActivity.value?.id !== activity.id) return
+    selectedRoute.value = route
+    trailLoadState.value = 'ready'
+  } catch (error) {
+    if (request !== trailLoadRequest || selectedActivity.value?.id !== activity.id) return
+    trailLoadState.value = 'error'
+    trailLoadError.value = error.message ?? 'Trail geometry could not be loaded.'
+  }
 }
 
 function hideSelectedTrail() {
@@ -466,7 +500,11 @@ function toggleSelectedTrail() {
     style: { color: '#7541ec', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' },
   }).addTo(map)
   const bounds = trailLayer.getBounds()
-  if (bounds.isValid()) map.fitBounds(bounds, { padding: [42, 42], animate: !prefersReducedMotion(), maxZoom: 16 })
+  if (bounds.isValid()) map.fitBounds(bounds, {
+    paddingTopLeft: isMobileViewport() ? [20, 110] : [390, 80],
+    paddingBottomRight: isMobileViewport() ? [20, 290] : [50, 180],
+    animate: !prefersReducedMotion(), maxZoom: 16,
+  })
   showingTrail.value = true
 }
 
@@ -598,7 +636,7 @@ onBeforeUnmount(() => {
   window.clearTimeout(tileReadyTimer)
   cancelAnimationFrame(categorySelectorAnimationFrame)
   removeTemporaryLocationMarker()
-  hideSelectedTrail()
+  clearSelectedTrail()
   removeNearbyRadiusCircle()
   setMapIntroActive(false)
   disableNearby()
@@ -739,15 +777,16 @@ onBeforeUnmount(() => {
             </section>
           </div>
         </div>
-        <div class="map-activity-card__actions" :class="{ 'map-activity-card__actions--route': canShowSelectedTrail }">
-          <button v-if="canShowSelectedTrail" type="button" class="map-activity-card__trail" @click="toggleSelectedTrail">
-            <i class="bi" :class="showingTrail ? 'bi-eye-slash' : 'bi-signpost-2'" aria-hidden="true"></i> {{ showingTrail ? 'Hide Trail' : 'View Trail' }}
+        <div class="map-activity-card__actions" :class="{ 'map-activity-card__actions--route': selectedIsNparksRoute }">
+          <button v-if="selectedIsNparksRoute" type="button" class="map-activity-card__trail" :disabled="trailLoadState === 'loading'" @click="trailLoadState === 'error' ? loadSelectedTrail({ retry: true }) : toggleSelectedTrail()">
+            <i class="bi" :class="showingTrail ? 'bi-eye-slash' : 'bi-signpost-2'" aria-hidden="true"></i> {{ trailLoadState === 'loading' ? 'Loading Trail…' : trailLoadState === 'error' ? 'Retry Trail' : showingTrail ? 'Hide Trail' : 'View Trail' }}
           </button>
           <a v-if="selectedDirections" :href="selectedDirections" target="_blank" rel="noopener" class="map-activity-card__directions">
             <i class="bi bi-signpost-split" aria-hidden="true"></i> Directions
           </a>
           <button type="button" class="map-activity-card__view" @click="openSelectedActivity"><i class="bi bi-arrow-up-right" aria-hidden="true"></i> View Activity</button>
         </div>
+        <p v-if="selectedIsNparksRoute && trailLoadState === 'error'" class="map-activity-card__trail-error" role="status">{{ trailLoadError }}</p>
       </section>
     </Transition>
     <FilterSheet
@@ -1218,6 +1257,8 @@ onBeforeUnmount(() => {
 .map-activity-card__actions--route { grid-template-columns: repeat(3, 1fr); }
 .map-activity-card__trail,.map-activity-card__directions,.map-activity-card__view { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .45rem; border-radius: 16px; font: 800 .9rem var(--gol-font); text-decoration: none; }
 .map-activity-card__trail { border: 0; background: #e9defe; color: var(--gol-purple-dark); }
+.map-activity-card__trail:disabled { cursor: wait; opacity: .65; }
+.map-activity-card__trail-error { margin: .55rem 0 0; color: var(--gol-coral-text); font-size: .8rem; font-weight: 700; }
 .map-activity-card__directions { border: 0; background: #fff; color: var(--gol-ink); }
 .map-activity-card__view { border: 0; background: var(--gol-purple); box-shadow: inset 0 -4px 0 var(--gol-purple-dark); color: #fff; }
 .map-activity-card__view:focus-visible,.map-activity-card__directions:focus-visible,.map-activity-card__trail:focus-visible { outline: 3px solid var(--gol-yellow); outline-offset: 3px; }

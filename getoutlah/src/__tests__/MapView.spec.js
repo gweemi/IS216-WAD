@@ -73,9 +73,22 @@ const authMocks = vi.hoisted(() => ({
   consumeBadgeWelcome: vi.fn(),
   setProfile: vi.fn(),
 }))
+const nparksMocks = vi.hoisted(() => ({
+  getNparksRoute: vi.fn(async (activity) => ({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: { OBJECTID: activity.nparks.featureObjectIds[0] }, geometry: { type: 'LineString', coordinates: [[103.82, 1.36], [103.83, 1.37]] } }] })),
+}))
+
+const defaultNparksRoute = async (activity) => ({
+  type: 'FeatureCollection',
+  features: [{
+    type: 'Feature',
+    properties: { OBJECTID: activity.nparks.featureObjectIds[0] },
+    geometry: { type: 'LineString', coordinates: [[103.82, 1.36], [103.83, 1.37]] },
+  }],
+})
 
 vi.mock('vue-router', () => ({ useRouter: () => routerMocks }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => authMocks }))
+vi.mock('@/services/api/nparks', () => ({ getNparksRoute: nparksMocks.getNparksRoute }))
 
 const activityMocks = vi.hoisted(() => ({
   items: [
@@ -164,7 +177,6 @@ vi.mock('@/stores/activities', async () => {
     allActivities,
     filters,
     filtered,
-    trails: ref({ type: 'FeatureCollection', features: [] }),
     oneCardPerEvent: (items) => {
       const seen = new Set()
       return items.filter((item) => {
@@ -182,7 +194,7 @@ vi.mock('@/stores/activities', async () => {
 })
 
 const { default: MapView } = await import('@/views/MapView.vue')
-const { allActivities, filters, trails } = await import('@/stores/activities')
+const { allActivities, filters } = await import('@/stores/activities')
 const { geolocationMocks } = await import('@/composables/useGeolocation')
 const { useBadgeHunt } = await import('@/composables/useBadgeHunt')
 const { startDemoSession } = await import('@/stores/gamification(badges).js')
@@ -216,7 +228,8 @@ describe('MapView', () => {
       onlySlots: false, prioritiseFreeTime: false,
     }
     allActivities.value = activityMocks.items
-    trails.value = { type: 'FeatureCollection', features: [] }
+    nparksMocks.getNparksRoute.mockReset()
+    nparksMocks.getNparksRoute.mockImplementation(defaultNparksRoute)
     geolocationMocks.coords.value = null
     geolocationMocks.error.value = null
     geolocationMocks.loading.value = false
@@ -637,9 +650,9 @@ describe('MapView', () => {
       category: 'outdoors', cost: 0, durationHrs: 3, lat: 1.36, lng: 103.82,
       nparks: { datasetId: 'd_84e6db6c43ffb8b17803334ec2b5c95d', featureObjectIds: [1] },
     }]
-    trails.value = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { OBJECTID: 1 }, geometry: { type: 'LineString', coordinates: [[103.82, 1.36], [103.83, 1.37]] } }] }
     const wrapper = mountMap()
     leafletMocks.markerInstances[0].handlers.click()
+    await Promise.resolve()
     await nextTick()
 
     await wrapper.get('.map-activity-card__trail').trigger('click')
@@ -649,6 +662,73 @@ describe('MapView', () => {
     await wrapper.get('.map-activity-card__trail').trigger('click')
     expect(leafletMocks.mapInstance.removeLayer).toHaveBeenCalledTimes(1)
     expect(leafletMocks.mapInstance.fitBounds).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows loading and retry states when a local trail asset cannot be fetched', async () => {
+    allActivities.value = [{
+      id: 'np-tree-top-walk', title: 'TreeTop Walk', source: 'externalListings', provider: 'nparks', contentType: 'route',
+      category: 'outdoors', cost: 0, durationHrs: 3, lat: 1.36, lng: 103.82,
+      nparks: { datasetId: 'd_84e6db6c43ffb8b17803334ec2b5c95d', featureObjectIds: [1] },
+    }]
+    let rejectFirst
+    nparksMocks.getNparksRoute
+      .mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject }))
+      .mockImplementation(defaultNparksRoute)
+    const wrapper = mountMap()
+
+    leafletMocks.markerInstances[0].handlers.click()
+    await nextTick()
+    expect(wrapper.get('.map-activity-card__trail').text()).toContain('Loading Trail')
+    expect(wrapper.get('.map-activity-card__trail').attributes('disabled')).toBeDefined()
+
+    rejectFirst(new Error('Route asset unavailable'))
+    await Promise.resolve()
+    await nextTick()
+    expect(wrapper.get('.map-activity-card__trail').text()).toContain('Retry Trail')
+    expect(wrapper.get('.map-activity-card__trail-error').text()).toContain('Route asset unavailable')
+
+    await wrapper.get('.map-activity-card__trail').trigger('click')
+    await Promise.resolve()
+    await nextTick()
+    expect(wrapper.get('.map-activity-card__trail').text()).toContain('View Trail')
+    expect(nparksMocks.getNparksRoute).toHaveBeenLastCalledWith(expect.any(Object), { retry: true })
+  })
+
+  it('ignores stale geometry when the user selects another NParks route while loading', async () => {
+    const treeTop = {
+      id: 'np-tree-top-walk', title: 'TreeTop Walk', source: 'externalListings', provider: 'nparks', contentType: 'route',
+      category: 'outdoors', cost: 0, durationHrs: 3, lat: 1.36, lng: 103.82,
+      nparks: { datasetId: 'd_84e6db6c43ffb8b17803334ec2b5c95d', featureObjectIds: [1] },
+    }
+    const dairyFarm = {
+      id: 'np-dairy-farm-loop', title: 'Dairy Farm Loop', source: 'externalListings', provider: 'nparks', contentType: 'route',
+      category: 'outdoors', cost: 0, durationHrs: 3, lat: 1.37, lng: 103.78,
+      nparks: { datasetId: 'd_84e6db6c43ffb8b17803334ec2b5c95d', featureObjectIds: [2] },
+    }
+    allActivities.value = [treeTop, dairyFarm]
+    const deferred = new Map()
+    nparksMocks.getNparksRoute.mockImplementation((activity) => new Promise((resolve) => deferred.set(activity.id, resolve)))
+    const wrapper = mountMap()
+
+    leafletMocks.markerInstances[0].handlers.click()
+    leafletMocks.markerInstances[1].handlers.click()
+    await nextTick()
+    deferred.get(treeTop.id)({ type: 'FeatureCollection', features: [] })
+    await Promise.resolve()
+    await nextTick()
+    expect(wrapper.get('[data-testid="selected-map-activity"]').text()).toContain('Dairy Farm Loop')
+    expect(wrapper.get('.map-activity-card__trail').text()).toContain('Loading Trail')
+
+    deferred.get(dairyFarm.id)({
+      type: 'FeatureCollection',
+      features: [{ type: 'Feature', properties: { OBJECTID: 2 }, geometry: { type: 'LineString', coordinates: [[103.78, 1.37], [103.79, 1.38]] } }],
+    })
+    await Promise.resolve()
+    await nextTick()
+    await wrapper.get('.map-activity-card__trail').trigger('click')
+    expect(leafletMocks.geoJSON).toHaveBeenLastCalledWith(expect.objectContaining({
+      features: [expect.objectContaining({ properties: { OBJECTID: 2 } })],
+    }), expect.any(Object))
   })
 
   it('adds shared activity-store records to one cluster layer', () => {

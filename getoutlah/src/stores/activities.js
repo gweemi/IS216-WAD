@@ -7,13 +7,11 @@ import { game } from '@/stores/gamification(badges).js'
 import { freeWindows } from './ports'
 import { seedActivities } from '@/data/seedActivities'
 import { getForecasts, nearestForecast, isRainy } from '@/services/api/weather'
-import { getTrails } from '@/services/api/nparks'
 import { fitsWindow } from '@/utils/freeTime'
 import { useOpenJioStore } from '@/stores/openjio'
 import { toActivity } from '@/utils/openjio'
 import { fitsHours } from '@/utils/activityStyle'
 import { ACTIVITY_COLLECTIONS, ACTIVITY_SOURCES, activityFromCollection } from '@/utils/activitySource'
-import { isNparksRoute } from '@/utils/nparksTrails'
 
 const defaultFilters = () => ({
   query: '', categories: [], regions: [], sources: [], // empty = all; otherwise canonical activity source values
@@ -26,7 +24,6 @@ export const resetFilters = () => { filters.value = defaultFilters() }
 
 const baseActivities = ref([])   // GetOutLah Picks + external listings, both from Firestore
 export const forecasts = ref([])
-export const trails = ref({ type: 'FeatureCollection', features: [] })
 export const loadingActivities = ref(false)
 export const sourceErrors = ref({})   // which outside source failed, so the screen can say so
 // A cached pre-migration browser bundle may still try to read `activities` after
@@ -84,17 +81,10 @@ export async function loadActivities() {
   }
 
   baseActivities.value = stored || seedActivities
-  // Route geometry is fairly large. Do not download it until a published NParks
-  // route record actually exists in the combined activity catalog.
-  const hasNparksRoutes = baseActivities.value.some(isNparksRoute)
-  const [weather, trail] = await Promise.allSettled([
-    getForecasts(),
-    hasNparksRoutes ? getTrails() : Promise.resolve({ type: 'FeatureCollection', features: [] }),
-  ])
+  const [weather] = await Promise.allSettled([getForecasts()])
   
 
   if (weather.status === 'fulfilled') forecasts.value = weather.value; else sourceErrors.value.weather = weather.reason.message
-  if (trail.status === 'fulfilled') trails.value = trail.value; else sourceErrors.value.nparks = trail.reason.message
   loadingActivities.value = false
 }
 
