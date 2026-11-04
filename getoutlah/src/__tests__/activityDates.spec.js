@@ -24,4 +24,13 @@ describe('repeating events', () => {
   it('shows one card per event, keeping the first (best-ranked) one', () => {
     expect(oneCardPerEvent(list).map((a) => a.id)).toEqual(['eb-3', 's5', 'x2'])
   })
+
+  it('keeps an OPENJIO! started from an activity separate from that activity', () => {
+    const curated = { id: 's20', title: 'Jurong Lake Gardens Picnic', area: 'Jurong Lake Gardens' }
+    const jio = { id: 'jio-abc', type: 'openJio', title: 'Jurong Lake Gardens Picnic', area: 'Jurong Lake Gardens', startsAt: day(1) }
+    const withJio = [curated, jio]
+    expect(datesOf(curated, withJio, NOW).map((a) => a.id)).toEqual(['s20'])
+    expect(datesOf(jio, withJio, NOW).map((a) => a.id)).toEqual(['jio-abc'])
+    expect(oneCardPerEvent(withJio).map((a) => a.id)).toEqual(['s20', 'jio-abc'])
+  })
 })
