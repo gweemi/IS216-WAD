@@ -161,7 +161,7 @@ const celebrateThenLogin = () => {
     </div>
 
     <section id="explore" class="strip" aria-label="Kinds of activities">
-      <div class="container d-flex flex-wrap justify-content-center gap-3">
+      <div class="landing-content d-flex flex-wrap justify-content-center gap-3">
         
         <div v-for="(category, index) in INTERESTS" :key="category.id" v-reveal="index * 60" class="chip-pop">
           <LandingCategoryChip :category="category" :index="index" />
@@ -169,7 +169,8 @@ const celebrateThenLogin = () => {
       </div>
     </section>
 
-    <section class="container section">
+    <section class="landing-section section">
+      <div class="landing-content">
       <div v-reveal class="card-lip why">
         
         <span class="float-emoji f1" aria-hidden="true">📱</span>
@@ -198,9 +199,11 @@ const celebrateThenLogin = () => {
           </div>
         </div>
       </div>
+      </div>
     </section>
 
-    <section id="activities" class="container section">
+    <section id="activities" class="landing-section section">
+      <div class="landing-content">
       <p v-reveal class="gol-eyebrow text-center">Pick your vibe</p>
       <h2 v-reveal="100" class="section-title text-center">Something for every mood</h2>
       <div class="d-flex flex-wrap justify-content-center gap-2 mb-4" role="tablist">
@@ -243,9 +246,11 @@ const celebrateThenLogin = () => {
           </div>
         </Transition>
       </div>
+      </div>
     </section>
 
-    <section class="container section">
+    <section class="landing-section section how-section">
+      <div class="landing-content">
       <p v-reveal class="gol-eyebrow text-center">How it works</p>
       <h2 v-reveal="100" class="section-title text-center">Three steps to a better break</h2>
       <div class="row g-3 steps">
@@ -259,9 +264,11 @@ const celebrateThenLogin = () => {
           </div>
         </div>
       </div>
+      </div>
     </section>
 
-    <section class="container section">
+    <section class="landing-section section">
+      <div class="landing-content">
       <div v-reveal class="cta">
         <span class="blob blob-a" aria-hidden="true"></span>
         <span class="blob blob-b" aria-hidden="true"></span>
@@ -276,13 +283,27 @@ const celebrateThenLogin = () => {
           <span v-for="b in burst" :key="b.id" class="burst" :style="{ '--x': b.x + 'px', '--y': b.y + 'px' }" aria-hidden="true">{{ b.emoji }}</span>
         </div>
       </div>
+      </div>
     </section>
     <LandingFooter />
   </main>
 </template>
 
 <style scoped>
-.page { min-height: 100vh; background: var(--gol-bg); color: var(--gol-ink); font-family: var(--gol-font); overflow-x: hidden; }.page a { text-decoration: none; color: inherit; }.hero-wrap { width: min(100% - 2.5rem, 1280px); margin: 2rem auto 0; }.scroll-hint { display: flex; width: fit-content; align-items: center; gap: .35rem; margin: .9rem auto 1.3rem; padding: .35rem 1rem; background: #fff; border-radius: 999px; box-shadow: 0 3px 0 var(--gol-card-edge); color: var(--gol-purple) !important; font-size: .9rem; font-weight: 800; animation: hint-bob 1.8s ease-in-out infinite; }.section { padding: 2.5rem 0; }.strip { padding: 2rem 0 1rem; }.section-title { font-weight: 900; font-size: clamp(1.9rem, 5vw, 2.8rem); line-height: 1.1; margin-bottom: 1.5rem; }.muted { color: var(--gol-muted); font-weight: 600; }.card-lip { background: #fff; border-radius: 26px; box-shadow: 0 6px 0 var(--gol-card-edge); }.why { padding: 2.2rem 1.6rem; } @media (min-width: 992px) { .why { padding: 3.2rem; } }.chip { display: inline-flex; align-items: center; gap: .3rem; background: var(--gol-purple-soft); color: var(--gol-purple) !important; font-weight: 800; border-radius: 999px; padding: .5rem 1rem; }.chip:hover { background: var(--gol-purple); color: #fff !important; }.stat { border: 2px solid var(--gol-ink); border-radius: 20px; padding: 1.2rem; box-shadow: 4px 4px 0 var(--gol-ink); transform: rotate(var(--r)); transition: transform .2s; }.stat:hover { transform: rotate(0) translateY(-3px); }.stat-emoji { font-size: 1.6rem; }.stat-num { font-weight: 900; font-size: clamp(2rem, 5vw, 2.6rem); line-height: 1; margin-top: .3rem; }.stat-label { font-weight: 700; font-size: .85rem; margin-top: .4rem; }.source { font-size: .72rem; color: var(--gol-muted); margin: 1rem 0 0; }.tab { font-family: var(--gol-font); font-weight: 900; color: var(--gol-ink); background: #fff; border: 2px solid var(--gol-ink); border-radius: 999px; padding: .5rem 1.15rem; box-shadow: 0 3px 0 var(--gol-ink); transition: translate .1s, box-shadow .1s; }.tab:hover { translate: 0 -2px; box-shadow: 0 5px 0 var(--gol-ink); }.tab.active { background: var(--gol-purple); color: #fff; translate: 0 2px; box-shadow: 0 1px 0 var(--gol-ink); }.tile { display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--gol-ink); box-shadow: 3px 3px 0 var(--gol-ink); }.tile-lg { width: 64px; height: 64px; border-radius: 18px; font-size: 2rem; margin-bottom: 1rem; transform: rotate(var(--r)); }.step { padding: 1.6rem; }.step-num { font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gol-muted); margin-bottom: .2rem; }.act-title { font-weight: 900; font-size: 1.15rem; line-height: 1.25; margin: 0; }.cta { position: relative; overflow: hidden; text-align: center; color: #fff; border-radius: 30px; padding: 3.5rem 1.25rem; background: linear-gradient(150deg, var(--gol-purple), var(--gol-purple-dark)); box-shadow: 0 6px 0 #2f1785; }.cta > * { position: relative; }.blob { position: absolute; border-radius: 46% 54% 60% 40%; }.blob-a { width: 220px; height: 220px; right: -80px; bottom: -90px; background: var(--gol-coral); opacity: .9; animation: spin 18s linear infinite; }.cta-title { font-weight: 900; font-size: clamp(2rem, 5vw, 2.8rem); }.cta-sub { font-weight: 700; opacity: .9; margin-bottom: 1.5rem; }.cta-emoji { position: absolute !important; font-size: 2.6rem; animation: bounce 2.4s ease-in-out infinite; }.e1 { top: 14%; left: 8%; }.e2 { top: 18%; right: 10%; animation-delay: 1s; }.btn-3d { font-family: var(--gol-font); font-weight: 900; font-size: 1.02rem; color: var(--gol-ink); border: 2px solid var(--gol-ink); border-radius: 999px; padding: .8rem 1.7rem; box-shadow: 0 4px 0 var(--gol-ink); transition: translate .1s, box-shadow .1s; }.btn-3d:hover { translate: 0 -2px; box-shadow: 0 6px 0 var(--gol-ink); }.btn-lime { background: var(--gol-lime); }.cta-button { animation: cta-bounce 1.65s ease-in-out infinite; }@keyframes spin { to { transform: rotate(360deg); } }@keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px) rotate(8deg); } }@keyframes hint-bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(5px); } }@keyframes cta-bounce { 0%,100% { transform: translateY(0); } 18% { transform: translateY(-14px); } 36% { transform: translateY(0); } 54% { transform: translateY(-7px); } 70% { transform: translateY(0); } }
+/* Shared Bootstrap-sized content bounds keep every landing block aligned with the carousel. */
+.page { --landing-section-padding: 1.25rem; }
+.landing-section { width: 100%; }
+.landing-content { box-sizing: border-box; width: 100%; padding-inline: var(--landing-section-padding); margin-inline: auto; }
+@media (min-width: 576px) { .landing-content { max-width: 540px; } }
+@media (min-width: 768px) { .landing-content { max-width: 720px; } }
+@media (min-width: 992px) {
+  .page { --landing-section-padding: 3rem; }
+  .landing-content { max-width: 960px; }
+}
+@media (min-width: 1200px) { .landing-content { max-width: 1140px; } }
+@media (min-width: 1400px) { .landing-content { max-width: 1320px; } }
+
+.page { --landing-gutter: 1.25rem; min-height: 100vh; background: var(--gol-bg); color: var(--gol-ink); font-family: var(--gol-font); overflow-x: hidden; }.page a { text-decoration: none; color: inherit; }.page .container { --bs-gutter-x: calc(var(--landing-gutter) * 2); }.hero-wrap { box-sizing: border-box; width: 100%; padding-inline: var(--landing-gutter); margin: 2rem auto 0; }.scroll-hint { display: flex; width: fit-content; align-items: center; gap: .35rem; margin: .9rem auto 1.3rem; padding: .35rem 1rem; background: #fff; border-radius: 999px; box-shadow: 0 3px 0 var(--gol-card-edge); color: var(--gol-purple) !important; font-size: .9rem; font-weight: 800; animation: hint-bob 1.8s ease-in-out infinite; }.section { padding: 2.5rem 0; }.strip { padding: 2rem 0 1rem; }.section-title { font-weight: 900; font-size: clamp(1.9rem, 5vw, 2.8rem); line-height: 1.1; margin-bottom: 1.5rem; }.muted { color: var(--gol-muted); font-weight: 600; }.card-lip { background: #fff; border-radius: 26px; box-shadow: 0 6px 0 var(--gol-card-edge); }.why { padding: 2.2rem 1.6rem; } @media (min-width: 576px) { .hero-wrap { max-width: 540px; } } @media (min-width: 768px) { .hero-wrap { max-width: 720px; } } @media (min-width: 992px) { .hero-wrap { max-width: 960px; } .why { padding: 3.2rem; } } @media (min-width: 1200px) { .hero-wrap { max-width: 1140px; } } @media (min-width: 1400px) { .hero-wrap { max-width: 1320px; } }.chip { display: inline-flex; align-items: center; gap: .3rem; background: var(--gol-purple-soft); color: var(--gol-purple) !important; font-weight: 800; border-radius: 999px; padding: .5rem 1rem; }.chip:hover { background: var(--gol-purple); color: #fff !important; }.stat { border: 2px solid var(--gol-ink); border-radius: 20px; padding: 1.2rem; box-shadow: 4px 4px 0 var(--gol-ink); transform: rotate(var(--r)); transition: transform .2s; }.stat:hover { transform: rotate(0) translateY(-3px); }.stat-emoji { font-size: 1.6rem; }.stat-num { font-weight: 900; font-size: clamp(2rem, 5vw, 2.6rem); line-height: 1; margin-top: .3rem; }.stat-label { font-weight: 700; font-size: .85rem; margin-top: .4rem; }.source { font-size: .72rem; color: var(--gol-muted); margin: 1rem 0 0; }.tab { font-family: var(--gol-font); font-weight: 900; color: var(--gol-ink); background: #fff; border: 2px solid var(--gol-ink); border-radius: 999px; padding: .5rem 1.15rem; box-shadow: 0 3px 0 var(--gol-ink); transition: translate .1s, box-shadow .1s; }.tab:hover { translate: 0 -2px; box-shadow: 0 5px 0 var(--gol-ink); }.tab.active { background: var(--gol-purple); color: #fff; translate: 0 2px; box-shadow: 0 1px 0 var(--gol-ink); }.tile { display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--gol-ink); box-shadow: 3px 3px 0 var(--gol-ink); }.tile-lg { width: 64px; height: 64px; border-radius: 18px; font-size: 2rem; margin-bottom: 1rem; transform: rotate(var(--r)); }.step { padding: 1.6rem; }.step-num { font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gol-muted); margin-bottom: .2rem; }.act-title { font-weight: 900; font-size: 1.15rem; line-height: 1.25; margin: 0; }.cta { position: relative; overflow: hidden; text-align: center; color: #fff; border-radius: 30px; padding: 3.5rem 1.25rem; background: linear-gradient(150deg, var(--gol-purple), var(--gol-purple-dark)); box-shadow: 0 6px 0 #2f1785; }.cta > * { position: relative; }.blob { position: absolute; border-radius: 46% 54% 60% 40%; }.blob-a { width: 220px; height: 220px; right: -80px; bottom: -90px; background: var(--gol-coral); opacity: .9; animation: spin 18s linear infinite; }.cta-title { font-weight: 900; font-size: clamp(2rem, 5vw, 2.8rem); }.cta-sub { font-weight: 700; opacity: .9; margin-bottom: 1.5rem; }.cta-emoji { position: absolute !important; font-size: 2.6rem; animation: bounce 2.4s ease-in-out infinite; }.e1 { top: 14%; left: 8%; }.e2 { top: 18%; right: 10%; animation-delay: 1s; }.btn-3d { font-family: var(--gol-font); font-weight: 900; font-size: 1.02rem; color: var(--gol-ink); border: 2px solid var(--gol-ink); border-radius: 999px; padding: .8rem 1.7rem; box-shadow: 0 4px 0 var(--gol-ink); transition: translate .1s, box-shadow .1s; }.btn-3d:hover { translate: 0 -2px; box-shadow: 0 6px 0 var(--gol-ink); }.btn-lime { background: var(--gol-lime); }.cta-button { animation: cta-bounce 1.65s ease-in-out infinite; }@keyframes spin { to { transform: rotate(360deg); } }@keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px) rotate(8deg); } }@keyframes hint-bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(5px); } }@keyframes cta-bounce { 0%,100% { transform: translateY(0); } 18% { transform: translateY(-14px); } 36% { transform: translateY(0); } 54% { transform: translateY(-7px); } 70% { transform: translateY(0); } }
 
 .progress-bar{ position: fixed; top: 0; left: 0; right: 0; height: 5px; z-index: 1000; background: linear-gradient(90deg, var(--gol-lime), var(--gol-cyan), var(--gol-purple)); transform-origin: left; transform: scaleX(0)}.reveal{ opacity: 0; transform: translateY(40px); transition: opacity .7s ease, transform .8s cubic-bezier(.34, 1.56, .64, 1); transition-delay: var(--reveal-delay, 0ms)}.reveal.is-visible{ opacity: 1; transform: none}.chip-pop.reveal{ transform: translateY(30px) scale(.6)}.chip-pop.reveal.is-visible{ transform: none}.pop-in.reveal{ transform: scale(.7) rotate(-6deg)}.pop-in.reveal.is-visible{ transform: none}.ticker{ overflow: hidden; background: var(--gol-ink); padding: .7rem 0; rotate: -1.5deg; margin: .5rem -1rem 1rem; box-shadow: 0 4px 0 var(--gol-purple)}.ticker-track{ display: flex; gap: 2.6rem; width: max-content; animation: ticker 45s linear infinite}.ticker:hover .ticker-track{ animation-play-state: paused}.ticker-item{ color: #fff; font-weight: 900; white-space: nowrap; font-size: 1.05rem}.ticker-item:nth-child(3n + 1){ color: var(--gol-lime)}.ticker-item:nth-child(3n + 2){ color: var(--gol-yellow)}@keyframes ticker{ to{ transform: translateX(-50%)}}.why{ position: relative; overflow: hidden}.why > .row{ position: relative; z-index: 1}.float-emoji{ position: absolute; font-size: 3rem; opacity: .16; animation: drift 9s ease-in-out infinite; pointer-events: none}.f1{ top: 8%; right: 6%}.f2{ bottom: 10%; left: 4%; animation-delay: -3s}.f3{ top: 45%; left: 46%; animation-delay: -6s}@keyframes drift{ 0%, 100%{ transform: translate(0, 0) rotate(0)}33%{ transform: translate(14px, -18px) rotate(10deg)}66%{ transform: translate(-12px, 10px) rotate(-8deg)}}.strike{ position: relative; display: inline-block; opacity: 1 !important; transform: none !important}.strike::after{ content: ''; position: absolute; left: -3%; right: -3%; top: 55%; height: .14em; border-radius: 99px; background: var(--gol-coral); transform: scaleX(0); transform-origin: left; transition: transform .6s cubic-bezier(.65, 0, .35, 1) .5s}
 
@@ -291,4 +312,5 @@ const celebrateThenLogin = () => {
 .slide.in-view{ opacity: 1; transform: none}.slide.in-view:hover{ transform: translateY(-6px)}.nav-btn{ position: absolute; top: calc(50% - 1.2rem); translate: 0 -50%; z-index: 2; width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--gol-ink); background: #fff; color: var(--gol-ink); font-size: 1.8rem; font-weight: 900; line-height: 1; box-shadow: 0 3px 0 var(--gol-ink); transition: translate .15s, box-shadow .15s, background .15s}.nav-btn:hover{ background: var(--gol-lime); translate: 0 calc(-50% - 2px); box-shadow: 0 5px 0 var(--gol-ink)}.nav-btn:active{ translate: 0 calc(-50% + 2px); box-shadow: 0 1px 0 var(--gol-ink)}.prev{ left: -6px}.next{ right: -6px}@media (min-width: 1200px){ .prev{ left: -28px}.next{ right: -28px}}.dots{ position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: .5rem}.dot{ position: relative; overflow: hidden; width: 12px; height: 12px; padding: 0; border-radius: 999px; border: 2px solid var(--gol-ink); background: #fff; transition: width .3s}.dot.active{ width: 42px; background: var(--gol-purple-soft)}.fill{ position: absolute; inset: 0; background: var(--gol-purple); transform-origin: left; animation: fill linear forwards}.paused .fill{ animation-play-state: paused}@keyframes fill{ from{ transform: scaleX(0)}to{ transform: scaleX(1)}}.empty{ text-align: center; padding: 2rem; font-weight: 800; color: var(--gol-muted)}.swap-enter-active, .swap-leave-active{ transition: opacity .25s ease, transform .3s ease}.swap-enter-from{ opacity: 0; transform: translateX(40px)}.swap-leave-to{ opacity: 0; transform: translateX(-40px)}.blob-b{ width: 140px; height: 140px; left: -50px; top: -50px; background: var(--gol-lime); opacity: .85; animation: spin 14s linear infinite reverse}.e3{ bottom: 14%; left: 14%; animation-delay: .5s}
 
 .burst-wrap{ position: relative; display: inline-block}.burst{ position: absolute; left: 50%; top: 50%; font-size: 1.8rem; pointer-events: none; animation: burst .7s cubic-bezier(.2, .8, .3, 1) forwards}@keyframes soft-float{ 0%, 100%{ transform: translateY(0)}50%{ transform: translateY(-8px)}}@keyframes soft-pop{ from{ opacity: 0; transform: scale(.7) rotate(var(--r))}to{ opacity: 1; transform: scale(1) rotate(var(--r))}}@keyframes burst{ from{ transform: translate(-50%, -50%) scale(.3); opacity: 1}to{ transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.1) rotate(200deg); opacity: 0}}@media (prefers-reduced-motion: reduce){ .blob-a{ animation-duration: 40s}.blob-b{ animation-duration: 36s}.cta-emoji, .float-emoji{ animation: soft-float 4s ease-in-out infinite}.e2{ animation-delay: 1s}.e3{ animation-delay: 2s}.f2{ animation-delay: -1.5s}.f3{ animation-delay: -3s}.cta-button{ animation: soft-float 3s ease-in-out infinite}.wiggle-word{ animation-duration: 4s}.reveal, .chip-pop.reveal, .pop-in.reveal{ transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; transition-delay: var(--reveal-delay, 0ms)}.reveal.is-visible, .chip-pop.reveal.is-visible, .pop-in.reveal.is-visible{ transform: none}.ticker-track{ animation-duration: 70s}.steps .reveal.is-visible .tile-lg{ animation: soft-pop .7s ease both; animation-delay: calc(var(--reveal-delay, 0ms) + .2s)}.track{ transition-duration: .45s}.slide{ transition: opacity .3s; transform: none !important}}
+
 </style>
