@@ -1,7 +1,7 @@
 
-import { reactive, watch } from 'vue'
+import { reactive } from 'vue'
+import { registerUserStore } from './userData.js'
 
-const STORAGE_KEY = 'gol-reflections-v2'
 
 export const MOODS = [
   { value: 1, label: 'Drained', icon: 'bi-emoji-frown', color: 'coral' },
@@ -24,28 +24,10 @@ function emptyState() {
   return { pending: [], entries: [], promptsOn: true, dismissed: [] }
 }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...emptyState(), ...JSON.parse(raw) }
-  } catch (e) {
-  }
-  return emptyState()
-}
-
-export const reflections = reactive(load())
-
-watch(
-  reflections,
-  (val) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
-    } catch (e) {
-
-    }
-  },
-  { deep: true }
-)
+// Each account has its own reflections and moods, saved to Firestore so they show on
+// every device (src/stores/userData.js + src/services/userDataSync.js). Only the owner can read them.
+export const reflections = reactive(emptyState())
+registerUserStore('reflections', reflections, emptyState)
 
 export function addPendingReflection(activity) {
   if (reflections.pending.some((p) => p.activityId === activity.id)) return

@@ -36,7 +36,7 @@ and whether they appear in "Friends who have done this". Saved in `users/{uid}.p
 - This is enforced by the app, not the database: Friends needs to read other students' records,
   so the rules still let signed-in users read `users/{uid}`. Fine for this project; a real launch
   would move the public parts into a separate collection.
-- Wellbeing scores, moods and reflections are saved on the user's device only.
+- Wellbeing scores, moods and reflections are saved in `users/{uid}/private/...`, which only the owner can read (see `src/services/userDataSync.js`).
 
 ## Points for the wellbeing check-in
 Finishing a WHO-5 check-in gives **+20 points**, once every 14 days, whatever the score.

@@ -164,6 +164,29 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- Private per-account data (src/services/userDataSync.js) ----------
+    // users/{uid}/private/wellbeing and users/{uid}/private/reflections:
+    // WHO-5 check-ins, moods and reflection notes. ONLY the owner can read or write them.
+    function validPrivateData(docId, d) {
+      return (docId == 'wellbeing'
+                && d.keys().hasOnly(['history', 'updatedAt'])
+                && d.history is list && d.history.size() <= 500)
+        || (docId == 'reflections'
+                && d.keys().hasOnly(['pending', 'entries', 'promptsOn', 'dismissed', 'updatedAt'])
+                && d.entries is list && d.entries.size() <= 1000
+                && d.pending is list && d.pending.size() <= 200
+                && d.dismissed is list && d.dismissed.size() <= 200
+                && d.promptsOn is bool);
+    }
+
+    match /users/{uid}/private/{docId} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && validPrivateData(docId, request.resource.data)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
     // ---------- OPENJIO! (see OPENJIO.md) ----------
     // Keep these limits in sync with validateJio() in src/utils/openjio.js.
     function pairId(a, b) {
