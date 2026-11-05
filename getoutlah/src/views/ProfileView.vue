@@ -4,10 +4,9 @@
     - Completed / Badges / level  -> stores/gamification(badges).js (Badges page)
     - Friends count               -> users/{uid}.friendIds (Friends page)
     - Saved                       -> users/{uid}.saved (Save button on an activity)
-    - My plans                    -> users/{uid}.plans (Join button on an activity)
+    - My plans                    -> OPENJIOs you host, are going to or are queued for (stores/openjio.js)
                                      + OPENJIOs you host, go to or queue for (stores/openjio.js)
     - My wellbeing                -> WHO-5 check-in, gives points (components/wellbeing)
-    - Activity moods              -> emoji rating per completed activity (stores/activityMoods.js)
     - My reflections              -> private notes after activities (components/wellbeing/ReflectionsCard)
     - Study-break mode            -> pauses the weekly streak (Badges page, setStudyBreak)
     - Admin button                -> only for users with role 'admin', goes to /admin/activities
@@ -23,14 +22,12 @@ import { useOpenJioStore } from '@/stores/openjio'
 import { ensureUserProfile, logOut } from '@/services/auth'
 import { activityById, loadActivities, toggleSaved } from '@/stores/activities'
 import { game, badgeList, levelInfo, setStudyBreak, currentStreak } from '@/stores/gamification(badges).js'
-import { planIds, togglePlan } from '@/stores/plans'
-import { moodFace, moodFor } from '@/stores/activityMoods'
+import { reflections, moodInfo } from '@/stores/reflections.js'
 import { handleFor, firstName, savedActivities, buildPlans, completedNewestFirst } from '@/utils/profile'
 import { categoryLabel, priceText, whenText } from '@/utils/activityStyle'
 import ProfileAvatar from '@/components/profile/ProfileAvatar.vue'
 import EditProfileSheet from '@/components/profile/EditProfileSheet.vue'
 import ProfileListSheet from '@/components/profile/ProfileListSheet.vue'
-import ActivityMoodsCard from '@/components/profile/ActivityMoodsCard.vue'
 import WellbeingCard from '@/components/wellbeing/WellbeingCard.vue'
 import ReflectionsCard from '@/components/wellbeing/ReflectionsCard.vue'
 import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog.vue'
@@ -88,13 +85,20 @@ const savedItems = computed(() =>
   })),
 )
 
+// The mood the user gave in their reflection (shown as an emoji in the Completed list)
+const MOOD_EMOJI = { 1: '😩', 2: '😐', 3: '🙂', 4: '🤩' }
+function moodOf(activityId) {
+  const entry = reflections.entries.findLast((r) => r.activityId === activityId && r.mood)
+  return entry ? { emoji: MOOD_EMOJI[entry.mood], label: moodInfo(entry.mood)?.label ?? '' } : null
+}
+
 const completedItems = computed(() =>
   completedNewestFirst(game.completed).map((c) => ({
     key: c.id + c.date,
     title: c.title,
     category: c.category,
     meta: `Done ${shortDate(c.date)}` + (c.isOpenJio ? (c.hostedByMe ? ' · Hosted OPENJIO' : ' · OPENJIO') : ''),
-    mood: moodFace(moodFor(c.id)),
+    mood: moodOf(c.id),
     to: activityById(c.id) ? `/activities/${c.id}` : null,
   })),
 )
@@ -102,8 +106,6 @@ const completedItems = computed(() =>
 const ROLE_LABEL = { host: 'Hosting', going: 'Going', queued: 'In queue' }
 const planItems = computed(() =>
   buildPlans({
-    planIds: planIds(),
-    findActivity: activityById,
     jios: jios.visible,
     uid: auth.user?.uid,
     completedIds: game.completed.map((c) => c.id),
@@ -114,7 +116,6 @@ const planItems = computed(() =>
     category: p.category,
     meta: (p.when ? whenText(p.when) : 'Any time') + (p.kind === 'jio' ? ' · OPENJIO' : ''),
     pill: p.kind === 'jio' ? ROLE_LABEL[p.role] : null,
-    removable: p.kind === 'activity', // leave a jio on the OPENJIO page instead
     to: p.to,
   })),
 )
@@ -141,9 +142,7 @@ const SHEETS = {
   plans: {
     eyebrow: 'Coming up',
     title: 'My plans',
-    emptyText: 'Join an activity or an OPENJIO! and it’ll show up here until you’ve done it.',
-    removeLabel: 'Remove from plans',
-    removeIcon: 'bi-calendar-x',
+    emptyText: 'Join or host an OPENJIO! and it’ll show up here until it’s done.',
   },
 }
 const sheetItems = computed(() => ({ saved: savedItems, completed: completedItems, plans: planItems })[lastSheet.value].value)
@@ -152,7 +151,6 @@ async function removeItem(item) {
   message.value = ''
   try {
     if (lastSheet.value === 'saved') await toggleSaved(item.key)
-    if (lastSheet.value === 'plans') await togglePlan(item.id)
   } catch {
     message.value = 'Couldn’t update that. Check your connection and try again.'
   }
@@ -286,7 +284,6 @@ async function confirmLogOut() {
             <router-link to="/badges" class="streak-link"><i class="bi bi-trophy"></i> See my streak and badges <i class="bi bi-arrow-right"></i></router-link>
           </section>
 
-          <ActivityMoodsCard />
           <!-- Private notes after activities (Ashley's reflections) -->
           <ReflectionsCard />
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-1">

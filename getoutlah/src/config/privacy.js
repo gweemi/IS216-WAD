@@ -3,7 +3,7 @@
 // The Friends and OPENJIO features read other students' users/{uid} records, so every
 // place that shows another student goes through visibleProfile() below, which hides
 // whatever that student switched off. (Email is never shown to other students anywhere.)
-// Wellbeing scores, moods and reflections never leave the user's device.
+// Wellbeing scores and reflections are private to the user (users/{uid}/private, see userDataSync.js).
 //
 // Keep the ids in sync with validPrivacy() in firestore.rules.
 export const PRIVACY_OPTIONS = [
@@ -29,13 +29,6 @@ export const PRIVACY_OPTIONS = [
     icon: 'ph-magnifying-glass',
   },
   {
-    id: 'shareFreeTime',
-    title: 'Share when I’m free',
-    on: 'Friends see when you’re both free',
-    off: 'Your free time is just for you',
-    icon: 'ph-calendar-dots',
-  },
-  {
     id: 'shareActivity',
     title: 'Show friends what I’ve done',
     on: 'You appear in “Friends who have done this”',
@@ -48,7 +41,6 @@ export const DEFAULT_PRIVACY = {
   showPhoto: true,
   showUniversity: true,
   discoverable: true,
-  shareFreeTime: true,
   shareActivity: true,
 }
 
@@ -66,7 +58,6 @@ export function visibleProfile(profile = {}) {
     ...rest,
     photoURL: p.showPhoto ? (profile?.photoURL ?? null) : null,
     universityName: p.showUniversity ? (profile?.universityName ?? null) : null,
-    freeWindows: p.shareFreeTime ? (profile?.freeWindows ?? []) : [],
     checkedInActivityIds: p.shareActivity ? (profile?.checkedInActivityIds ?? []) : [],
     discoverable: p.discoverable,
   }

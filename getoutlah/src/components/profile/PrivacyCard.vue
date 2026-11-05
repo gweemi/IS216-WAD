@@ -53,7 +53,6 @@ async function toggle(id, value) {
           <div class="d-flex flex-wrap gap-1 mt-1">
             <span v-if="preview.universityName" class="mini-chip chip-lime">{{ preview.universityName }}</span>
             <span v-if="!privacy.discoverable" class="mini-chip chip-grey"><i class="ph ph-eye-slash"></i> Hidden from search</span>
-            <span v-if="!privacy.shareFreeTime" class="mini-chip chip-grey"><i class="ph ph-lock-key"></i> Free time private</span>
           </div>
         </div>
       </div>

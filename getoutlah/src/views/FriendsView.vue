@@ -202,7 +202,7 @@ async function unfriend() {
                 v-model="email"
                 type="email"
                 class="form-control rounded-pill"
-                placeholder="friend@smu.edu.sg"
+                placeholder="friend@gmail.com"
                 aria-label="Friend's email"
                 required
                 data-testid="friend-email"
