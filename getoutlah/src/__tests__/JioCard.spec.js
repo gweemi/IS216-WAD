@@ -43,6 +43,19 @@ function card(changes, uid = 'me') {
   return mount(JioCard, { props: { jio, uid } })
 }
 
+// Same card, but clickable through to the activity detail page (as on the Activities page).
+function linkedCard(changes = {}) {
+  const w = card(changes)
+  const push = vi.fn()
+  return {
+    push,
+    w: mount(JioCard, {
+      props: { ...w.props(), linkToDetails: true },
+      global: { mocks: { $router: { push } }, stubs: { RouterLink: { props: ['to'], template: '<a :href="to.name"><slot /></a>' } } },
+    }),
+  }
+}
+
 const button = (w) => w.find('[data-testid="jio-action"]')
 
 beforeEach(() => {
@@ -61,8 +74,8 @@ describe('JioCard', () => {
     expect(w.find('[data-testid="jio-message"]').text()).toContain("You're in")
   })
 
-  it('shows Chope next spot when full', () => {
-    expect(button(card({ participants: ['host', 'a', 'b'] })).text()).toBe('Chope next spot')
+  it('shows Chope a spot when full', () => {
+    expect(button(card({ participants: ['host', 'a', 'b'] })).text()).toBe('Chope a spot')
   })
 
   it('shows your place in the queue', () => {
@@ -82,9 +95,17 @@ describe('JioCard', () => {
     expect(card({}, 'me').find('[data-testid="edit-jio"]').exists()).toBe(false)
   })
 
-  it('only lets the host open the attendee list', () => {
+  it('lets the host and people going open the attendee list, but not others', () => {
     expect(card({}, 'host').find('[data-testid="view-jio-attendees"]').exists()).toBe(true)
+    expect(card({ participants: ['host', 'me'] }, 'me').find('[data-testid="view-jio-attendees"]').exists()).toBe(true)
+    expect(card({ participants: ['host', 'x', 'y'], waitlist: ['me'], capacity: 3 }, 'me').find('[data-testid="view-jio-attendees"]').exists()).toBe(false)
     expect(card({}, 'me').find('[data-testid="view-jio-attendees"]').exists()).toBe(false)
+  })
+
+  it('shows Who\'s going on a clickable card for someone going', () => {
+    const { w } = linkedCard({ participants: ['host', 'me'] })
+    expect(w.find('[data-testid="view-jio-attendees"]').exists()).toBe(true)
+    expect(button(w).exists()).toBe(false)
   })
 
   it('shows who invited you to an invite-only jio', () => {
@@ -117,5 +138,34 @@ describe('JioCard', () => {
     const w = card({ status: 'cancelled' })
     expect(button(w).exists()).toBe(false)
     expect(w.text()).toContain('Cancelled')
+  })
+
+  it('opens the activity detail page when the card is clicked', async () => {
+    const { w, push } = linkedCard()
+    expect(w.text()).not.toContain('View details')
+    expect(button(w).exists()).toBe(false) // join / leave live on the detail page instead
+    await w.find('.jio-desc, .jio-meta').trigger('click')
+    expect(push).toHaveBeenCalledWith({ name: 'activity', params: { id: 'jio-j1' } })
+  })
+
+  it("doesn't open the detail page when one of the card's buttons is clicked", async () => {
+    const { w, push } = linkedCard({ visibility: 'invite_only', invited: ['me'] })
+    await w.find('[data-testid="decline-jio"]').trigger('click')
+    await flushPromises()
+    expect(calls).toEqual([['decline', 'j1']])
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it("keeps the host's Who's going button, but leaves Edit and Cancel to the detail page", () => {
+    const { w } = linkedCard({ hostId: 'me', participants: ['me'] })
+    expect(w.find('[data-testid="view-jio-attendees"]').exists()).toBe(true)
+    expect(w.find('[data-testid="edit-jio"]').exists()).toBe(false)
+    expect(button(w).exists()).toBe(false)
+  })
+
+  it('is not clickable unless asked to be', async () => {
+    const w = card({})
+    expect(w.find('[data-testid="jio-card"]').classes()).not.toContain('is-clickable')
+    expect(w.find('[data-testid="jio-details-link"]').exists()).toBe(false)
   })
 })

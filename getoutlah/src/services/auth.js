@@ -18,8 +18,6 @@ provider.setCustomParameters({ prompt: 'select_account' })
 export async function signInWithGoogle() {
   const { user } = await signInWithPopup(auth, provider)
   const profile = await ensureUserProfile(user)
-  // Points, badges and completed activities now belong to the account and sync across
-  // devices (src/services/userDataSync.js), so logging in no longer resets them.
   clearTrackedBadge()
   const store = useAuthStore()
   store.setUser(user)

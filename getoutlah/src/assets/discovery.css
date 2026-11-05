@@ -24,7 +24,7 @@
 }
 .act-body { min-width: 0; flex: 1; padding: 0.9rem 1rem 1.1rem; }
 .act-body .gol-eyebrow { font-size: 0.7rem; }
-.act-title { font-size: 1.15rem; font-weight: 900; margin: 0.1rem 0 0.25rem; }
+.act-title { font-size: 1.15rem; font-weight: 900; margin: 0.1rem 0 0.25rem; overflow-wrap: anywhere; }
 .act-meta { font-size: 0.8rem; color: var(--gol-muted); font-weight: 600; }
 .act-more-dates { color: var(--gol-purple); font-weight: 800; margin-left: 0.25rem; }
 .act-pills { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.4rem; }
@@ -65,13 +65,13 @@
 .act-page { min-height: 100vh; }
 .act-search { display: flex; gap: 0.6rem; margin: 1rem 0 0.8rem; }
 .act-input {
-  flex: 1; display: flex; align-items: center; gap: 0.6rem; background: #fff;
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.6rem; background: #fff;
   border: 1.5px solid var(--gol-card-edge); border-radius: 999px; padding: 0 1rem; box-shadow: 0 3px 0 var(--gol-card-edge);
 }
 .act-input i { color: var(--gol-purple); }
-.act-input input { flex: 1; border: none; outline: none; background: transparent; padding: 0.75rem 0; font-family: var(--gol-font); font-weight: 600; color: var(--gol-ink); }
+.act-input input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; padding: 0.75rem 0; font-family: var(--gol-font); font-weight: 600; color: var(--gol-ink); }
 .act-filter-btn {
-  width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--gol-purple); color: #fff;
+  flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--gol-purple); color: #fff;
   box-shadow: 0 4px 0 var(--gol-purple-dark); font-size: 1.1rem; transition: transform 0.15s, box-shadow 0.15s;
 }
 @media (hover: hover) {
@@ -87,8 +87,6 @@
   cursor: pointer; transition: background 0.15s, color 0.15s;
 }
 .act-active-pill i { font-size: 0.65rem; }
-.act-switch { display: flex; align-items: center; gap: 0.7rem; padding-left: 0; font-weight: 700; font-size: 0.9rem; }
-.act-switch .form-check-input { margin: 0; flex-shrink: 0; float: none; }
 /* As many 260px+ columns as fit: 1 on phones, 2 on tablets, 3-4 on laptops */
 .act-list { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .act-count { font-size: 0.8rem; font-weight: 800; color: var(--gol-purple); }
@@ -100,6 +98,7 @@
 .det-layout { display: grid; gap: 1rem; }   /* space between the picture card and the details card */
 /* Same 16:9 shape on every screen; capped so it doesn't become a long strip on laptop */
 .det-hero {
+  position: relative;   /* anchors the save button in the top-right corner */
   width: 100%; max-width: 640px; aspect-ratio: 16 / 9; margin-inline: auto; overflow: hidden;
   border-radius: 18px; display: flex; align-items: center; justify-content: center;
 }
@@ -110,7 +109,7 @@
 .det-description { white-space: pre-line; line-height: 1.55; margin: 0; }   /* keeps the description's line breaks */
 .det-more { border: none; background: none; padding: 0; margin-top: 0.4rem; font-weight: 800; color: var(--gol-purple); cursor: pointer; }
 .det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0; }
-.det-cell { background: var(--gol-bg); border-radius: 14px; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+.det-cell { min-width: 0; overflow-wrap: anywhere; background: var(--gol-bg); border-radius: 14px; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
 .det-cell i { color: var(--gol-purple); margin-right: 0.3rem; }
 .det-wide { grid-column: 1 / -1; }
 .det-dates { margin: 0 0 1rem; }
@@ -128,7 +127,17 @@
 .det-actions .gol-btn-primary { flex: 1 1 100%; }
 .det-link { text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; }
 .det-book { justify-content: center; }
+/* Side by side when there's room; stacks on very narrow phones */
+.det-jio-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-start; }
+.det-jio-actions > * { flex: 1 1 9rem; min-width: 0; }
+.det-jio-edit { justify-content: center; }
 .det-msg { margin-top: 0.8rem; font-weight: 800; color: var(--gol-purple); }
+.det-main .gol-title { overflow-wrap: anywhere; }   /* long Eventbrite titles wrap instead of overflowing */
+
+/* Phones: the action buttons fill each row instead of leaving ragged gaps */
+@media (max-width: 575.98px) {
+  .det-actions > * { flex: 1 1 auto; justify-content: center; text-align: center; }
+}
 
 /* ---- resets so links/lists don't look like default browser HTML ---- */
 .act-list { list-style: none; }

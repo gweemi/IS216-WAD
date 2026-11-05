@@ -64,6 +64,7 @@ export default {
       if (role === 'going') return { action: 'leave', label: 'Leave', style: 'gol-btn-soft w-100' }
       if (role === 'queued') return { action: 'leaveQueue', label: 'Leave queue', style: 'gol-btn-soft w-100' }
       if (status === 'full') return { action: 'chope', label: 'Chope a spot', style: 'gol-btn-coral w-100' }
+      return { action: 'join', label: 'Join', style: 'gol-btn-primary' }
     },
   },
   mounted() {

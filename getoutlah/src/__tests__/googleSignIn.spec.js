@@ -30,7 +30,7 @@ vi.mock('firebase/firestore', () => ({
 
 const { signInWithGoogle, friendlyError, isCancelled } = await import('@/services/auth')
 const { useAuthStore } = await import('@/stores/auth')
-const { game, startDemoSession, totalPoints } = await import('@/stores/gamification(badges).js')
+const { game, resetGamification, totalPoints } = await import('@/stores/gamification(badges).js')
 
 function googleUser(email, extra = {}) {
   return {
@@ -48,7 +48,7 @@ function googleUser(email, extra = {}) {
 beforeEach(() => {
   setActivePinia(createPinia())
   fake.savedDocs = {}
-  startDemoSession()
+  resetGamification(false)
 })
 
 describe('Google sign-in', () => {
@@ -89,15 +89,15 @@ describe('Google sign-in', () => {
     expect(fake.savedDocs['users/uid-123'].points).toBe(120)
   })
 
-  it('keeps the account’s points and badges when logging in (they sync per account now)', async () => {
+  it('keeps badge progress on login instead of loading demo data', async () => {
     game.completed.push({ id: 'extra', title: 'Extra outdoor activity', category: 'outdoors', region: 'east', date: '2026-11-03' })
-    game.ledger.push({ date: '2026-11-03', amount: 50, reason: 'Extra outdoor activity' })
+    game.ledger.push({ date: '2026-11-03', amount: 60, reason: 'Extra outdoor activity' })
     fake.user = googleUser('enmin@gmail.com')
 
     await signInWithGoogle()
 
-    expect(game.completed.some((activity) => activity.id === 'extra')).toBe(true)
-    expect(totalPoints()).toBe(400)
+    expect(game.completed.map((activity) => activity.id)).toEqual(['extra'])
+    expect(totalPoints()).toBe(60)
     expect(useAuthStore().mapIntroPending).toBe(true)
   })
 

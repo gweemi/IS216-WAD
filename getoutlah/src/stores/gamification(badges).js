@@ -12,7 +12,19 @@ export const WEEKLY_POINT_CAP = 300      // max points a student can earn per we
 export const CHECKIN_RADIUS_M = 200      // must be within 200m to check in
 export const POINTS_PER_ACTIVITY = 50    // base points for a verified activity
 export const POINTS_PER_LEVEL = 250      // points needed per level
-const USE_DEMO_DATA = true
+
+// Extra points on top of POINTS_PER_ACTIVITY, keyed by activity category (interest ids in
+// src/config/preferences.js). To change a bonus, edit the number; to add one, add a line.
+// Changes only affect future check-ins: past awards are stored as fixed amounts in the ledger.
+export const CATEGORY_BONUS_POINTS = {
+  outdoors: 10,
+  sports: 10,
+}
+
+/** Points a check-in at this activity is worth before the weekly cap. */
+export function pointsForActivity(activity) {
+  return POINTS_PER_ACTIVITY + (CATEGORY_BONUS_POINTS[activity?.category] ?? 0)
+}
 
 
 export const BADGES = [
@@ -147,7 +159,8 @@ function emptyState() {
 }
 
 /**
- * A fresh shared starting point for each explicit demo login.
+ * Sample progress for tests and local experiments (resetGamification(true)).
+ * Real accounts never start with this; they start empty.
  *
  * Activities are replayed from oldest to newest so completed activities,
  * badge dates and the points ledger all tell the same story. The two outdoor
@@ -167,7 +180,7 @@ export function createDemoStartingState() {
 
   for (const activity of completed) {
     s.completed.push(activity)
-    s.ledger.push({ date: activity.date, amount: POINTS_PER_ACTIVITY, reason: activity.title })
+    s.ledger.push({ date: activity.date, amount: pointsForActivity(activity), reason: activity.title })
 
     // Award each badge on the date the activity actually unlocked it.
     for (const badge of BADGES) {
@@ -180,13 +193,12 @@ export function createDemoStartingState() {
   return s
 }
 
-// Each account has its own points, badges and completed activities, saved to Firestore
-// (users/{uid}/private/gamification) so they follow the user to every device.
-// A brand-new account starts from the demo data; after that, progress is kept.
-// See src/stores/userData.js and src/services/userDataSync.js.
-const startingState = () => (USE_DEMO_DATA ? createDemoStartingState() : emptyState())
-export const game = reactive(startingState())
-registerUserStore('gamification', game, startingState)
+// Each account has its own points, badges and check-ins, saved to Firestore
+// users/{uid}/private/gamification so they follow the user to every device
+// (src/stores/userData.js + src/services/userDataSync.js). Only the owner can read them.
+// New accounts start empty: no demo data.
+export const game = reactive(emptyState())
+registerUserStore('gamification', game, emptyState)
 
 export function totalPoints() {
   return game.ledger.reduce((sum, e) => sum + e.amount, 0)
@@ -370,12 +382,15 @@ export async function checkInToActivity(activity, userPosition = null) {
 
   addPendingReflection(activity)
 
-  const pointsGiven = awardPoints(POINTS_PER_ACTIVITY, activity.title)
+  const pointsEarned = pointsForActivity(activity)
+  const bonus = pointsEarned - POINTS_PER_ACTIVITY
+  const pointsGiven = awardPoints(pointsEarned, activity.title)
   const newBadges = checkBadges()
 
   let message = `Checked in! +${pointsGiven} points`
   if (pointsGiven === 0) message = "Checked in! You've hit this week's points cap, so no points this time, but it still counts for your streak and badges."
-  else if (pointsGiven < POINTS_PER_ACTIVITY) message = `Checked in! +${pointsGiven} points (you've reached this week's cap)`
+  else if (pointsGiven < pointsEarned) message = `Checked in! +${pointsGiven} points (you've reached this week's cap)`
+  else if (bonus > 0) message = `Checked in! +${pointsGiven} points (includes a +${bonus} ${getInterest(activity.category)?.label ?? activity.category} bonus)`
 
   const levelledUp = levelInfo().level > levelBefore
   try {
@@ -403,11 +418,6 @@ export function setStudyBreak(on) {
     }
     game.studyBreak = { active: false, since: null }
   }
-}
-
-/** Start a new local demo session and persist it before authenticated UI renders. */
-export function startDemoSession() {
-  Object.assign(game, createDemoStartingState())
 }
 
 // Handy while testing: wipes everything back to empty (or demo) data

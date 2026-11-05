@@ -12,7 +12,7 @@ import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, bookingLink, durationText } from '@/utils/activityStyle'
 import JioActionButton from '@/components/openjio/JioActionButton.vue'
 import StartJioButton from '@/components/openjio/StartJioButton.vue'
-import { prefillFromActivity } from '@/utils/openjio'
+import { prefillFromActivity, myRole, statusOf } from '@/utils/openjio'
 import ReportJioButton from '@/components/reports/ReportJioButton.vue'
 import { useOpenJioStore } from '@/stores/openjio'
 
@@ -45,8 +45,10 @@ const shownDescription = computed(() => {
 })
 const saved = computed(() => (activity.value ? isSaved(activity.value.id) : false))
 const jios = useOpenJioStore()
-const jioSuspended = computed(() =>
-  activity.value?.type === 'openJio' && jios.all.find((j) => j.id === activity.value.jioId)?.status === 'suspended')
+const jio = computed(() => (activity.value?.type === 'openJio' ? jios.all.find((j) => j.id === activity.value.jioId) ?? null : null))
+const jioSuspended = computed(() => jio.value?.status === 'suspended')
+// Same rule as JioCard: only the host can edit, and only while the jio is open or full.
+const canEditJio = computed(() => !!jio.value && myRole(jio.value, jios.uid) === 'host' && ['open', 'full'].includes(statusOf(jio.value)))
 
 watchEffect(async () => { if (activity.value) friendsDid.value = await friendsWhoDid(activity.value.id) })
 
@@ -80,6 +82,11 @@ const doCheckIn = async () => {
               class="det-hero-img" :class="{ 'is-loaded': loadedImage === heroImage }"
               @load="loadedImage = heroImage" @error="brokenImage = heroImage" />
             <span v-else class="det-emoji">{{ categoryEmoji(activity.category) }}</span>
+            <!-- Same round save button as the top-right of ActivityCard -->
+            <button class="act-save" :class="{ on: saved }" :aria-label="saved ? 'Unsave' : 'Save'" :aria-pressed="saved"
+              data-testid="save-activity" @click="toggleSaved(activity.id)">
+              <i class="bi" :class="saved ? 'bi-bookmark-fill' : 'bi-bookmark'"></i>
+            </button>
           </div>
           <div class="gol-eyebrow mt-3">{{ categoryLabel(activity.category) }}</div>
           <h1 class="gol-title">{{ activity.title }}</h1>
@@ -125,7 +132,14 @@ const doCheckIn = async () => {
             <i class="bi bi-people"></i> Friends who have done this: {{ friendsDid.map((f) => f.name).join(', ') }}
           </p>
 
-          <JioActionButton v-if="activity.type === 'openJio'" :jio-id="activity.jioId" class="mt-3" />
+          <!-- Host: Cancel jio and Edit OPENJIO side by side -->
+          <div v-if="activity.type === 'openJio'" class="det-jio-actions mt-3">
+            <JioActionButton :jio-id="activity.jioId" />
+            <router-link v-if="canEditJio" :to="{ name: 'openjio-edit', params: { id: activity.jioId } }"
+              class="gol-btn-soft det-link det-jio-edit" data-testid="edit-jio">
+              <i class="bi bi-pencil-square" aria-hidden="true"></i> Edit OPENJIO
+            </router-link>
+          </div>
           <ReportJioButton v-if="activity.type === 'openJio'" :jio-id="activity.jioId" class="mt-2" />
 
           <div class="det-actions">
@@ -133,9 +147,6 @@ const doCheckIn = async () => {
               <i class="bi bi-ticket-perforated"></i> {{ booking.label }} <i class="bi bi-box-arrow-up-right"></i>
             </a>
             <button v-if="activity.lat != null && !jioSuspended" class="gol-btn-primary" @click="doCheckIn">Check in</button>
-            <button class="gol-btn-soft" @click="toggleSaved(activity.id)">
-              <i class="bi" :class="saved ? 'bi-bookmark-fill' : 'bi-bookmark'"></i> {{ saved ? 'Saved' : 'Save' }}
-            </button>
             <button v-if="!jioSuspended" class="gol-btn-soft" data-testid="invite-friends" @click="showInvite = true">
               <i class="bi bi-person-plus"></i> Invite friends
             </button>
