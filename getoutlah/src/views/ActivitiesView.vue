@@ -8,6 +8,8 @@ import { ACTIVITY_SOURCES, SOURCE_LABELS, canonicalSource, isActivitySource } fr
 import ActivityCard from '@/components/ActivityCard.vue'
 import FilterSheet from '@/components/FilterSheet.vue'
 import JioCard from '@/components/openjio/JioCard.vue'
+import StartJioCard from '@/components/openjio/StartJioCard.vue'
+import JioRow from '@/components/openjio/JioRow.vue'
 import { useOpenJioStore } from '@/stores/openjio'
 
 const route = useRoute()
@@ -69,6 +71,11 @@ const shownActivities = computed(() => {
   })
 })
 
+// OPENJIO! tab: row 1 is jios I host, row 2 is everyone else's
+const isOpenJioTab = computed(() => selectedSource.value === ACTIVITY_SOURCES.OPEN_JIO)
+const hostingJios = computed(() => shownActivities.value.filter((a) => a.hostedByMe))
+const otherJios = computed(() => shownActivities.value.filter((a) => !a.hostedByMe))
+
 function applyRouteSource(source) { filters.value.sources = source ? [source] : [] }
 function selectSource(source) { router.push({ name: 'activities', query: source ? { view: source } : {} }) }
 function selectOpenJioVisibility(visibility) {
@@ -110,7 +117,7 @@ onMounted(loadActivities)
       <h2 class="act-label act-label--browse">Browse activities</h2>
       <div class="source-pills" role="tablist" aria-label="Activity source">
         <button v-for="pill in sourcePills" :key="pill.label" type="button" role="tab"
-          :aria-selected="selectedSource === pill.value" :class="[pill.value && `source-colour--${pill.value}`, { on: selectedSource === pill.value }]"
+          :aria-selected="selectedSource === pill.value" :class="[`source-colour--${pill.value ?? 'all'}`, { on: selectedSource === pill.value }]"
           :data-testid="`source-${pill.value ?? 'all'}`" @click="selectSource(pill.value)">
           {{ pill.label }}
         </button>
@@ -151,21 +158,31 @@ onMounted(loadActivities)
       <div class="act-results-head mt-3 mb-2">
         <h2 class="gol-section-title">{{ resultsHeading }}</h2>
         <div class="act-results-actions">
-          <RouterLink v-if="selectedSource === ACTIVITY_SOURCES.OPEN_JIO" to="/activities/openjio" class="act-manage-jios">
-            <i class="ph ph-users-three" aria-hidden="true"></i> Manage OPENJIOs
-          </RouterLink>
           <span class="act-count">{{ shownActivities.length }} activities</span>
         </div>
       </div>
 
-      <TransitionGroup name="activity-card" tag="ul" class="act-list p-0 m-0">
-        <li v-for="(a, index) in shownActivities" :key="`${selectedSource ?? 'all'}-${openJioVisibility}-${a.id}`" class="list-unstyled"
+      <!-- OPENJIO! tab: two rows that scroll left to right -->
+      <template v-if="isOpenJioTab">
+        <JioRow title="My Jios" :count="hostingJios.length" test-id="jio-row-hosting">
+          <li key="start-jio" data-testid="activities-start-jio"><StartJioCard /></li>
+          <li v-for="a in hostingJios" :key="a.id"><JioCard v-if="jioById.get(a.jioId)" :jio="jioById.get(a.jioId)" :uid="jios.uid" link-to-details /><ActivityCard v-else :activity="a" /></li>
+        </JioRow>
+        <JioRow title="Other Jios" :count="otherJios.length" test-id="jio-row-others"
+          :empty-text="!loadingActivities && !otherJios.length ? emptyMessage : ''">
+          <li v-for="a in otherJios" :key="a.id"><JioCard v-if="jioById.get(a.jioId)" :jio="jioById.get(a.jioId)" :uid="jios.uid" link-to-details /><ActivityCard v-else :activity="a" /></li>
+        </JioRow>
+        <button v-if="!otherJios.length && hasAdditionalFilters" type="button" class="act-empty-clear" @click="clearAdditionalFilters">Clear Filters</button>
+      </template>
+
+      <TransitionGroup v-else name="activity-card" tag="ul" class="act-list p-0 m-0">
+        <li v-for="(a, index) in shownActivities" :key="`${selectedSource ?? 'all'}-${a.id}`" class="list-unstyled"
           :style="{ '--card-stagger': `${Math.min(index, 8) * 35}ms` }">
           <JioCard v-if="a.source === ACTIVITY_SOURCES.OPEN_JIO && jioById.get(a.jioId)" :jio="jioById.get(a.jioId)" :uid="jios.uid" link-to-details />
           <ActivityCard v-else :activity="a" />
         </li>
       </TransitionGroup>
-      <div v-if="!loadingActivities && !shownActivities.length" class="act-empty" role="status">
+      <div v-if="!isOpenJioTab && !loadingActivities && !shownActivities.length" class="act-empty" role="status">
         <i class="ph ph-compass" aria-hidden="true"></i>
         <p>{{ emptyMessage }}</p>
         <button v-if="hasAdditionalFilters" type="button" class="act-empty-clear" @click="clearAdditionalFilters">Clear Filters</button>
@@ -186,6 +203,7 @@ onMounted(loadActivities)
 /* One colour per source, shared by the "Ways to explore" icons and the "Browse activities" pills.
    "All Activities" has no source, so it keeps the default purple. */
 .source-info, .source-pills { --source-colour: var(--gol-purple); --source-soft: var(--gol-purple-soft); }
+.source-colour--all { --source-colour: var(--gol-ink); --source-soft: #ece9f4; }
 .source-colour--getoutlahPicks { --source-colour: var(--gol-purple); --source-soft: var(--gol-purple-soft); }
 .source-colour--externalListings { --source-colour: #1f6f7d; --source-soft: #dff6fa; }
 .source-colour--openJio { --source-colour: #b4382f; --source-soft: #ffe6e0; }
@@ -213,8 +231,6 @@ onMounted(loadActivities)
 .openjio-visibility-help a { color: var(--gol-purple); font-weight: 850; text-decoration: none; }
 .openjio-visibility-help a:hover, .openjio-visibility-help a:focus-visible { text-decoration: underline; }
 .act-results-actions { display: flex; align-items: center; gap: .75rem; }
-.act-manage-jios { display: inline-flex; align-items: center; gap: .35rem; border: 2px solid #282047; border-radius: 999px; padding: .35rem .65rem; background: #fff; box-shadow: 0 2px 0 #282047; color: #282047; font: 800 .8rem var(--gol-font); text-decoration: none; }
-.act-manage-jios:hover, .act-manage-jios:focus-visible { color: #fff; background: var(--gol-purple); }
 .act-empty { display: grid; justify-items: start; gap: .35rem; padding: 1rem 0; color: var(--gol-muted); font-weight: 750; }
 .act-empty > i { color: var(--gol-purple); font-size: 1.45rem; }
 .act-empty p { margin: 0; }
@@ -242,7 +258,7 @@ onMounted(loadActivities)
 @media (prefers-reduced-motion: reduce) {
   .activity-card-enter-active, .activity-card-leave-active, .activity-card-move { transition: none; }
 }
-/* Results heading + "Manage OPENJIOs" + count: wraps onto two lines on phones instead of squashing */
+/* Results heading + count: wraps onto two lines on phones instead of squashing */
 .act-results-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .4rem .75rem; }
 .act-results-head .gol-section-title { margin: 0; min-width: 0; }
 

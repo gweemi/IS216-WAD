@@ -16,10 +16,10 @@ directly—there is no Cloud Functions deployment required for the feature.
 | Where | What |
 |---|---|
 | **Activities page** (main list) | Public jios, mixed in with events: `jios.publicUpcoming` |
-| **Activities page → OPENJIO! filter** | Choose the **OPENJIO!** Browse activities pill to view discoverable Jios, with All / Public / Friends only / Invite only filters. Link straight to it with `/activities?view=openJio`; **Manage OPENJIOs** opens the dedicated management page. |
+| **Activities page → OPENJIO! filter** | Choose the **OPENJIO!** Browse activities pill to view discoverable Jios, with All / Public / Friends only / Invite only filters. Link straight to it with `/activities?view=openJio`; Jios show in two rows that scroll left to right (`JioRow.vue`): **My Jios** (starting with the dashed **Start a jio** card, which opens the create form) and **Other Jios**. |
 | **Friends page** | `<FreeTogetherJios />` lists times you're free with friends, each with an **OpenJio** button. A friend's details also have an OpenJio button per shared time |
 | **Activity details** | `<JioActionButton>`: Join / Chope / Leave on a public jio |
-| `/activities/openjio` | Dedicated OpenJio management page containing `<OpenJioPanel />`. |
+| `/activities/openjio` | Redirects to `/activities?view=openJio` (the old management page was removed). |
 
 The Activities page applies those visibility filters when it builds the OPENJIO
 cards. In this lightweight school-project setup, raw Jio documents are readable
@@ -66,13 +66,11 @@ below the number of people already going.
 | `src/utils/openjio.js` | The rules (validate, join, chope, leave, who can see). No Firebase, easy to test |
 | `src/services/openjio.js` | Firestore calls. Join/chope/leave run in a transaction so a jio can't be overbooked |
 | `src/stores/openjio.js` | Pinia store with the live lists |
-| `src/components/openjio/OpenJioPanel.vue` | Dedicated OpenJio management panel: start, invites, my Jios, discoverable Jios, and visibility filters |
 | `src/components/openjio/FreeTogetherJios.vue` | "Free with friends" card on the Friends page with OpenJio buttons |
 | `src/components/openjio/JioCard.vue` | One jio card |
 | `src/components/openjio/JioActionButton.vue` | Join / Chope / Leave / Cancel button that does the work itself. Use it anywhere |
 | `src/components/openjio/CreateJioSheet.vue` | "Start a jio" form with the friend picker (accepts `prefill`) |
 | `src/components/openjio/StartJioButton.vue` | Drop-in button that opens the form, for other pages |
-| `src/views/OpenJioView.vue` | `/activities/openjio` page (wraps the management panel) |
 | `firestore.rules` → `openjios` | Database rules for visibility, host edits, and participant/waitlist changes |
 
 ## Activities page (Xin Hee): small additions

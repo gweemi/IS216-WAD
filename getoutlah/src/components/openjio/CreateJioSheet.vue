@@ -104,14 +104,10 @@
         </label>
       </div>
 
-      <div class="field-row" style="grid-template-columns: 1fr 1fr 1fr">
+      <div class="field-row">
         <label class="field">
           <span>Hours</span>
           <input v-model.number="hours" type="number" min="0.25" max="12" step="0.25" class="form-control" />
-        </label>
-        <label class="field">
-          <span>Cost ($)</span>
-          <input v-model.number="form.cost" type="number" min="0" :max="LIMITS.maxCost" step="0.5" class="form-control" data-testid="jio-cost" />
         </label>
         <label class="field">
           <span>Total spots</span>
@@ -126,6 +122,33 @@
         </label>
       </div>
       <p class="hint">Total spots includes you, the host<span v-if="isEditing">. You already have {{ participantCount }} going.</span></p>
+
+      <!-- Price: the host can enter it per person or for the whole group; only the per-person price is saved and shown -->
+      <fieldset class="field">
+        <legend class="field-legend">Price</legend>
+        <div class="price-mode" role="radiogroup" aria-label="Price is for">
+          <button type="button" role="radio" :aria-checked="priceMode === 'solo'" :class="{ on: priceMode === 'solo' }"
+            data-testid="jio-price-solo" @click="setPriceMode('solo')">Per person</button>
+          <button type="button" role="radio" :aria-checked="priceMode === 'group'" :class="{ on: priceMode === 'group' }"
+            data-testid="jio-price-group" @click="setPriceMode('group')">Whole group</button>
+        </div>
+        <label class="price-input">
+          <span class="visually-hidden">{{ priceMode === 'group' ? 'Price for the whole group' : 'Price per person' }} in dollars</span>
+          <span class="price-input__dollar" aria-hidden="true">$</span>
+          <input v-if="priceMode === 'solo'" v-model.number="form.cost" type="number" min="0" :max="LIMITS.maxCost" step="0.5"
+            class="form-control" data-testid="jio-cost" />
+          <input v-else v-model.number="groupCost" type="number" min="0" :max="LIMITS.maxCost * (form.capacity || 1)" step="0.5"
+            class="form-control" data-testid="jio-group-cost" />
+          <span class="price-input__unit">{{ priceMode === 'group' ? 'total' : 'per person' }}</span>
+        </label>
+        <p v-if="priceMode === 'group'" class="hint" role="status" data-testid="jio-price-split">
+          <template v-if="perPersonFromGroup !== null">
+            Split across {{ form.capacity }} spots: <strong>${{ formatMoney(perPersonFromGroup) }} per person</strong>. Only the per-person price is shown on your jio.
+          </template>
+          <template v-else>Set the total spots to work out the per-person price.</template>
+        </p>
+        <p v-else class="hint">This is the price shown on your jio.</p>
+      </fieldset>
 
       <fieldset class="field">
         <span>Who can join your jio?</span>
@@ -197,7 +220,7 @@
           <div><dt>Category</dt><dd>{{ categoryText }}</dd></div>
           <div><dt>Where</dt><dd>{{ pendingJio?.location }} · {{ pendingJio?.region }}</dd></div>
           <div><dt>When</dt><dd>{{ dateTimeText }}</dd></div>
-          <div><dt>Details</dt><dd>{{ pendingJio?.durationMins / 60 }} hours · ${{ pendingJio?.cost }} · {{ pendingJio?.capacity }} spots</dd></div>
+          <div><dt>Details</dt><dd>{{ pendingJio?.durationMins / 60 }} hours · ${{ formatMoney(pendingJio?.cost) }} per person · {{ pendingJio?.capacity }} spots</dd></div>
           <div><dt>Visibility</dt><dd>{{ visibilityText }}</dd></div>
           <div v-if="pendingJio?.description"><dt>Note</dt><dd>{{ pendingJio.description }}</dd></div>
         </dl>
@@ -276,6 +299,8 @@ export default {
       error: '',
       confirmationOpen: false,
       pendingJio: null,
+      priceMode: 'solo', // 'solo' = form.cost is per person; 'group' = groupCost is split across the spots
+      groupCost: 0,
       placeQuery: '',
       places: [],
       placeError: '',
@@ -308,12 +333,19 @@ export default {
         ...this.form,
         lat: toCoord(this.form.lat),
         lng: toCoord(this.form.lng),
+        cost: this.priceMode === 'group' ? (this.perPersonFromGroup ?? NaN) : this.form.cost,
         startAt: this.date && this.time ? new Date(`${this.date}T${this.time}`) : null,
         durationMins: Math.round(this.hours * 60),
       }
     },
     isEditing() {
       return Boolean(this.editJio?.id)
+    },
+    // Whole-group price ÷ total spots, rounded to the cent (null until both are filled in)
+    perPersonFromGroup() {
+      const total = this.groupCost, spots = this.form.capacity
+      if (typeof total !== 'number' || !Number.isInteger(spots) || spots < 1) return null
+      return Math.round((total / spots) * 100) / 100
     },
     participantCount() {
       return this.editJio?.participants?.length ?? 1
@@ -360,6 +392,23 @@ export default {
       this.placeQuery = ''
       this.places = []
       this.placeError = ''
+      this.priceMode = 'solo'
+      this.groupCost = 0
+    },
+
+    // Switching keeps the same overall price: per person × spots, or the split back to per person
+    setPriceMode(mode) {
+      if (mode === this.priceMode) return
+      if (mode === 'group') {
+        this.groupCost = typeof this.form.cost === 'number' ? Math.round(this.form.cost * (this.form.capacity || 1) * 100) / 100 : 0
+      } else {
+        this.form.cost = this.perPersonFromGroup ?? 0
+      }
+      this.priceMode = mode
+    },
+
+    formatMoney(n) {
+      return typeof n === 'number' && !Number.isInteger(n) ? n.toFixed(2) : String(n ?? 0)
     },
 
     async findPlace() {
@@ -428,6 +477,9 @@ export default {
 
 <style scoped>
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+/* Let grid columns shrink on narrow phones (date/time inputs are wide by default) */
+.field-row > .field { min-width: 0; }
+.field-row .form-control { min-width: 0; width: 100%; }
 .field { display: block; margin-bottom: 0.75rem; border: 0; padding: 0; }
 .field > span,
 .field > label {
@@ -457,6 +509,16 @@ export default {
   box-shadow: 0 0 0 0.2rem rgba(107, 66, 227, 0.2);
 }
 .hint { color: var(--gol-muted); font-size: 0.78rem; font-weight: 600; margin-top: -0.4rem; }
+.field-legend { float: none; width: auto; margin-bottom: 0.3rem; font-weight: 800; font-size: 0.85rem; }
+.price-mode { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; margin-bottom: 0.45rem; padding: 0.25rem; border: 2px solid var(--gol-card-edge); border-radius: 999px; background: #fff; }
+.price-mode button { min-height: 2.25rem; padding: 0.3rem 0.9rem; border: 0; border-radius: 999px; background: transparent; color: var(--gol-ink); font-weight: 800; font-size: 0.82rem; }
+.price-mode button.on { background: var(--gol-purple); color: #fff; }
+.price-mode button:focus-visible { outline: 3px solid rgba(107, 66, 227, 0.35); outline-offset: 1px; }
+.field > .price-input { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0; }
+.price-input__dollar { font-weight: 900; color: var(--gol-ink); }
+.price-input .form-control { flex: 1; min-width: 0; max-width: 10rem; }
+.price-input + .hint { margin-top: 0.35rem; }
+.price-input__unit { font-weight: 700; font-size: 0.82rem; color: var(--gol-muted); }
 .visibility-toggle {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

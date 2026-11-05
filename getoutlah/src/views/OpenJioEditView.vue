@@ -8,7 +8,8 @@ const route = useRoute()
 const router = useRouter()
 const jios = useOpenJioStore()
 const jio = computed(() => jios.all.find((item) => item.id === route.params.id) ?? null)
-const backToManagement = () => router.replace({ name: 'openjio' })
+// Back to where Edit was pressed (usually the jio's details page); OPENJIO list if opened directly
+const backToManagement = () => (window.history.state?.back ? router.back() : router.replace({ name: 'activities', query: { view: 'openJio' } }))
 
 onMounted(() => jios.start())
 </script>

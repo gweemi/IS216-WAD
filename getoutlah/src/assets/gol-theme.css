@@ -7,7 +7,7 @@
 :root {
   --gol-bg: #fff6ec;
   --gol-ink: #221a3b;
-  --gol-muted: #8a8199;
+  --gol-muted: #6a627c; /* darkened from #8a8199 so muted text passes WCAG AA (4.5:1) on cards and tints */
   --gol-purple: #6b42e3;
   --gol-purple-dark: #4b27b8;
   --gol-purple-soft: #ece6fb;

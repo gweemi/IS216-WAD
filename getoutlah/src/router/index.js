@@ -41,18 +41,10 @@ const router = createRouter({
       component: ActivitiesView,
       meta: appRouteMeta,
     },
-    {
-      path: '/activities/openjio',
-      name: 'openjio',
-      component: () => import('@/views/OpenJioView.vue'),
-      meta: appRouteMeta,
-    },
-    {
-      path: '/activities/openjio/create',
-      name: 'openjio-create',
-      component: () => import('@/views/OpenJioCreateView.vue'),
-      meta: appRouteMeta,
-    },
+    // The old OPENJIO manage page is gone: jios are listed (and started) from Activities → OPENJIO!
+    // Kept as redirects so old links still work; must stay above /activities/:id.
+    { path: '/activities/openjio', redirect: { name: 'activities', query: { view: 'openJio' } } },
+    { path: '/activities/openjio/create', redirect: { name: 'activities', query: { view: 'openJio' } } },
     {
       path: '/activities/openjio/:id/edit',
       name: 'openjio-edit',
@@ -85,7 +77,7 @@ const router = createRouter({
       component: ProfileView,
       meta: appRouteMeta,
     },
-    { path: '/openjio', redirect: { name: 'openjio' } },
+    { path: '/openjio', redirect: { name: 'activities', query: { view: 'openJio' } } },
     {
       // Admin only. One page with a tab per tool; add new tools as children here.
       // Firestore rules are the real lock, this only keeps non-admins off the page.
