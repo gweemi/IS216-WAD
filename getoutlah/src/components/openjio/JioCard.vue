@@ -262,7 +262,7 @@ export default {
 .queue-note { color: #b4382f; font-weight: 700; font-size: 0.8rem; }
 .jio-host-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .5rem; }
 .jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button), .jio-actions > button, .jio-attendees { min-height: 2.35rem; padding: .45rem .7rem !important; font-size: .8rem !important; line-height: 1.1; }
-.jio-host-actions > .gol-btn-primary, .jio-actions :deep(.gol-btn-primary) { display: inline-flex; align-items: center; justify-content: center; }
+.jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button) { display: inline-flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap; }
 .jio-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; align-items: stretch; }
 .jio-actions > :first-child { min-width: 0; }
 .jio-actions :deep(.jio-action-button) { width: 100%; }

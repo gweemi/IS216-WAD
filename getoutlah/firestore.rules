@@ -110,11 +110,10 @@ service cloud.firestore {
     // Privacy switches (src/config/privacy.js)
     function validPrivacy(p) {
       return p is map
-        && p.keys().hasOnly(['showPhoto', 'showUniversity', 'discoverable', 'shareFreeTime', 'shareActivity'])
+        && p.keys().hasOnly(['showPhoto', 'showUniversity', 'discoverable', 'shareActivity'])
         && p.get('showPhoto', true) is bool
         && p.get('showUniversity', true) is bool
         && p.get('discoverable', true) is bool
-        && p.get('shareFreeTime', true) is bool
         && p.get('shareActivity', true) is bool;
     }
     function validProfileEdits(d) {
@@ -123,8 +122,6 @@ service cloud.firestore {
         // photoURL: a Google picture link, or a small picture saved as text (data URL), or null
         && (!changed('photoURL') || d.photoURL == null
                 || (d.photoURL is string && d.photoURL.size() <= 300000))
-        // My plans: activity ids the user tapped Join on
-        && (!changed('plans') || (d.plans is list && d.plans.size() <= 200))
         && (!changed('privacy') || validPrivacy(d.privacy));
     }
 

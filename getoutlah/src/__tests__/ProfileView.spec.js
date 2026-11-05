@@ -76,12 +76,12 @@ describe('ProfileView', () => {
     expect(w.find('[data-testid="stat-badges"]').text()).toMatch(/\d+\s*Badges/)
   })
 
-  it('opens Saved and My plans with the right activities', async () => {
+  it('opens Saved and My plans', async () => {
     const w = mountPage()
     await w.find('[data-testid="tile-saved"]').trigger('click')
     expect(w.text()).toContain('Pottery taster')
     await w.find('[data-testid="tile-plans"]').trigger('click')
-    expect(w.text()).toContain('Sunset kayak')
+    expect(w.text()).toContain('Join or host an OPENJIO!') // no jios in this test
   })
 
   it('opens Completed from the number on the profile card', async () => {

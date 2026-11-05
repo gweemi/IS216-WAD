@@ -3,9 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { fromEventbrite } from '@/utils/eventbriteMap'
 import { durationText, fitsHours, isVaried } from '@/utils/activityStyle'
 import { activeFilterPills } from '@/utils/activeFilters'
-import { buildPlans } from '@/utils/profile'
 
-const HOUR = 3600000
 const timed = (startUtc, endUtc) => fromEventbrite({ start: { utc: startUtc }, end: { utc: endUtc } })
 const sameDay = timed('2026-11-07T02:00:00Z', '2026-11-07T07:00:00Z')       // 5 hrs
 const twoDays = timed('2026-11-07T02:00:00Z', '2026-11-08T07:00:00Z')       // 29 hrs
@@ -55,12 +53,5 @@ describe('other places that use duration', () => {
   it('labels the active filter pill', () => {
     const f = { categories: [], sources: [], maxCost: null, maxHours: 'varied', setting: 'Any', energy: 'Any' }
     expect(activeFilterPills(f).map((p) => p.label)).toEqual(['Varied duration'])
-  })
-
-  it('keeps a multi-day event in plans until it really ends', () => {
-    const a = { id: 'a1', title: 'Fair', ...threeDays }
-    const plans = (now) => buildPlans({ planIds: ['a1'], findActivity: () => a, jios: [], uid: 'me', now })
-    expect(plans(new Date(a.startsAt + 30 * HOUR))).toHaveLength(1)
-    expect(plans(new Date(a.endsAt + HOUR))).toHaveLength(0)
   })
 })

@@ -34,29 +34,13 @@ export function savedActivities(savedIds = [], findActivity) {
 }
 
 /**
- * "My plans": activities the user tapped Join on, plus OPENJIOs they host, are going to
- * or are queued for. Things already checked in to, ended or cancelled are left out.
- * Returns one list in the same shape, soonest first:
- *   { key, id, title, category, when (ms or null), kind: 'activity' | 'jio', role, to }
+ * "My plans": OPENJIOs the user hosts, is going to or is queued for.
+ * Ended, cancelled and already-checked-in ones are left out. Soonest first:
+ *   { key, id, title, category, when (ms), kind: 'jio', role, to }
  */
-export function buildPlans({ planIds = [], findActivity, jios = [], uid, completedIds = [], now = new Date() }) {
+export function buildPlans({ jios = [], uid, completedIds = [], now = new Date() }) {
   const done = new Set(completedIds)
-  const fromActivities = planIds
-    .map((id) => findActivity(id))
-    .filter((a) => a && !done.has(a.id))
-    // Dated ones drop off once they're over (3 hours if we don't know how long it runs)
-    .filter((a) => a.startsAt == null || (a.endsAt ?? a.startsAt + (a.durationHrs ?? 3) * 3600000) > now.getTime())
-    .map((a) => ({
-      key: 'a-' + a.id,
-      id: a.id,
-      title: a.title,
-      category: a.category,
-      when: a.startsAt ?? null,
-      kind: 'activity',
-      role: 'going',
-      to: `/activities/${a.id}`,
-    }))
-  const fromJios = jios
+  return jios
     .filter((j) => myRole(j, uid) !== 'none' && !['ended', 'cancelled'].includes(statusOf(j, now)))
     .filter((j) => !done.has(`jio-${j.id}`))
     .map((j) => ({
@@ -69,28 +53,12 @@ export function buildPlans({ planIds = [], findActivity, jios = [], uid, complet
       role: myRole(j, uid),
       to: '/activities?view=openJio',
     }))
-  // Dated plans first (soonest first), then the ones with no date
-  return [...fromActivities, ...fromJios].sort((x, y) => (x.when ?? Infinity) - (y.when ?? Infinity))
+    .sort((x, y) => x.when - y.when)
 }
 
 /** Completed activities, newest first. */
 export const completedNewestFirst = (completed = []) =>
   [...completed].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
-
-// ---------- Activity moods ----------
-
-/**
- * Splits completed activities into "to rate" and "rated".
- *   completed = game.completed, entries = reflections.entries
- * Returns { toRate: [completedItem], rated: [reflectionEntry] } (newest first)
- */
-export function moodLists(completed = [], entries = []) {
-  const ratedIds = new Set(entries.filter((e) => e.mood).map((e) => e.activityId))
-  return {
-    toRate: completedNewestFirst(completed).filter((a) => !ratedIds.has(a.id)),
-    rated: entries.filter((e) => e.mood).slice().reverse(),
-  }
-}
 
 // ---------- Wellbeing suggestions ("Keep the energy going") ----------
 

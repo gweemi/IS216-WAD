@@ -7,7 +7,6 @@ import { friendsWhoDid } from '@/stores/ports'
 import { recordCheckIn } from '@/services/friends'
 import InviteFriendsSheet from '@/components/friends/InviteFriendsSheet.vue'
 import { checkInToActivity } from '@/stores/gamification(badges).js'
-import { removePlan } from '@/stores/plans'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, bookingLink, durationText } from '@/utils/activityStyle'
@@ -63,7 +62,6 @@ const doCheckIn = async () => {
     energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openJio', hostedByMe: !!a.hostedByMe,
     }, await request())
     if (!r.ok) throw new Error(r.message)
-    await removePlan(a.id).catch(() => {})
     recordCheckIn(a.id).catch(() => {})
     message.value = r.message
     earnedBadges.value = r.newBadges ?? []
