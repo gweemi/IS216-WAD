@@ -23,8 +23,12 @@ Test scripts
   script (`e2e/support/emulator.js`). 
 - Our contribution: defined what to test, ran the tests, and fixed failed cases.
 
+Documentation
+- Used AI to help draft and keep implementation documentation up to date.
+- Our contribution: verified the documented behaviour against the app and edited it for accuracy.
+
 Debugging
-- Used AI explained error messages and suggested possible causes. Point out errors in code 
+- Used AI to explain error messages, suggest possible causes, and point out errors in code.
 - Our contribution: look through code and fixed them
 
 Eventbrite sync
