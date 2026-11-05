@@ -11,7 +11,7 @@ const badgeStyle = (badge) => ({ background: badgePresentation(badge).color })
 <template>
   <BottomSheet :open="open" label="Choose a badge to explore" @close="emit('close')">
     <div class="hunt-header"><div><p class="gol-eyebrow">Your next adventure</p><h2 class="gol-title">Choose a badge to explore</h2></div><button class="gol-close" type="button" aria-label="Close badge selection" @click="emit('close')"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
-    <p class="hunt-copy">Select a badge to highlight activities that bring you closer to earning it.</p>
+    <p class="hunt-copy">Select a badge to highlight activities that bring you closer to earning it. Select it again to stop tracking it.</p>
     <div class="hunt-list">
       <button v-for="badge in opportunities" :key="badge.id" class="hunt-option" :class="{ selected: selectedId === badge.id }" type="button" @click="choose(badge.id)">
         <span class="hunt-icon" :style="badgeStyle(badge)" aria-hidden="true">{{ badgePresentation(badge).emoji }}</span><span class="hunt-option__body"><strong>{{ badge.name }}</strong><span>{{ badge.desc }}</span><span class="hunt-progress"><i :style="{ width: `${(badge.progress / badge.target) * 100}%` }"></i></span><em>{{ badge.progress }}/{{ badge.target }} · {{ badge.remaining }} to go</em></span><i v-if="selectedId === badge.id" class="bi bi-check-circle-fill hunt-check" aria-hidden="true"></i>

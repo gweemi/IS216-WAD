@@ -327,17 +327,18 @@ describe('MapView', () => {
     expect(leafletMocks.mapInstance.setZoom).toHaveBeenCalledWith(14, { animate: false })
   })
 
-  it('automatically tracks the closest achievable badge when Map activities are ready', async () => {
+  it('starts with no tracked badge and invites the user to choose one', async () => {
     const wrapper = mountMap()
     await nextTick()
     await nextTick()
 
-    expect(badgeHunt.trackedBadgeId.value).toBe('trailblazer')
+    expect(badgeHunt.trackedBadgeId.value).toBeNull()
     expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Next badge')
-    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Trailblazer')
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Choose your next badge!')
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).not.toContain('activities completed')
   })
 
-  it('opens the selector once after an explicit login and keeps the recommendation when it is dismissed', async () => {
+  it('opens the optional selector after an explicit login without preselecting a badge', async () => {
     authMocks.badgeWelcomePending = true
     const wrapper = mountMap()
     await nextTick()
@@ -346,12 +347,44 @@ describe('MapView', () => {
     const dialog = document.body.querySelector('[role="dialog"]')
     expect(dialog?.textContent).toContain('Choose a badge to explore')
     expect(authMocks.consumeBadgeWelcome).toHaveBeenCalledTimes(1)
+    expect(dialog?.querySelector('.hunt-option.selected')).toBeNull()
 
     document.body.querySelector('.hunt-header .gol-close').click()
     await nextTick()
 
     expect(document.body.querySelector('[role="dialog"]')).toBeNull()
-    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Trailblazer')
+    expect(badgeHunt.trackedBadgeId.value).toBeNull()
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Choose your next badge!')
+  })
+
+  it('opens from the next-badge prompt and preserves an explicit selection on reopening', async () => {
+    const wrapper = mountMap()
+
+    await wrapper.get('[data-testid="next-badge-card"] button').trigger('click')
+    await nextTick()
+
+    let dialog = document.body.querySelector('[role="dialog"]')
+    expect(dialog?.querySelector('.hunt-option.selected')).toBeNull()
+
+    dialog.querySelector('.hunt-option').click()
+    await nextTick()
+
+    const selectedId = badgeHunt.trackedBadgeId.value
+    expect(selectedId).toBeTruthy()
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('activities completed')
+
+    await wrapper.get('[data-testid="next-badge-card"] button').trigger('click')
+    await nextTick()
+
+    dialog = document.body.querySelector('[role="dialog"]')
+    expect(dialog?.querySelector('.hunt-option.selected')).not.toBeNull()
+
+    dialog.querySelector('.hunt-option.selected').click()
+    await nextTick()
+
+    expect(badgeHunt.trackedBadgeId.value).toBeNull()
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Choose your next badge!')
   })
 
   it('keeps a manually selected badge when map filters change', async () => {

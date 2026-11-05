@@ -409,33 +409,22 @@ function syncHuntAfterClusterLifecycle(event = {}) {
 }
 
 function openHuntSelector() {
-  selectedHuntId.value = trackedBadgeId.value ?? recommendedBadgeOpportunities.value[0]?.id ?? null
+  selectedHuntId.value = trackedBadgeId.value
   huntSheetOpen.value = true
 }
 function selectRecommendedBadge(id) {
   if (!id) return
-  selectTrackedBadge(id)
-  selectedHuntId.value = id
+  const nextId = trackedBadgeId.value === id ? null : id
+  selectTrackedBadge(nextId)
+  selectedHuntId.value = nextId
   huntSheetOpen.value = false
-}
-
-function ensureRecommendedBadge() {
-  const opportunities = recommendedBadgeOpportunities.value
-  if (!opportunities.length) {
-    if (trackedBadgeId.value) selectTrackedBadge(null)
-    return
-  }
-  if (!trackedBadgeId.value || !opportunities.some((badge) => badge.id === trackedBadgeId.value)) {
-    selectTrackedBadge(opportunities[0].id)
-  }
 }
 
 function maybeOpenBadgeWelcome() {
   if (onboardingActive.value || selectedActivity.value || filtersOpen.value || nearbyPromptOpen.value || huntSheetOpen.value) return
   if (!recommendedBadgeOpportunities.value.length || !auth.consumeBadgeWelcome?.()) return
-  ensureRecommendedBadge()
-  selectedHuntId.value = trackedBadgeId.value ?? recommendedBadgeOpportunities.value[0]?.id ?? null
-  huntSheetOpen.value = Boolean(selectedHuntId.value)
+  selectedHuntId.value = trackedBadgeId.value
+  huntSheetOpen.value = true
 }
 
 function selectActivity(activity) {
@@ -569,10 +558,7 @@ function openCategorySelectorOnEntry(controlsVisible) {
 
 watch(onboardingStage, (stage) => {
   if (stage === 'locationPrompt') nextTick(() => introEnableButton.value?.focus())
-  if (stage === 'completed') nextTick(() => {
-    ensureRecommendedBadge()
-    maybeOpenBadgeWelcome()
-  })
+  if (stage === 'completed') nextTick(maybeOpenBadgeWelcome)
 })
 
 watch(showDiscoveryControls, openCategorySelectorOnEntry, { immediate: true })
@@ -590,10 +576,6 @@ watch([nearMeEnabled, nearbyRadiusKm, locationCoords], () => {
 })
 
 watch(trackedBadgeId, () => nextTick(() => refreshHuntMarkers(true)))
-watch(recommendedBadgeOpportunities, () => nextTick(ensureRecommendedBadge))
-watch(() => trackedBadge.value?.earned, (earned) => {
-  if (earned) nextTick(ensureRecommendedBadge)
-})
 
 onMounted(async () => {
   map = L.map(mapElement.value, { minZoom: MIN_MAP_ZOOM, maxZoom: MAX_MAP_ZOOM, zoomControl: false }).setView([1.3521, 103.8198], 12)
@@ -635,7 +617,6 @@ onMounted(async () => {
   }
   await loadPromise
   if (!onboardingActive.value) renderActivityMarkers(activities.value)
-  ensureRecommendedBadge()
   maybeOpenBadgeWelcome()
 })
 
@@ -645,7 +626,6 @@ watch(activities, (items) => {
     clearSelectedActivity()
   }
   nextTick(() => {
-    ensureRecommendedBadge()
     maybeOpenBadgeWelcome()
   })
 }, { deep: true })
@@ -725,7 +705,11 @@ onBeforeUnmount(() => {
               <span><small>Next badge</small><strong>{{ trackedBadge.name }}</strong><em>{{ trackedBadge.progress }}/{{ trackedBadge.target }} activities completed</em><span class="map-next-badge__remaining">{{ trackedBadge.target - trackedBadge.progress }} more to go!</span><i><b :style="{ width: `${(trackedBadge.progress / trackedBadge.target) * 100}%` }"></b></i></span>
               <i class="bi bi-chevron-right" aria-hidden="true"></i>
             </button>
-            <span v-else class="map-next-badge__complete"><span class="map-hunt-entry__icon">🎉</span><span><small>Badges</small><strong>All caught up!</strong></span></span>
+            <button v-else class="map-next-badge__main" type="button" @click="openHuntSelector">
+              <span class="map-hunt-entry__icon">🏆</span>
+              <span><small>Next badge</small><strong>Choose your next badge!</strong></span>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
           </section>
         </div>
 
@@ -1481,7 +1465,7 @@ onBeforeUnmount(() => {
   .map-mobile-header-surface { display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap:.55rem; padding:.5rem .65rem; border-radius:20px; background:#fff8ef; box-shadow:0 4px 16px rgba(35,25,65,.12); }
   .map-header-card { display:flex; width:auto; max-width:none; min-width:0; padding:0; flex-direction:column; justify-content:center; border-radius:0; background:transparent; box-shadow:none; transition:none; }.map-header-card:hover { transform:none; box-shadow:none; }.map-header-card .gol-eyebrow { font-size:.59rem; }.map-header-card .gol-title { font-size:1.28rem; }
   .map-next-badge { min-width:8.2rem; padding-left:.55rem; align-items:center; }.map-next-badge__main > span:nth-child(2) { gap:.04rem; line-height:1.1; }.map-next-badge .map-hunt-entry__icon { width:1.7rem; height:1.7rem; border-radius:8px; font-size:.9rem; }.map-next-badge strong { font-size:.68rem; }.map-next-badge em { font-size:.58rem; }
-  .map-control-stack { --map-search-control-height:3.5rem; --map-selector-gap:.75rem; display:flex; flex:0 0 auto; flex-direction:column; gap:var(--map-selector-gap); width:100%; }.map-search-toolbar { display:grid; grid-template-columns:minmax(0, 1fr) 3rem; gap:.625rem; width:100%; }.map-search-toolbar :deep(.gol-search-bar),.map-search-toolbar :deep(.gol-filter-button) { min-height:var(--map-search-control-height); height:var(--map-search-control-height); }
+  .map-control-stack { --map-search-control-height:3.5rem; --map-selector-gap:.75rem; display:flex; flex:0 0 auto; flex-direction:column; gap:var(--map-selector-gap); width:100%; }.map-search-toolbar { display:grid; grid-template-columns:minmax(0, 1fr) var(--map-search-control-height); gap:.625rem; width:100%; }.map-search-toolbar :deep(.gol-search-bar),.map-search-toolbar :deep(.gol-filter-button) { min-height:var(--map-search-control-height); height:var(--map-search-control-height); }.map-search-toolbar :deep(.gol-filter-button) { width:var(--map-search-control-height); }
   .map-category-anchor { position:relative; height:2.85rem; }.map-category-selector { position:absolute; top:0; left:0; z-index:1; width:fit-content; min-width:10rem; max-width:calc(100% - 3.5rem); min-height:2.85rem; }.map-category-selector--expanded { width:calc(100% - 3.5rem); min-height:5.1rem; border-radius:16px; }.map-category-selector__summary { padding:.35rem .45rem .35rem .5rem; font-size:.7rem; }.map-category-selector__sparkle,.map-category-selector__summary > .bi,.map-category-selector__collapse { width:1.9rem; height:1.9rem; }.map-category-selector__rail { gap:.55rem; padding:.35rem .15rem .28rem .5rem; }.map-category-selector .map-category { flex-basis:3.9rem; font-size:.62rem; }.map-category-selector .map-category__icon { width:2.35rem; height:2.35rem; font-size:1rem; }.map-category-selector .map-category--selected .map-category__icon::after { top:-.32rem; right:-.32rem; width:1.08rem; height:1.08rem; font-size:.62rem; }.map-category-selector__collapse { margin-right:.45rem; }
   .map-nearby-row { bottom:calc(5.9rem + env(safe-area-inset-bottom)); left:.75rem; width:calc(100% - 1.5rem); max-width:none; gap:.35rem; }.map-nearby-switch { min-height:2.7rem; padding:0 .55rem; font-size:.7rem; }.map-radius-control { min-width:0; min-height:0; gap:.55rem; padding:.75rem 1rem; font-size:.65rem; }
   .map-activity-card { bottom:calc(6.1rem + env(safe-area-inset-bottom)); }
