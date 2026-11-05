@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { syncEventbriteToFirestore, getLastDailySync } from '@/services/api/eventbriteSync'
 import { getOrganisers, addOrganiser, removeOrganiser } from '@/services/api/organisers'
 import { reloadActivities } from '@/stores/activities'
-import CuratedActivities from '@/components/admin/CuratedActivities.vue'
+import GetOutLahPicks from '@/components/admin/GetOutLahPicks.vue'
 import NparksTrails from '@/components/admin/NparksTrails.vue'
 import '@/assets/discovery.css'
 
@@ -101,7 +101,7 @@ function remove(o) {
       <p v-if="syncMessage" class="adm-sync-msg" :class="{ failed: syncFailed }" role="status">{{ syncMessage }}</p>
     </div>
 
-    <CuratedActivities />
+    <GetOutLahPicks />
     <NparksTrails />
 
     <p v-if="message" class="det-msg">{{ message }}</p>

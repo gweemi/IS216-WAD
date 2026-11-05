@@ -154,7 +154,7 @@
 .adm-add { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .adm-add .form-control { flex: 1 1 200px; }
 
-/* ---- components/admin/CuratedActivities.vue ---- */
+/* ---- components/admin/GetOutLahPicks.vue ---- */
 .adm-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .adm-row-actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
 .adm-edit { border: none; border-radius: 999px; padding: 0.35rem 0.8rem; font-weight: 800; font-size: 0.8rem; background: transparent; color: var(--gol-purple); cursor: pointer; }

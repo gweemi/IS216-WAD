@@ -3,9 +3,9 @@
 // "getoutlahPicks"; the activity store combines them with external listings.
 import { ref, reactive, computed, onMounted } from 'vue'
 import { allActivities, loadActivities, reloadActivities, sourceErrors, seedFirestore } from '@/stores/activities'
-import { saveCurated, removeCurated } from '@/services/api/curated'
+import { saveCurated, removeCurated } from '@/services/api/getoutlahPicks'
 import { searchPlaces } from '@/services/api/onemap'
-import { emptyCurated, toCuratedActivity, CURATED_TYPES, ENERGY_LEVELS, CURATED_DESCRIPTION_MAX } from '@/utils/curated'
+import { emptyCurated, toCuratedActivity, CURATED_TYPES, ENERGY_LEVELS, CURATED_DESCRIPTION_MAX } from '@/utils/getoutlahPicks'
 import { seedActivities } from '@/data/seedActivities'
 import { INTERESTS } from '@/config/preferences'
 import { categoryLabel, priceText } from '@/utils/activityStyle'

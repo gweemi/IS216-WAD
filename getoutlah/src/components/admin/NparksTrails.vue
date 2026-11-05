@@ -3,7 +3,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { getNparksListings, saveNparksPresentation } from '@/services/api/nparksListings'
 import { INTERESTS } from '@/config/preferences'
-import { ENERGY_LEVELS } from '@/utils/curated'
+import { ENERGY_LEVELS } from '@/utils/getoutlahPicks'
 
 const trails = ref([])
 const loading = ref(false), message = ref(''), error = ref('')

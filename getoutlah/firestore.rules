@@ -63,7 +63,7 @@ service cloud.firestore {
 
     // Activities are stored in source-owned collections. The daily GitHub Action
     // uses the Admin SDK and bypasses these rules. Keep this in sync with
-    // src/utils/activitySource.js and src/utils/curated.js.
+    // src/utils/activitySource.js and src/utils/getoutlahPicks.js.
     function validActivity(d, expectedSource) {
       return d.title is string && d.title.size() >= 1 && d.title.size() <= 120
         && d.source == expectedSource

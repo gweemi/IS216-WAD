@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emptyCurated, toCuratedActivity } from '@/utils/curated'
+import { emptyCurated, toCuratedActivity } from '@/utils/getoutlahPicks'
 
 const filled = (over = {}) => ({ ...emptyCurated(), title: 'Pottery taster', description: '  Make a bowl in two hours.  ', area: 'Bugis', lat: '1.3009', lng: '103.8559', ...over })
 

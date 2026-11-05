@@ -2,7 +2,7 @@
 // Firestore collection; the activity store combines them with external listings.
 import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '@/firebase'
-import { toCuratedActivity } from '@/utils/curated'
+import { toCuratedActivity } from '@/utils/getoutlahPicks'
 import { ACTIVITY_COLLECTIONS } from '@/utils/activitySource'
 
 const picks = ACTIVITY_COLLECTIONS.getoutlahPicks

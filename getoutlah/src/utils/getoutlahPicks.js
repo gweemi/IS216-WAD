@@ -1,4 +1,4 @@
-// Admin-picked GetOutLah Picks: form starting values and validation before saving.
+// GetOutLah Picks: form starting values and validation before saving.
 // Pure functions, no Firebase. Keep the limits in sync with validActivity() in firestore.rules.
 import { categories } from '@/data/seedActivities'
 import { regionOf } from '@/utils/eventbriteMap'
