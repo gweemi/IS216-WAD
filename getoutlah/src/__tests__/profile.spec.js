@@ -7,7 +7,6 @@ import {
   firstName,
   savedActivities,
   buildPlans,
-  moodLists,
   wellbeingSuggestions,
 } from '@/utils/profile'
 
@@ -55,19 +54,23 @@ describe('saved', () => {
 })
 
 describe('my plans', () => {
-  it('combines joined activities and my OPENJIOs, soonest first', () => {
-    const plans = buildPlans({ planIds: ['a2', 'a1'], findActivity: find, jios: [jio()], uid: 'me', now })
-    expect(plans.map((p) => p.key)).toEqual(['j-j1', 'a-a1', 'a-a2'])
+  it('lists the OPENJIOs I’m going to, soonest first', () => {
+    const later = jio({ id: 'j2', startAt: new Date('2026-11-09T18:00:00') })
+    const plans = buildPlans({ jios: [later, jio()], uid: 'me', now })
+    expect(plans.map((p) => p.key)).toEqual(['j-j1', 'j-j2'])
     expect(plans[0]).toMatchObject({ kind: 'jio', role: 'going', to: '/activities?view=openJio' })
   })
 
   it('leaves out finished, cancelled, completed and other people’s jios', () => {
     const plans = buildPlans({
-      planIds: ['a1', 'a3'],
-      findActivity: find,
-      jios: [jio({ id: 'x', participants: ['host'] }), jio({ id: 'c', status: 'cancelled' })],
+      jios: [
+        jio({ id: 'x', participants: ['host'] }),
+        jio({ id: 'c', status: 'cancelled' }),
+        jio({ id: 'old', startAt: new Date('2026-10-01T18:00:00') }),
+        jio({ id: 'done' }),
+      ],
       uid: 'me',
-      completedIds: ['a1'],
+      completedIds: ['jio-done'],
       now,
     })
     expect(plans).toEqual([])
@@ -76,24 +79,10 @@ describe('my plans', () => {
   it('shows hosting and queued jios too', () => {
     const plans = buildPlans({
       jios: [jio({ id: 'h', hostId: 'me', participants: ['me'] }), jio({ id: 'q', participants: ['host'], waitlist: ['me'] })],
-      findActivity: find,
       uid: 'me',
       now,
     })
     expect(plans.map((p) => p.role).sort()).toEqual(['host', 'queued'])
-  })
-})
-
-describe('activity moods lists', () => {
-  it('splits completed activities into to-rate and rated', () => {
-    const completed = [
-      { id: 'a1', title: 'Pottery', date: '2026-10-01' },
-      { id: 'a2', title: 'Kayak', date: '2026-10-20' },
-    ]
-    const entries = [{ id: 'r1', activityId: 'a1', mood: 3 }, { id: 'r2', activityId: 'a2', mood: null }]
-    const { toRate, rated } = moodLists(completed, entries)
-    expect(toRate.map((a) => a.id)).toEqual(['a2'])
-    expect(rated.map((r) => r.id)).toEqual(['r1'])
   })
 })
 
@@ -108,31 +97,6 @@ describe('wellbeing suggestions', () => {
   })
   it('suggests things they like when doing well', () => {
     expect(wellbeingSuggestions(80, list, ['sports']).map((a) => a.title).sort()).toEqual(['Climb', 'HIIT'])
-  })
-})
-
-// ---------- Stores (localStorage, no Firebase) ----------
-describe('activity mood ratings', async () => {
-  const { reflections } = await import('@/stores/reflections.js')
-  const { rateActivity, moodFor } = await import('@/stores/activityMoods')
-
-  beforeEach(() => {
-    reflections.entries.splice(0)
-    reflections.pending.splice(0)
-  })
-
-  it('rates a completed activity and clears its "How was it?" prompt', () => {
-    reflections.pending.push({ activityId: 'a9', activityTitle: 'Kayak' })
-    rateActivity({ id: 'a9', title: 'Kayak', category: 'outdoors' }, 4)
-    expect(moodFor('a9')).toBe(4)
-    expect(reflections.pending).toHaveLength(0)
-  })
-
-  it('changes the mood instead of adding a second rating', () => {
-    rateActivity({ id: 'a9', title: 'Kayak' }, 4)
-    rateActivity({ activityId: 'a9', activityTitle: 'Kayak' }, 2)
-    expect(reflections.entries).toHaveLength(1)
-    expect(moodFor('a9')).toBe(2)
   })
 })
 

@@ -30,7 +30,7 @@ describe('visibleProfile', () => {
   it('hides what the user switched off', () => {
     const off = Object.fromEntries(Object.keys(DEFAULT_PRIVACY).map((k) => [k, false]))
     const v = visibleProfile({ ...amy, privacy: off })
-    expect(v).toMatchObject({ photoURL: null, universityName: null, freeWindows: [], checkedInActivityIds: [], discoverable: false })
+    expect(v).toMatchObject({ photoURL: null, universityName: null, checkedInActivityIds: [], discoverable: false })
   })
 
   it('fills in defaults for switches not chosen yet', () => {
@@ -48,7 +48,7 @@ describe('Friends page respects privacy', () => {
     ]
   })
 
-  it('shows a friend’s photo, uni, free time and check-ins when allowed', async () => {
+  it('shows a friend’s photo, uni and check-ins when allowed', async () => {
     friendsState.profiles = { amy }
     expect(friendList.value[0]).toMatchObject({ photoURL: amy.photoURL, universityName: 'SMU' })
     expect(friendList.value[0].freeWindows).toHaveLength(1)
@@ -57,9 +57,9 @@ describe('Friends page respects privacy', () => {
 
   it('hides them when the friend switched them off (even the photo saved on the request)', async () => {
     friendsState.profiles = {
-      amy: { ...amy, privacy: { showPhoto: false, showUniversity: false, shareFreeTime: false, shareActivity: false } },
+      amy: { ...amy, privacy: { showPhoto: false, showUniversity: false, shareActivity: false } },
     }
-    expect(friendList.value[0]).toMatchObject({ photoURL: null, universityName: null, freeWindows: [] })
+    expect(friendList.value[0]).toMatchObject({ photoURL: null, universityName: null })
     expect(await friendsWhoDid('act-1')).toEqual([])
   })
 })

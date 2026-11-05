@@ -7,7 +7,6 @@ import { friendsWhoDid } from '@/stores/ports'
 import { recordCheckIn } from '@/services/friends'
 import InviteFriendsSheet from '@/components/friends/InviteFriendsSheet.vue'
 import { checkInToActivity } from '@/stores/gamification(badges).js'
-import { isPlanned, togglePlan, removePlan } from '@/stores/plans'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, bookingLink, durationText } from '@/utils/activityStyle'
@@ -45,14 +44,12 @@ const shownDescription = computed(() => {
   return first100 + '…'
 })
 const saved = computed(() => (activity.value ? isSaved(activity.value.id) : false))
-const planned = computed(() => (activity.value ? isPlanned(activity.value.id) : false))   
 const jios = useOpenJioStore()
 const jioSuspended = computed(() =>
   activity.value?.type === 'openJio' && jios.all.find((j) => j.id === activity.value.jioId)?.status === 'suspended')
 
 watchEffect(async () => { if (activity.value) friendsDid.value = await friendsWhoDid(activity.value.id) })
 
-async function run(fn, ok) { message.value = ''; try { await fn(); message.value = ok } catch (e) { message.value = e.message } }
 const doCheckIn = async () => {
   message.value = ''
   earnedBadges.value = []
@@ -63,13 +60,11 @@ const doCheckIn = async () => {
     energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openJio', hostedByMe: !!a.hostedByMe,
     }, await request())
     if (!r.ok) throw new Error(r.message)
-    await removePlan(a.id).catch(() => {})
     recordCheckIn(a.id).catch(() => {})
     message.value = r.message
     earnedBadges.value = r.newBadges ?? []
   } catch (error) { message.value = error.message }
 }
-const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'Removed from your plans.' : 'Added to My plans on your Profile.')
 </script>
 
 <template>
@@ -138,9 +133,6 @@ const doJoin = () => run(() => togglePlan(activity.value.id), planned.value ? 'R
               <i class="bi bi-ticket-perforated"></i> {{ booking.label }} <i class="bi bi-box-arrow-up-right"></i>
             </a>
             <button v-if="activity.lat != null && !jioSuspended" class="gol-btn-primary" @click="doCheckIn">Check in</button>
-            <button v-if="!jioSuspended" class="gol-btn-soft" :aria-pressed="planned" @click="doJoin">
-              <i class="bi" :class="planned ? 'bi-calendar-check-fill' : 'bi-calendar-plus'"></i> {{ planned ? 'Added to calendar' : 'Add to calendar' }}
-            </button>
             <button class="gol-btn-soft" @click="toggleSaved(activity.id)">
               <i class="bi" :class="saved ? 'bi-bookmark-fill' : 'bi-bookmark'"></i> {{ saved ? 'Saved' : 'Save' }}
             </button>
