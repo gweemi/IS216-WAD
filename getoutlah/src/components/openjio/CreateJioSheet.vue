@@ -38,24 +38,60 @@
         </select>
       </label>
 
-      <div class="field-row" style="grid-template-columns: 7fr 5fr">
-        <label class="field">
-          <span>Where?</span>
+      <!-- Location: same fields as the admin form. Search OneMap, or type coordinates -->
+      <div class="field">
+        <label for="jio-place">Location</label>
+        <div class="place-search">
           <input
-            v-model="form.location"
+            id="jio-place"
+            v-model="placeQuery"
             class="form-control"
-            :maxlength="LIMITS.locationMax"
-            placeholder="e.g. SMU Sports Hall"
-            data-testid="jio-location"
+            placeholder="Place, address or postal code"
+            data-testid="jio-place"
+            @keydown.enter.prevent="findPlace"
           />
+          <button type="button" class="gol-btn-soft place-find" :disabled="searching" data-testid="jio-find-place" @click="findPlace">
+            {{ searching ? '…' : 'Find' }}
+          </button>
+        </div>
+        <p v-if="placeError" class="place-help" role="status">{{ placeError }}</p>
+        <ul v-if="places.length" class="place-results" data-testid="jio-places">
+          <li v-for="p in places" :key="p.address">
+            <button type="button" class="place-pick" @click="pickPlace(p)">
+              <strong>{{ p.name }}</strong><span>{{ p.address }}</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <label class="field">
+        <span>Area name</span>
+        <input
+          v-model="form.location"
+          class="form-control"
+          :maxlength="LIMITS.locationMax"
+          placeholder="e.g. SMU Sports Hall"
+          data-testid="jio-location"
+        />
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Latitude</span>
+          <input v-model="form.lat" type="number" step="any" class="form-control" data-testid="jio-lat" @change="regionFromCoords" />
         </label>
         <label class="field">
-          <span>Region</span>
-          <select v-model="form.region" class="form-select text-capitalize" data-testid="jio-region">
-            <option v-for="r in REGIONS" :key="r" :value="r">{{ r }}</option>
-          </select>
+          <span>Longitude</span>
+          <input v-model="form.lng" type="number" step="any" class="form-control" data-testid="jio-lng" @change="regionFromCoords" />
         </label>
       </div>
+
+      <label class="field">
+        <span>Region</span>
+        <select v-model="form.region" class="form-select text-capitalize" data-testid="jio-region">
+          <option v-for="r in REGIONS" :key="r" :value="r">{{ r }}</option>
+        </select>
+      </label>
 
       <div class="field-row">
         <label class="field">
@@ -183,11 +219,16 @@ import { INTERESTS } from '@/config/preferences'
 import { VISIBILITY, REGIONS, LIMITS, validateJio } from '@/utils/openjio'
 import { createJio, updateJio, friendlyJioError } from '@/services/openjio'
 import { friendsState, friendList } from '@/stores/friends'
+import { searchPlaces } from '@/services/api/onemap'
+import { regionOf } from '@/utils/eventbriteMap'
 
 // 'YYYY-MM-DD' in the user's own time zone
 function isoDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+
+// Number inputs give '' when empty: save that as no coordinate
+const toCoord = (v) => (v === '' || v == null ? null : Number(v))
 
 // Tomorrow at 3pm
 function defaultStart() {
@@ -235,6 +276,10 @@ export default {
       error: '',
       confirmationOpen: false,
       pendingJio: null,
+      placeQuery: '',
+      places: [],
+      placeError: '',
+      searching: false,
     }
   },
   watch: {
@@ -261,6 +306,8 @@ export default {
     jio() {
       return {
         ...this.form,
+        lat: toCoord(this.form.lat),
+        lng: toCoord(this.form.lng),
         startAt: this.date && this.time ? new Date(`${this.date}T${this.time}`) : null,
         durationMins: Math.round(this.hours * 60),
       }
@@ -310,6 +357,40 @@ export default {
       this.error = ''
       this.confirmationOpen = false
       this.pendingJio = null
+      this.placeQuery = ''
+      this.places = []
+      this.placeError = ''
+    },
+
+    async findPlace() {
+      this.placeError = ''
+      if (!this.placeQuery.trim()) return
+      this.searching = true
+      try {
+        this.places = await searchPlaces(this.placeQuery)
+        if (!this.places.length) this.placeError = 'Nothing found. Try the postal code.'
+      } catch (err) {
+        this.places = []
+        this.placeError = err.message
+      } finally {
+        this.searching = false
+      }
+    },
+
+    // Same as the admin form: fill in the coordinates, and the area name if it's still empty
+    pickPlace(p) {
+      this.form.lat = p.lat
+      this.form.lng = p.lng
+      if (!this.form.location.trim()) this.form.location = p.name.slice(0, LIMITS.locationMax)
+      this.placeQuery = p.address
+      this.places = []
+      this.regionFromCoords()
+    },
+
+    // Admin activities get their region from the coordinates; do the same here
+    regionFromCoords() {
+      const region = regionOf(toCoord(this.form.lat), toCoord(this.form.lng))
+      if (region) this.form.region = region
     },
 
     onSubmit() {
@@ -348,7 +429,8 @@ export default {
 <style scoped>
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 .field { display: block; margin-bottom: 0.75rem; border: 0; padding: 0; }
-.field > span {
+.field > span,
+.field > label {
   display: block;
   font-weight: 800;
   font-size: 0.85rem;
@@ -360,6 +442,15 @@ export default {
   border: 2px solid var(--gol-card-edge);
   font-weight: 600;
 }
+/* Location search: same look as the admin form's OneMap search */
+.place-search { display: flex; gap: 0.5rem; }
+.place-search .form-control { flex: 1; min-width: 0; }
+.place-find { flex: none; padding-inline: 1rem; }
+.place-help { margin: 0.3rem 0 0; font-size: 0.78rem; font-weight: 600; color: var(--gol-muted); }
+.place-results { list-style: none; padding: 0; margin: 0.4rem 0 0; display: grid; gap: 0.3rem; max-height: 14rem; overflow-y: auto; }
+.place-pick { width: 100%; text-align: left; display: flex; flex-direction: column; border: 1px solid var(--gol-card-edge); border-radius: 10px; background: var(--gol-card); padding: 0.45rem 0.7rem; cursor: pointer; }
+.place-pick:hover { border-color: var(--gol-purple); }
+.place-pick span { font-weight: 600; font-size: 0.75rem; color: var(--gol-muted); }
 .form-control:focus,
 .form-select:focus {
   border-color: var(--gol-purple);

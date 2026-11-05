@@ -158,6 +158,14 @@ export async function getJioAttendees(_id, { legacyParticipants = [], hostId = n
   return getProfiles(legacyParticipants)
 }
 
+// Only the host can see who has choped a spot, in queue order.
+export async function getJioQueue(_id, { waitlist = [], hostId = null } = {}) {
+  if (currentUser().user.uid !== hostId) throw new Error('Only the host can see the queue.')
+  const profiles = await getProfiles(waitlist)
+  const byUid = new Map(profiles.map((p) => [p.uid, p]))
+  return waitlist.filter((uid) => byUid.has(uid)).map((uid, i) => ({ ...byUid.get(uid), position: i + 1 }))
+}
+
 const ACTIONS = {
   join: [joinJio, "You're in! See you there."],
   chope: [chopeJio, "Choped! If a spot opens up, it's yours."],
