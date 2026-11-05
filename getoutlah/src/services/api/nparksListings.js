@@ -27,7 +27,6 @@ export function nparksPresentation(form) {
 }
 
 export async function saveNparksPresentation(id, form) {
-  // Only UI-owned presentation fields are sent. nparks identifiers and route references stay untouched.
   await setDoc(doc(db, externalListings, id), {
     ...nparksPresentation(form), source: 'externalListings', provider: NPARKS_PROVIDER, contentType: NPARKS_CONTENT_TYPE,
   }, { merge: true })

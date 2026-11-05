@@ -6,10 +6,10 @@ const day = (n) => NOW + n * 86400000
 const list = [
   { id: 'eb-3', title: 'Clay Jam', area: 'Bugis', startsAt: day(3), seriesId: 's1' },
   { id: 'eb-1', title: 'Clay Jam', area: 'Bugis', startsAt: day(1), seriesId: 's1' },
-  { id: 'eb-0', title: 'Clay Jam', area: 'Bugis', startsAt: day(-2), seriesId: 's1' },   // already over
+  { id: 'eb-0', title: 'Clay Jam', area: 'Bugis', startsAt: day(-2), seriesId: 's1' },
   { id: 's5', title: 'Board Game Blitz', area: 'Tiong Bahru' },
-  { id: 'x1', title: 'Board game blitz ', area: 'Tiong Bahru' },                         // same title + place, no series
-  { id: 'x2', title: 'Board Game Blitz', area: 'Tampines' },                             // different place
+  { id: 'x1', title: 'Board game blitz ', area: 'Tiong Bahru' },
+  { id: 'x2', title: 'Board Game Blitz', area: 'Tampines' },
 ]
 
 describe('repeating events', () => {

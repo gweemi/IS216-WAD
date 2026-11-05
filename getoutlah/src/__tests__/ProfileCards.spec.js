@@ -1,4 +1,3 @@
-// "My vibe" (preferences) and "Privacy" cards on the Profile page.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
@@ -46,7 +45,6 @@ describe('My vibe card', () => {
   it('edits and saves them with the questionnaire', async () => {
     const w = mount(PreferencesCard, opts)
     await w.find('[data-testid="edit-preferences"]').trigger('click')
-    // Starts with the current answers: just go through the steps and save
     await w.find('[data-testid="interest-outdoors"]').trigger('click')
     for (let i = 0; i < 3; i++) await w.find('[data-testid="prefs-next"]').trigger('click')
     await flushPromises()

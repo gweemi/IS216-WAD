@@ -1,4 +1,3 @@
-// Checks that redeeming a voucher takes its cost off the points shown everywhere.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
@@ -14,15 +13,15 @@ describe('redeeming a voucher', () => {
 
   it('takes the voucher cost off the points you can spend', () => {
     expect(availablePoints()).toBe(400)
-    expect(redeemVoucher('cafe-5').ok).toBe(true)   // 75 pts
+    expect(redeemVoucher('cafe-5').ok).toBe(true)
     expect(availablePoints()).toBe(325)
-    expect(totalPoints()).toBe(400) // everything ever earned is still in the history
+    expect(totalPoints()).toBe(400)
   })
 
   it('updates the points card straight away', async () => {
     const w = mount(PointsCard)
     expect(w.text()).toContain('400 pts')
-    redeemVoucher('retail-10')   // 250 pts
+    redeemVoucher('retail-10')
     await nextTick()
     expect(w.text()).toContain('150 pts')
     expect(w.text()).not.toContain('Level')

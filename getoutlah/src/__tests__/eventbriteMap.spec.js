@@ -1,8 +1,6 @@
-// Turning Eventbrite's raw events into our activities (shared by the admin sync button and the daily GitHub Action).
 import { describe, it, expect } from 'vitest'
 import { fromEventbrite, planActivityWrites, htmlToText } from '@/utils/eventbriteMap'
 
-// Trimmed from a real Mapletree Arts in the City event.
 const event = {
   id: '2001113878479',
   name: { text: 'Waterfront Escapades (Wind Band Marathon)' },
@@ -71,7 +69,7 @@ describe('planActivityWrites', () => {
     const again = planActivityWrites([event], new Map([['eb-2001113878479', { source: 'externalListings' }]]), now)
     expect(again).toMatchObject({ added: 0, updated: 1 })
     expect(again.writes[0].merge).toBe(true)
-    expect(again.writes[0].data).not.toHaveProperty('category')   // admin edits survive
+    expect(again.writes[0].data).not.toHaveProperty('category')
   })
 
   it('skips past and business events', () => {
@@ -93,7 +91,7 @@ describe('planActivityWrites', () => {
   })
 
   it('keeps an event that is happening right now', () => {
-    const during = Date.parse('2026-11-15T08:00:00Z')   // between start and end
+    const during = Date.parse('2026-11-15T08:00:00Z')
     const existing = new Map([['eb-2001113878479', { source: 'externalListings', organiserId: '49232782843' }]])
     expect(planActivityWrites([event], existing, during)).toMatchObject({ updated: 1, removed: 0 })
   })

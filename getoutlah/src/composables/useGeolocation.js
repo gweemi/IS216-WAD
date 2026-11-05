@@ -1,5 +1,4 @@
 import { ref } from 'vue'
-// Browser geolocation (needs https or localhost, and the user's permission).
 export function useGeolocation() {
   const coords = ref(null), error = ref(null), loading = ref(false)
   const request = () => new Promise((resolve) => {

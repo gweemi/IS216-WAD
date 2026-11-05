@@ -22,7 +22,6 @@
     </div>
     <TransitionGroup tag="ul" name="refl" class="list-unstyled mb-2 d-grid gap-2">
       <li v-for="r in shown" :key="r.id">
-        <!-- Tap a reflection to change its mood or note, or delete it -->
         <button class="refl-row" :aria-label="'Edit reflection for ' + r.activityTitle" data-testid="reflection-row" @click="openEdit(r)">
           <span class="face" :class="mood(r) ? 'dot--' + mood(r).color : ''">
             <i class="bi" :class="mood(r) ? mood(r).icon : 'bi-pencil'"></i>

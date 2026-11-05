@@ -1,5 +1,3 @@
-// Singapore address / postal code search from OneMap (Singapore Land Authority). Search needs no API key.
-// Used by the admin page so admins can type "Plaza Singapura" or "238839" instead of coordinates.
 const URL = 'https://www.onemap.gov.sg/api/common/elastic/search'
 
 const nice = (v) => (v && v !== 'NIL' ? v : '')

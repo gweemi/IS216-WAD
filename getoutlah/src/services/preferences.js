@@ -1,4 +1,3 @@
-// Saves and checks the answers from the new-user questionnaire.
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { useAuthStore } from '@/stores/auth'
@@ -15,10 +14,6 @@ import {
 const ids = (list) => list.map((o) => o.id)
 const allowedBudgets = BUDGETS.map((b) => b.maxBudget)
 
-/**
- * Returns a list of problems with the answers ([] means they're fine).
- * Used by the form before saving, and mirrored by firestore.rules.
- */
 export function validatePreferences(prefs) {
   const problems = []
   const interests = prefs?.interests ?? []
@@ -38,7 +33,6 @@ export function validatePreferences(prefs) {
   return problems
 }
 
-/** Saves the answers to users/{uid}.preferences and updates the app straight away. */
 export async function savePreferences(prefs) {
   const problems = validatePreferences(prefs)
   if (problems.length) throw new Error(problems[0])
@@ -47,7 +41,7 @@ export async function savePreferences(prefs) {
   if (!auth.user) throw new Error('Please log in again.')
 
   const preferences = {
-    interests: [...new Set(prefs.interests)], // no duplicates
+    interests: [...new Set(prefs.interests)],
     maxBudget: prefs.maxBudget,
     energyLevel: prefs.energyLevel,
     groupPreference: prefs.groupPreference,

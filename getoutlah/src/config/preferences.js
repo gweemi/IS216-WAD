@@ -1,10 +1,3 @@
-// The options shown in the new-user questionnaire.
-//
-// The `id`s are what gets saved in Firestore (users/{uid}.preferences), so the
-// recommendation code should use these SAME ids, e.g. an activity's `category`
-// should be one of the INTEREST ids below. Labels and emojis can change freely;
-// ids should not (old answers would stop matching).
-// See PREFERENCES.md for the full data format.
 
 export const INTERESTS = [
   { id: 'outdoors', label: 'Outdoors & nature', emoji: '🌳', hint: 'Hikes, parks, beaches', color: '#B8EC61', mapIcon: 'tree' },
@@ -20,8 +13,6 @@ export const INTERESTS = [
 
 export const PREFERENCES_VERSION = 2
 
-// maxBudget is the most (in SGD) someone wants to spend on one activity.
-// null means "no limit".
 export const BUDGETS = [
   { id: 'free', label: 'Free only', maxBudget: 0 },
   { id: 'under10', label: 'Up to $10', maxBudget: 10 },
@@ -45,7 +36,6 @@ export const GROUP_PREFERENCES = [
 export const MIN_INTERESTS = 1
 export const MAX_INTERESTS = INTERESTS.length
 
-/** Turn an interest id back into its label, e.g. 'food' → 'Food & cafés'. */
 export function interestLabel(id) {
   return INTERESTS.find((i) => i.id === id)?.label ?? id
 }

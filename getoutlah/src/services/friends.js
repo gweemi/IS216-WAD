@@ -1,16 +1,3 @@
-// =============================================================
-// GetOutLah! — Friends & notifications (Firestore)
-//
-// Collections (rules in firestore.rules):
-//   friendships/{uidA_uidB}  { members: [uidA, uidB], requestedBy, status: 'pending' | 'accepted',
-//                              names: { uid: name }, photos: { uid: url }, createdAt, acceptedAt }
-//   notifications/{id}       { to, from, fromName, fromPhoto, type, activityId?, activityTitle?,
-//                              read, createdAt }
-//                              type: 'friend_request' | 'friend_accepted' | 'activity_invite'
-//   users/{uid}.checkedInActivityIds  [activityId] — powers "Friends who have done this"
-//
-// startFriends(uid) is called from main.js whenever the logged-in user changes.
-// =============================================================
 import {
   collection, doc, query, where, limit, onSnapshot, getDocs, setDoc, updateDoc, deleteDoc,
   addDoc, writeBatch, serverTimestamp, arrayUnion,
@@ -21,8 +8,8 @@ import { friendsState, resetFriendsState, relationshipWith } from '@/stores/frie
 import { pairId, otherMember, toMillis } from '@/utils/friends'
 import { privacyOf, visibleProfile } from '@/config/privacy'
 
-let unsubs = [] // my friendships, my notifications
-const profileUnsubs = {} // uid → unsubscribe, one per friend / requester
+let unsubs = []
+const profileUnsubs = {}
 
 function stopAll() {
   unsubs.forEach((u) => u())
@@ -33,7 +20,6 @@ function stopAll() {
   }
 }
 
-/** Start (or stop, with no uid) the live listeners for the logged-in user. */
 export function startFriends(uid) {
   if (uid === friendsState.uid) return
   stopAll()
@@ -73,7 +59,6 @@ export function startFriends(uid) {
   )
 }
 
-// Keep one live listener per person I'm connected to, so their profile stays fresh.
 function syncProfileListeners() {
   const wanted = new Set(friendsState.friendships.map((f) => otherMember(f, friendsState.uid)))
   for (const uid of wanted) {
@@ -90,14 +75,12 @@ function syncProfileListeners() {
   }
 }
 
-// ---------- helpers ----------
 function me() {
   const auth = useAuthStore()
   if (!auth.user) throw new Error('Please log in first.')
   return {
     uid: auth.user.uid,
     name: auth.profile?.displayName || auth.user.displayName || auth.email.split('@')[0],
-    // Respect my own Profile → Privacy setting when my photo is copied into requests and notifications
     photo: privacyOf(auth.profile).showPhoto ? auth.profile?.photoURL || auth.user.photoURL || null : null,
   }
 }
@@ -109,19 +92,15 @@ function notify(to, type, extra = {}) {
   })
 }
 
-// ---------- finding people ----------
-/** Look someone up by their exact login email. Returns { uid, ...profile } or null. */
 export async function findUserByEmail(email) {
   const clean = email.trim().toLowerCase()
   if (!clean) return null
   const snap = await getDocs(query(collection(db, 'users'), where('email', '==', clean), limit(1)))
   if (snap.empty) return null
   const person = { uid: snap.docs[0].id, ...visibleProfile(snap.docs[0].data()) }
-  // "Let people find me" switched off: act as if they aren't on GetOutLah!
   return person.discoverable || relationshipWith(person.uid) !== 'none' ? person : null
 }
 
-/** A few students from my university that I'm not connected to yet. */
 export async function suggestedPeople(universityId, max = 6) {
   if (!universityId) return []
   const snap = await getDocs(query(collection(db, 'users'), where('universityId', '==', universityId), limit(30)))
@@ -131,7 +110,6 @@ export async function suggestedPeople(universityId, max = 6) {
     .slice(0, max)
 }
 
-// ---------- friend requests ----------
 export async function sendFriendRequest(person) {
   const mine = me()
   if (person.uid === mine.uid) throw new Error("That's you!")
@@ -160,7 +138,6 @@ export async function acceptFriendRequest(friendshipId) {
   await markRequestNotificationsRead(f.requestedBy)
 }
 
-/** Decline a request, cancel one I sent, or unfriend. */
 export async function removeFriendship(friendshipId) {
   const f = friendsState.friendships.find((x) => x.id === friendshipId)
   await deleteDoc(doc(db, 'friendships', friendshipId))
@@ -174,15 +151,12 @@ function markRequestNotificationsRead(fromUid) {
   return markRead(ids)
 }
 
-// ---------- invites ----------
-/** Send an activity invite to each friend uid. */
 export async function inviteFriends(activity, friendUids) {
   await Promise.all(
     friendUids.map((uid) => notify(uid, 'activity_invite', { activityId: activity.id, activityTitle: activity.title })),
   )
 }
 
-// ---------- notifications ----------
 export async function markRead(ids) {
   if (!ids.length) return
   const batch = writeBatch(db)
@@ -198,8 +172,6 @@ export function deleteNotification(id) {
   return deleteDoc(doc(db, 'notifications', id))
 }
 
-// ---------- check-ins ----------
-/** Remember that I did this activity, so it shows under "Friends who have done this" for my friends. */
 export function recordCheckIn(activityId) {
   return updateDoc(doc(db, 'users', me().uid), { checkedInActivityIds: arrayUnion(String(activityId)) })
 }

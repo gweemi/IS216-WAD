@@ -1,8 +1,3 @@
-// Admin tool: copy the organisers' live Eventbrite events into Firestore "externalListings".
-// A GitHub Action (scripts/sync-eventbrite.mjs) does the same every day; this button is for running it by hand.
-// It is safe to run again: existing activities only get their Eventbrite-owned fields refreshed
-// (title, time, price, place), so manual edits to category, energy level etc. are kept.
-// Events that have ended or were taken off Eventbrite are deleted.
 import { collection, getDoc, getDocs, writeBatch, doc } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { useAuthStore } from '@/stores/auth'
@@ -12,16 +7,14 @@ import { ACTIVITY_COLLECTIONS } from '@/utils/activitySource'
 
 const externalListings = ACTIVITY_COLLECTIONS.externalListings
 
-// When the daily GitHub Action last finished. "Sync now" doesn't change it, so it shows the 6am run is working.
 export async function getLastDailySync() {
   const snap = await getDoc(doc(db, 'config', 'eventbriteSync'))
   if (!snap.exists()) {
-    return null // the daily sync has never run
+    return null
   }
   return snap.data().lastDailySyncAt ?? null
 }
 
-// The token is typed on the admin page, so it never has to be baked into the website.
 export async function syncEventbriteToFirestore({ token } = {}) {
   const profile = useAuthStore().profile
   if (!profile || profile.role !== 'admin') throw new Error('Admins only')
@@ -33,7 +26,7 @@ export async function syncEventbriteToFirestore({ token } = {}) {
   const existingDocs = await getDocs(collection(db, externalListings))
   const existing = new Map(existingDocs.docs.map((d) => [d.id, d.data()]))
   const { writes, deletes, added, updated, skipped, removed } = planActivityWrites(events, existing, Date.now(), failedOrganisers)
-  for (let i = 0; i < writes.length; i += 500) {   // a Firestore batch holds up to 500 writes
+  for (let i = 0; i < writes.length; i += 500) {
     const batch = writeBatch(db)
     writes.slice(i, i + 500).forEach((w) => batch.set(doc(db, externalListings, w.id), w.data, { merge: w.merge }))
     await batch.commit()

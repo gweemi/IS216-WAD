@@ -1,5 +1,3 @@
-// Route geometry is bundled with the app, so normal map use never depends on
-// data.gov.sg availability. Vite emits these imports as hosted asset URLs.
 import treeTopUrl from '@/data/geojson-routes/nparks/treetop-walk.geojson?url&no-inline'
 import macritchieUrl from '@/data/geojson-routes/nparks/macritchie-nature-trail.geojson?url&no-inline'
 import dairyFarmUrl from '@/data/geojson-routes/nparks/dairy-farm-loop.geojson?url&no-inline'

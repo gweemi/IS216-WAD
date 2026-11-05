@@ -1,5 +1,3 @@
-// Checks where the router sends people, depending on whether they're logged in
-// and whether they've answered the questionnaire.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import MapView from '@/views/MapView.vue'
 
@@ -22,7 +20,6 @@ async function visit(path) {
 }
 
 beforeEach(async () => {
-  // start every test from the landing page, logged out
   Object.assign(fakeAuth, { isLoggedIn: false, hasPreferences: false, isAdmin: false })
   await router.replace('/')
 })

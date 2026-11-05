@@ -1,4 +1,3 @@
-// Checks that each OPENJIO card shows the right details and button for the user.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
@@ -47,7 +46,6 @@ function card(changes, uid = 'me') {
   return mount(JioCard, { props: { jio, uid } })
 }
 
-// Same card, but clickable through to the activity detail page (as on the Activities page).
 function linkedCard(changes = {}) {
   const w = card(changes)
   const push = vi.fn()
@@ -77,7 +75,6 @@ describe('JioCard', () => {
     await button(w).trigger('click')
     await flushPromises()
     expect(calls).toEqual([['join', 'j1']])
-    // First join earns Crew energy: its pop-up comes first, then "You have been jioed" instead of a line of text
     expect(badgePopup.showNewBadges.mock.calls[0][0].map((b) => b.id)).toEqual(['crew-energy'])
     expect(w.find('[data-testid="jio-message"]').exists()).toBe(false)
     expect(document.body.textContent).toContain('You have been jioed!')
@@ -146,7 +143,7 @@ describe('JioCard', () => {
   it('opens the activity detail page when the card is clicked', async () => {
     const { w, push } = linkedCard()
     expect(w.text()).not.toContain('View details')
-    expect(button(w).exists()).toBe(false) // join / leave live on the detail page instead
+    expect(button(w).exists()).toBe(false)
     await w.find('.jio-desc, .jio-meta').trigger('click')
     expect(push).toHaveBeenCalledWith({ name: 'activity', params: { id: 'jio-j1' } })
   })
@@ -175,7 +172,7 @@ describe('JioCard', () => {
     const long = 'Court is booked from 3pm, bring your own racket and water, we will split the shuttlecock cost after'
     const w = card({ description: long })
     const desc = w.get('[data-testid="jio-desc"]')
-    expect(desc.text()).toBe(long) // all of it is there for screen readers; CSS trims it to one line with …
+    expect(desc.text()).toBe(long)
     expect(desc.attributes('title')).toBeUndefined()
   })
 

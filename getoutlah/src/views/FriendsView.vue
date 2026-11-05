@@ -1,8 +1,3 @@
-<!--
-  Friends tab: add friends by email and answer requests.
-  Layout: one column on phones, two columns from large screens (Bootstrap grid).
-  Notifications (bell, top right) live at /notifications.
--->
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
@@ -15,7 +10,6 @@ import BottomSheet from '@/components/common/BottomSheet.vue'
 
 const auth = useAuthStore()
 
-// ---- add by email ----
 const email = ref('')
 const searching = ref(false)
 const addMsg = ref({ text: '', ok: true })
@@ -36,7 +30,6 @@ async function addByEmail() {
   }
 }
 
-// ---- suggestions from the same university ----
 const suggestions = ref([])
 async function loadSuggestions() {
   try {
@@ -49,7 +42,6 @@ onMounted(loadSuggestions)
 watch(() => friendsState.ready, (ready) => ready && loadSuggestions())
 const visibleSuggestions = computed(() => suggestions.value.filter((p) => relationshipWith(p.uid) === 'none'))
 
-// ---- actions ----
 const busy = ref('')
 const actionError = ref('')
 async function run(id, fn) {
@@ -64,7 +56,7 @@ async function run(id, fn) {
   }
 }
 
-const selected = ref(null) // friend shown in the bottom sheet
+const selected = ref(null)
 async function unfriend() {
   const f = selected.value
   await run(f.id, () => removeFriendship(f.id))
@@ -75,7 +67,6 @@ async function unfriend() {
 <template>
   <main class="gol-page" data-testid="friends-page">
     <div class="container py-3 py-md-4" style="max-width: 1100px">
-      <!-- Header + bell -->
       <header class="d-flex justify-content-between align-items-start gap-3 mb-3">
         <div>
           <p class="gol-eyebrow">Your crew</p>
@@ -101,9 +92,7 @@ async function unfriend() {
       <div v-if="actionError" class="alert alert-danger small py-2">{{ actionError }}</div>
 
       <div class="row g-3">
-        <!-- Left column (full width on phones) -->
         <div class="col-12 col-lg-7 d-flex flex-column gap-3">
-          <!-- Requests waiting for me -->
           <section
             v-if="incomingRequests.length"
             class="gol-card border border-2"
@@ -133,7 +122,6 @@ async function unfriend() {
             </ul>
           </section>
 
-          <!-- My friends -->
           <section class="gol-card">
             <div class="d-flex justify-content-between align-items-baseline mb-2">
               <h2 class="gol-section-title">Your friends</h2>
@@ -171,7 +159,6 @@ async function unfriend() {
             </div>
           </section>
 
-          <!-- Requests I sent -->
           <section v-if="outgoingRequests.length" class="gol-card">
             <h2 class="gol-section-title mb-2">Waiting for a reply</h2>
             <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
@@ -184,9 +171,7 @@ async function unfriend() {
           </section>
         </div>
 
-        <!-- Right column (below the left one on phones) -->
         <div class="col-12 col-lg-5 d-flex flex-column gap-3">
-          <!-- Add a friend -->
           <section class="gol-card">
             <h2 class="gol-section-title mb-2"><i class="bi bi-person-plus me-1"></i> Add a friend</h2>
             <form class="d-flex gap-2" @submit.prevent="addByEmail">
@@ -208,7 +193,6 @@ async function unfriend() {
             >{{ addMsg.text }}</p>
           </section>
 
-          <!-- People from the same university -->
           <section v-if="visibleSuggestions.length" class="gol-card">
             <h2 class="gol-section-title mb-2">From {{ auth.profile?.universityName }}</h2>
             <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
@@ -225,7 +209,6 @@ async function unfriend() {
       </div>
     </div>
 
-    <!-- Friend details (slides up on phones, centred pop-up on laptops) -->
     <BottomSheet :open="!!selected" label="Friend details" @close="selected = null">
       <template v-if="selected">
         <div class="d-flex justify-content-end">

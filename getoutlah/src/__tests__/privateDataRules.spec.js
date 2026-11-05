@@ -1,6 +1,3 @@
-// Firestore rules for users/{uid}/private/* (wellbeing + reflections).
-// Runs only with the emulator, like firestoreRulesEmulator.spec.js:
-//   pnpm exec firebase emulators:exec --only firestore --project demo-getoutlah "pnpm test:unit --run"
 import { afterAll, beforeAll, describe, it } from 'vitest'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'

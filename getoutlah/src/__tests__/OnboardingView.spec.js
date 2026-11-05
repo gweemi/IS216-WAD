@@ -1,4 +1,3 @@
-// Checks the questionnaire page has a way out (log out) for the wrong account.
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 

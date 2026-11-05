@@ -1,14 +1,3 @@
-// Safe, operator-run migration from activities/{id} to source-owned collections.
-// Nothing runs unless one explicit mode is supplied. This script is intended for
-// a maintenance window; it never deletes legacy documents in --apply mode.
-//
-// FIRESTORE_EMULATOR_HOST=127.0.0.1:8081 GCLOUD_PROJECT=getoutlah-migration-emulator node scripts/migrate-activities-collections.mjs --preflight
-// ADC: gcloud auth application-default login
-// node scripts/migrate-activities-collections.mjs --production --adc --project getoutlah-4d959 --database '(default)' --preflight
-// Service account: FIREBASE_SERVICE_ACCOUNT="$(cat key.json)" node scripts/migrate-activities-collections.mjs --production --project getoutlah-4d959 --database '(default)' --preflight
-//
-// `--restore` and `--reconcile-to-legacy` are recovery commands. Read
-// MIGRATION_RUNBOOK.md before using either against any shared Firestore project.
 import { readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { initializeApp, cert, applicationDefault } from 'firebase-admin/app'
@@ -41,9 +30,6 @@ if (isEmulator) {
   if (!/^[a-zA-Z0-9.-]+:\d+$/.test(emulatorHost)) throw new Error('FIRESTORE_EMULATOR_HOST must be host:port without a protocol.')
   const projectId = process.env.GCLOUD_PROJECT
   if (!projectId) throw new Error('GCLOUD_PROJECT is required in emulator mode.')
-  // This connection probe prevents a missing emulator from ever falling back
-  // to a real Firestore project. Any HTTP response means the local endpoint is
-  // reachable; connection errors fail before a database read or write.
   try {
     await fetch(`http://${emulatorHost}/`)
   } catch (error) {
@@ -64,9 +50,6 @@ if (isEmulator) {
       throw new Error('--adc cannot be combined with FIREBASE_SERVICE_ACCOUNT. Choose exactly one production credential source.')
     }
     firebaseApp = initializeApp({ projectId: requestedProject, credential: applicationDefault() })
-    // Resolve ADC before constructing a Firestore client. A missing, expired,
-    // or unusable local user credential therefore fails before any Firestore
-    // read or write. The database target remains explicitly pinned below.
     try {
       await firebaseApp.options.credential.getAccessToken()
     } catch (error) {
@@ -101,8 +84,6 @@ if (!isEmulator && mode === '--reconcile-to-legacy' && !args.includes('--confirm
 const db = isEmulator ? getFirestore(firebaseApp) : getFirestore(firebaseApp, PRODUCTION_DATABASE)
 const LEGACY_COLLECTION = 'activities'
 
-// JSON alone does not preserve Firestore types. The backup encoder is explicit
-// so snapshots can be restored by this script without changing values.
 function encode(value) {
   if (value instanceof Timestamp) return { __firestoreType: 'timestamp', seconds: value.seconds, nanoseconds: value.nanoseconds }
   if (value instanceof GeoPoint) return { __firestoreType: 'geopoint', latitude: value.latitude, longitude: value.longitude }
@@ -216,8 +197,6 @@ async function backup(trees, path) {
   if (!path) throw new Error('--backup requires an output path.')
   const docs = trees.flatMap((tree) => tree.docs.map((item) => ({
     path: item.path,
-    // Backups preserve the exact legacy document. Canonicalisation is only
-    // applied to the destination copy, never to the recovery snapshot.
     data: encode(item.data),
   })))
   return writeTypedFile(path, {
@@ -237,9 +216,6 @@ async function restore(path) {
   console.log(`Restored ${backupFile.documents.length} documents. This does not delete documents absent from the backup.`)
 }
 
-// Reconciliation is only for rollback after writes have resumed. It mirrors
-// current new-collection state into legacy and deletes only baseline legacy
-// paths that are now absent from the corresponding new collection.
 async function reconcile(path) {
   if (!path) throw new Error('--reconcile-to-legacy requires the pre-cutover backup path.')
   const backupFile = await readTypedFile(path)

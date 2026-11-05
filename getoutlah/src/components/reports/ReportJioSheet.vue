@@ -1,7 +1,3 @@
-<!--
-  "Report this OPENJIO" pop-up: pick a reason, optionally explain, send.
-  Usage: <ReportJioSheet :open="showReport" :jio="jio" @close="showReport = false" @reported="..." />
--->
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import BottomSheet from '@/components/common/BottomSheet.vue'
@@ -19,7 +15,6 @@ const form = reactive({ reason: '', details: '' })
 const sending = ref(false)
 const error = ref('')
 
-// Start with an empty form every time it opens
 watch(() => props.open, (isOpen) => {
   if (isOpen) Object.assign(form, { reason: '', details: '' })
   error.value = ''

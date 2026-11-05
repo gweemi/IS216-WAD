@@ -1,4 +1,3 @@
-// Log-in with Google. Anyone with a Google account can sign up.
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '@/firebase'
@@ -8,13 +7,8 @@ import { useBadgeHunt } from '@/composables/useBadgeHunt'
 
 const provider = new GoogleAuthProvider()
 const { clearTrackedBadge } = useBadgeHunt()
-// Always show the account chooser, so people can pick which Google account to use.
 provider.setCustomParameters({ prompt: 'select_account' })
 
-/**
- * Opens the Google pop-up. Anyone with a Google account can sign in;
- * the first sign-in creates their profile.
- */
 export async function signInWithGoogle() {
   const { user } = await signInWithPopup(auth, provider)
   const profile = await ensureUserProfile(user)
@@ -31,24 +25,16 @@ export async function logOut() {
   try {
     await signOut(auth)
   } finally {
-    // Firebase can clear its local session before reporting an error from a
-    // follow-up persistence operation. Reflect the actual auth state so the
-    // UI does not keep a user in a completed session.
     if (!auth.currentUser) useAuthStore().setUser(null)
   }
 }
 
-/**
- * Create users/{uid} the first time someone logs in.
- * If they used a university account (e.g. name@smu.edu.sg), we also note which
- * university, so features like "students from my university only" work.
- */
 export async function ensureUserProfile(user) {
   const ref = doc(db, 'users', user.uid)
   const snap = await getDoc(ref)
   if (snap.exists()) return snap.data()
 
-  const university = getUniversity(user.email) // null for e.g. @gmail.com
+  const university = getUniversity(user.email)
 
   const profile = {
     displayName: user.displayName || user.email.split('@')[0],
@@ -63,12 +49,10 @@ export async function ensureUserProfile(user) {
   return profile
 }
 
-/** Errors that just mean "the student closed the pop-up": show nothing. */
 export function isCancelled(err) {
   return ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err?.code)
 }
 
-/** Turn Firebase error codes into messages a student would understand. */
 export function friendlyError(err) {
   const messages = {
     'auth/popup-blocked':

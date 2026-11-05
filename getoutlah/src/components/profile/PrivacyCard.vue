@@ -1,8 +1,3 @@
-<!--
-  "Privacy" card on the Profile page: switches for what other students can see,
-  plus a live preview of your friend card. The Friends and OPENJIO pages apply these
-  through visibleProfile() in src/config/privacy.js.
--->
 <script setup>
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
@@ -11,7 +6,7 @@ import { savePrivacy } from '@/services/privacy'
 import ProfileAvatar from './ProfileAvatar.vue'
 
 const auth = useAuthStore()
-const busy = ref(null) // id of the switch being saved
+const busy = ref(null)
 const error = ref('')
 
 const privacy = computed(() => privacyOf(auth.profile))
@@ -43,7 +38,6 @@ async function toggle(id, value) {
       </div>
     </div>
 
-    <!-- How friends see you -->
     <div class="preview mb-3" aria-label="How others see you">
       <span class="preview-label">How others see you</span>
       <div class="d-flex align-items-center gap-2 mt-1">

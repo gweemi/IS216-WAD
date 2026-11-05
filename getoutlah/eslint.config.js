@@ -24,7 +24,6 @@ export default defineConfig([
   },
 
   {
-    // Node scripts, e.g. the daily Eventbrite sync run by GitHub Actions
     files: ['scripts/**'],
     languageOptions: {
       globals: {
@@ -35,6 +34,12 @@ export default defineConfig([
 
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
+
+  {
+    rules: {
+      'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
 
   {
     ...pluginPlaywright.configs['flat/recommended'],

@@ -42,9 +42,6 @@ export function createActivityMarker(L, activity, { onSelect, isHuntEligible } =
     `<strong>${escapeTooltipText(activity.title || 'Activity')}</strong><span>${escapeTooltipText(titleCaseCategory(activity.category))}</span>`,
     { className: 'gol-activity-tooltip', direction: 'top', offset: [0, -24], opacity: 1 },
   )
-  // MarkerCluster temporarily removes child markers while recalculating a zoom level.
-  // Keep their component mounted through that transition; consumers explicitly clean
-  // these up when replacing the activity data or destroying the map.
   marker.__cleanupActivityMarker = () => render(null, markerContent)
   if (onSelect) marker.on('click', () => onSelect(activity))
   return marker

@@ -1,4 +1,3 @@
-// Checks the weather forecast is saved between page loads, so reloads don't hit data.gov.sg's rate limit.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getForecasts } from '@/services/api/weather'
 

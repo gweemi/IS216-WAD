@@ -17,7 +17,6 @@ const router = useRouter()
 const filtersOpen = ref(false)
 const OPENJIO_VIEWS = ['all', 'public', 'friends_only', 'invited']
 const jios = useOpenJioStore()
-// Source is represented by the page pills above, so do not duplicate it here.
 const activePills = computed(() => activeFilterPills(filters.value).filter((pill) => !pill.id.startsWith('source-')))
 const selectedSource = computed(() => {
   const source = canonicalSource(route.query.view)
@@ -30,8 +29,6 @@ const sourcePills = [
   { value: ACTIVITY_SOURCES.EXTERNAL, label: SOURCE_LABELS[ACTIVITY_SOURCES.EXTERNAL] },
   { value: ACTIVITY_SOURCES.OPEN_JIO, label: SOURCE_LABELS[ACTIVITY_SOURCES.OPEN_JIO] },
 ]
-// "Ways to explore": explains where activities come from. Not clickable on purpose;
-// the "Browse activities" pills below are the filters.
 const sourceCards = [
   { source: ACTIVITY_SOURCES.PICKS, icon: 'ph-sparkle', title: 'GetOutLah Picks', text: 'Handpicked activities by our team.' },
   { source: ACTIVITY_SOURCES.EXTERNAL, icon: 'ph-calendar-dots', title: 'External Listings', text: 'Events from trusted platforms.' },
@@ -71,7 +68,6 @@ const shownActivities = computed(() => {
   })
 })
 
-// OPENJIO! tab: row 1 is jios I host, row 2 is everyone else's
 const isOpenJioTab = computed(() => selectedSource.value === ACTIVITY_SOURCES.OPEN_JIO)
 const hostingJios = computed(() => shownActivities.value.filter((a) => a.hostedByMe))
 const otherJios = computed(() => shownActivities.value.filter((a) => !a.hostedByMe))
@@ -162,7 +158,6 @@ onMounted(loadActivities)
         </div>
       </div>
 
-      <!-- OPENJIO! tab: two rows that scroll left to right -->
       <template v-if="isOpenJioTab">
         <JioRow title="My Jios" :count="hostingJios.length" test-id="jio-row-hosting">
           <li key="start-jio" data-testid="activities-start-jio"><StartJioCard /></li>
@@ -197,18 +192,14 @@ onMounted(loadActivities)
 .act-intro { max-width: 44rem; margin: .25rem 0 1.1rem; color: var(--gol-muted); font-weight: 650; }
 .act-location-eyebrow { margin-bottom: .22rem; }
 
-/* Section labels: "Ways to explore", "Browse activities" */
 .act-label { margin: 0 0 .7rem; font: 900 1.02rem var(--gol-font); color: var(--gol-ink); }
 
-/* One colour per source, shared by the "Ways to explore" icons and the "Browse activities" pills.
-   "All Activities" has no source, so it keeps the default purple. */
 .source-info, .source-pills { --source-colour: var(--gol-purple); --source-soft: var(--gol-purple-soft); }
 .source-colour--all { --source-colour: var(--gol-ink); --source-soft: #ece9f4; }
 .source-colour--getoutlahPicks { --source-colour: var(--gol-purple); --source-soft: var(--gol-purple-soft); }
 .source-colour--externalListings { --source-colour: #1f6f7d; --source-soft: #dff6fa; }
 .source-colour--openJio { --source-colour: #b4382f; --source-soft: #ffe6e0; }
 
-/* "Ways to explore": grouped in the shared card treatment, while the info rows stay non-interactive. */
 .source-info { margin: .4rem 0 1.6rem; }
 .source-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
 .source-card { display: flex; align-items: center; gap: .9rem; }
@@ -217,7 +208,6 @@ onMounted(loadActivities)
 .source-card h3 { margin: 0; font: 900 1.05rem var(--gol-font); color: var(--gol-ink); }
 .source-card p { margin: .15rem 0 0; color: var(--gol-muted); font-size: .86rem; font-weight: 650; line-height: 1.3; }
 
-/* "Browse activities" pills and the OPENJIO visibility pills: outline, filled with the source's colour when selected */
 .source-pills { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .55rem; margin: 0 0 1.2rem; }
 .source-pills button { border: 1.5px solid rgba(34, 26, 59, .35); border-radius: 999px; padding: .5rem 1.1rem; background: transparent; color: var(--gol-ink); font: 800 .9rem var(--gol-font); transition: background .16s ease, border-color .16s ease, color .16s ease; }
 .source-pills button:hover, .source-pills button:focus-visible { border-color: var(--source-colour); color: var(--source-colour); }
@@ -236,9 +226,6 @@ onMounted(loadActivities)
 .act-empty p { margin: 0; }
 .act-empty-clear { border: 2px solid var(--gol-purple); border-radius: 999px; padding: .3rem .7rem; background: transparent; color: var(--gol-purple); font: 800 .8rem var(--gol-font); }
 
-/* Every card is the same height: all rows match the tallest card, and each card fills its cell.
-   Long titles and OPENJIO descriptions are cut to 2 lines (the detail page shows them in full)
-   so one long card doesn't stretch every row. */
 .act-list { grid-auto-rows: 1fr; }
 .act-list > li { display: flex; min-width: 0; }
 .act-list > li > * { flex: 1; min-width: 0; }
@@ -247,7 +234,6 @@ onMounted(loadActivities)
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
 }
 
-/* Cards enter in a quick stagger whenever a new source or filter result is shown. */
 .activity-card-enter-active { transition: opacity .32s cubic-bezier(.22, 1.35, .36, 1), transform .32s cubic-bezier(.22, 1.35, .36, 1); transition-delay: var(--card-stagger, 0ms); }
 .activity-card-leave-active { position: absolute; transition: opacity .16s ease, transform .16s ease; }
 .activity-card-enter-from { opacity: 0; transform: translateY(14px) scale(.97); }
@@ -257,18 +243,16 @@ onMounted(loadActivities)
 @media (prefers-reduced-motion: reduce) {
   .activity-card-enter-active, .activity-card-leave-active, .activity-card-move { transition: none; }
 }
-/* Results heading + count: wraps onto two lines on phones instead of squashing */
 .act-results-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .4rem .75rem; }
 .act-results-head .gol-section-title { margin: 0; min-width: 0; }
 
 @media (max-width: 767px) { .source-cards { grid-template-columns: 1fr; gap: .8rem; } }
 
-/* Phones: smaller pills so the four source tabs fit in two tidy rows */
 @media (max-width: 575.98px) {
   .source-pills { gap: .45rem; }
   .source-pills button { padding: .45rem .85rem; font-size: .84rem; }
   .source-pills--small button { padding: .3rem .7rem; font-size: .78rem; }
-  .openjio-visibility-label { flex-basis: 100%; }   /* "Visibility:" on its own line above its pills */
+  .openjio-visibility-label { flex-basis: 100%; }
   .source-icon { flex-basis: 2.8rem; width: 2.8rem; height: 2.8rem; font-size: 1.35rem; }
 }
 </style>

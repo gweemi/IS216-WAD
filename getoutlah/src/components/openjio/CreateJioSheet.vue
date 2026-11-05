@@ -1,11 +1,3 @@
-<!--
-  "Start an OPENJIO" form, inside the team's BottomSheet.
-  Usage:
-    <CreateJioSheet :open="showCreate" @close="showCreate = false" @created="onCreated" />
-  Optional :prefill fills in the form, e.g. from an activity or a free time slot:
-    :prefill="{ title: 'Pottery jam', location: 'Bras Basah', startAt: new Date(...) }"
-  See OPENJIO.md for the fields.
--->
 <template>
   <BottomSheet :open="open" :label="isEditing ? 'Edit an OPENJIO' : 'Start an OPENJIO'" @close="$emit('close')">
     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -38,7 +30,6 @@
         </select>
       </label>
 
-      <!-- Location: same fields as the admin form. Search OneMap, or type coordinates -->
       <div class="field">
         <label for="jio-place">Location</label>
         <div class="place-search">
@@ -123,7 +114,6 @@
       </div>
       <p class="hint">Total spots includes you, the host<span v-if="isEditing">. You already have {{ participantCount }} going.</span></p>
 
-      <!-- Price: the host can enter it per person or for the whole group; only the per-person price is saved and shown -->
       <fieldset class="field">
         <legend class="field-legend">Price</legend>
         <div class="price-mode" role="radiogroup" aria-label="Price is for">
@@ -247,15 +237,12 @@ import { friendsState, friendList } from '@/stores/friends'
 import { searchPlaces } from '@/services/api/onemap'
 import { regionOf } from '@/utils/eventbriteMap'
 
-// 'YYYY-MM-DD' in the user's own time zone
 function isoDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-// Number inputs give '' when empty: save that as no coordinate
 const toCoord = (v) => (v === '' || v == null ? null : Number(v))
 
-// Tomorrow at 3pm
 function defaultStart() {
   const d = new Date(Date.now() + 86400000)
   d.setHours(15, 0, 0, 0)
@@ -271,7 +258,7 @@ function blankForm() {
     cost: 0,
     capacity: 6,
     visibility: 'public',
-    invited: [], // friends' uids, for invite-only jios
+    invited: [],
     description: '',
     lat: null,
     lng: null,
@@ -301,7 +288,7 @@ export default {
       error: '',
       confirmationOpen: false,
       pendingJio: null,
-      priceMode: 'solo', // 'solo' = form.cost is per person; 'group' = groupCost is split across the spots
+      priceMode: 'solo',
       groupCost: 0,
       placeQuery: '',
       places: [],
@@ -310,7 +297,6 @@ export default {
     }
   },
   watch: {
-    // Start fresh (plus any prefill) every time the sheet opens
     open: {
       immediate: true,
       handler(isOpen) {
@@ -319,7 +305,6 @@ export default {
     },
   },
   computed: {
-    // Accepted friends from the Friends page: [{ uid, name, photoURL }]
     friends() {
       return friendList.value
     },
@@ -329,7 +314,6 @@ export default {
     today() {
       return isoDate(new Date())
     },
-    // Everything in the shape validateJio() and createJio() expect
     jio() {
       return {
         ...this.form,
@@ -343,7 +327,6 @@ export default {
     isEditing() {
       return Boolean(this.editJio?.id)
     },
-    // Whole-group price ÷ total spots, rounded to the cent (null until both are filled in)
     perPersonFromGroup() {
       const total = this.groupCost, spots = this.form.capacity
       if (typeof total !== 'number' || !Number.isInteger(spots) || spots < 1) return null
@@ -380,7 +363,6 @@ export default {
           form[key] = Array.isArray(p[key]) ? [...p[key]] : p[key]
         }
       }
-      // Only keep a category the form knows about
       if (!INTERESTS.some((i) => i.id === form.category)) form.category = ''
       this.form = form
 
@@ -398,7 +380,6 @@ export default {
       this.groupCost = 0
     },
 
-    // Switching keeps the same overall price: per person × spots, or the split back to per person
     setPriceMode(mode) {
       if (mode === this.priceMode) return
       if (mode === 'group') {
@@ -428,7 +409,6 @@ export default {
       }
     },
 
-    // Same as the admin form: fill in the coordinates, and the area name if it's still empty
     pickPlace(p) {
       this.form.lat = p.lat
       this.form.lng = p.lng
@@ -438,7 +418,6 @@ export default {
       this.regionFromCoords()
     },
 
-    // Admin activities get their region from the coordinates; do the same here
     regionFromCoords() {
       const region = regionOf(toCoord(this.form.lat), toCoord(this.form.lng))
       if (region) this.form.region = region
@@ -466,7 +445,6 @@ export default {
           ? await updateJio(this.editJio.id, this.pendingJio)
           : await createJio(this.pendingJio)
         this.confirmationOpen = false
-        // Posting a jio counts towards Big host energy straight away; a new badge pops up for 2s
         if (!this.isEditing) showNewBadges(recordJioForBadges(id, { hosted: true }))
         this.$emit(this.isEditing ? 'updated' : 'created', id)
       } catch (err) {
@@ -481,7 +459,6 @@ export default {
 
 <style scoped>
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-/* Let grid columns shrink on narrow phones (date/time inputs are wide by default) */
 .field-row > .field { min-width: 0; }
 .field-row .form-control { min-width: 0; width: 100%; }
 .field { display: block; margin-bottom: 0.75rem; border: 0; padding: 0; }
@@ -498,7 +475,6 @@ export default {
   border: 2px solid var(--gol-card-edge);
   font-weight: 600;
 }
-/* Location search: same look as the admin form's OneMap search */
 .place-search { display: flex; gap: 0.5rem; }
 .place-search .form-control { flex: 1; min-width: 0; }
 .place-find { flex: none; padding-inline: 1rem; }

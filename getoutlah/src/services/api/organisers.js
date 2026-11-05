@@ -1,5 +1,3 @@
-// The Eventbrite organisers we sync, kept in Firestore config/eventbrite as { organisers: [{ id, name }] }.
-// Read by the admin page, eventbriteSync.js and the daily GitHub Action (scripts/sync-eventbrite.mjs).
 import { doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { DEFAULT_ORGANISERS, isEventbriteListing } from '@/utils/eventbriteMap'
@@ -11,7 +9,6 @@ const configDoc = () => doc(db, 'config', 'eventbrite')
 
 export async function getOrganisers() {
   const snap = await getDoc(configDoc())
-  // `organizers` is the old spelling, used before the rename
   return snap.exists() ? (snap.data().organisers ?? snap.data().organizers ?? []) : DEFAULT_ORGANISERS
 }
 
@@ -25,15 +22,12 @@ export async function addOrganiser(id, name) {
   return next
 }
 
-// Takes the organiser off the list and deletes their upcoming events, so they disappear from the app.
 export async function removeOrganiser(id) {
   const next = (await getOrganisers()).filter((o) => o.id !== id)
   await setDoc(configDoc(), { organisers: next })
   const result = await getDocs(query(collection(db, externalListings), where('organiserId', '==', id)))
-  // A route must never be removed just because a future source happens to use
-  // an organiser-like field. Keep compatibility with pre-provider Eventbrite ids.
   const events = result.docs.filter((item) => isEventbriteListing(item.data(), item.id))
-  for (let i = 0; i < events.length; i += 500) {   // a Firestore batch holds up to 500 writes
+  for (let i = 0; i < events.length; i += 500) {
     const batch = writeBatch(db)
     events.slice(i, i + 500).forEach((d) => batch.delete(d.ref))
     await batch.commit()

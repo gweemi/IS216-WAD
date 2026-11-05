@@ -1,11 +1,3 @@
-// Privacy settings on the Profile page. Saved in users/{uid}.privacy.
-//
-// The Friends and OPENJIO features read other students' users/{uid} records, so every
-// place that shows another student goes through visibleProfile() below, which hides
-// whatever that student switched off. (Email is never shown to other students anywhere.)
-// Wellbeing scores and reflections are private to the user (users/{uid}/private, see userDataSync.js).
-//
-// Keep the ids in sync with validPrivacy() in firestore.rules.
 export const PRIVACY_OPTIONS = [
   {
     id: 'showPhoto',
@@ -44,13 +36,8 @@ export const DEFAULT_PRIVACY = {
   shareActivity: true,
 }
 
-/** The user's settings, with defaults filled in for anything not set yet. */
 export const privacyOf = (profile) => ({ ...DEFAULT_PRIVACY, ...profile?.privacy })
 
-/**
- * Another student's profile, with everything they chose to hide removed.
- * Use this whenever showing someone else's users/{uid} data.
- */
 export function visibleProfile(profile = {}) {
   const p = privacyOf(profile)
   const { email: _email, preferences: _prefs, saved: _saved, plans: _plans, ...rest } = profile ?? {}

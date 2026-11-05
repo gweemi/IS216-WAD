@@ -1,4 +1,3 @@
-// Region identifiers shared by map discovery controls and advanced filters.
 export const REGIONS = [
   { id: 'central', label: 'Central' },
   { id: 'north', label: 'North' },

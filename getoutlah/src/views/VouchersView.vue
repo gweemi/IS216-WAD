@@ -1,4 +1,3 @@
-<!-- ✨ NEW PAGE: Redeem Voucher (opened from the Badges page) -->
 <script setup>
 import { computed, ref } from 'vue'
 import { VOUCHERS, availablePoints, redeemVoucher, myVouchers } from '../stores/gamification(badges).js'
@@ -8,8 +7,8 @@ const available = computed(() => VOUCHERS.filter((v) => v.cost <= points.value))
 const more = computed(() => VOUCHERS.filter((v) => v.cost > points.value))
 const redeemed = computed(() => myVouchers())
 
-const confirming = ref(null) // voucher waiting for "Yes, redeem"
-const justRedeemed = ref(null) // shows the voucher code after redeeming
+const confirming = ref(null)
+const justRedeemed = ref(null)
 const error = ref('')
 
 function askToRedeem(voucher) {
@@ -32,7 +31,6 @@ function confirmRedeem() {
       <h1 class="title"><span class="gift">🎁</span> Redeem Voucher <span class="spark" aria-hidden="true"></span></h1>
       <p class="sub">Use your points to redeem rewards from our partners!</p>
 
-      <!-- Your points -->
       <section class="points-card">
         <span class="bolt">⚡</span>
         <div>
@@ -43,7 +41,6 @@ function confirmRedeem() {
         <span class="stars" aria-hidden="true">✨</span>
       </section>
 
-      <!-- Vouchers already redeemed: shown first so the codes are easy to find -->
       <template v-if="redeemed.length">
         <h2 class="section-title">My Vouchers</h2>
         <div class="d-grid gap-2 mb-5" data-testid="my-vouchers">
@@ -55,7 +52,6 @@ function confirmRedeem() {
         </div>
       </template>
 
-      <!-- Vouchers you can afford -->
       <h2 class="section-title">Available Vouchers</h2>
       <p v-if="!available.length" class="empty">Redeemable vouchers will show here!</p>
       <div class="row g-3 g-md-4">
@@ -69,7 +65,6 @@ function confirmRedeem() {
         </div>
       </div>
 
-      <!-- Vouchers that need more points -->
       <template v-if="more.length">
         <h2 class="section-title mt-5">More Vouchers</h2>
         <div class="row g-3 g-md-4">
@@ -87,7 +82,6 @@ function confirmRedeem() {
 
     </div>
 
-    <!-- Confirm pop-up -->
     <Transition name="pop">
       <div v-if="confirming" class="overlay" @click.self="confirming = null">
         <div class="dialog" role="dialog" aria-label="Redeem voucher">
@@ -103,7 +97,6 @@ function confirmRedeem() {
       </div>
     </Transition>
 
-    <!-- Success pop-up with the code -->
     <Transition name="pop">
       <div v-if="justRedeemed" class="overlay" @click.self="justRedeemed = null">
         <div class="dialog" role="dialog" aria-label="Voucher redeemed">

@@ -1,11 +1,3 @@
-<!--
-  Reusable sheet: slides up from the bottom on phones,
-  shows as a centred pop-up on laptops (768px and wider).
-  Usage:
-    <BottomSheet :open="showSheet" @close="showSheet = false">
-      ...content...
-    </BottomSheet>
--->
 <template>
   <Teleport to="body">
     <Transition name="gol-sheet">
@@ -27,7 +19,6 @@ export default {
   },
   emits: ['close'],
   watch: {
-    // Stop the page behind from scrolling while the sheet is open
     open(isOpen) {
       document.body.style.overflow = isOpen ? 'hidden' : ''
     },
@@ -71,7 +62,6 @@ export default {
   padding: 1.5rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
 }
 
-/* Laptop: centred card instead of bottom sheet */
 @media (min-width: 768px) {
   .gol-sheet-backdrop { align-items: center; }
   .gol-sheet {
@@ -81,7 +71,6 @@ export default {
   }
 }
 
-/* Slide-up animation */
 .gol-sheet-enter-active,
 .gol-sheet-leave-active { transition: opacity 0.25s ease; }
 .gol-sheet-enter-active .gol-sheet,

@@ -1,11 +1,12 @@
 <script setup>
-// Admin: add, edit and remove GetOutLah Picks. They're saved in Firestore
-// "getoutlahPicks"; the activity store combines them with external listings.
 import { ref, reactive, computed, onMounted } from 'vue'
 import { allActivities, loadActivities, reloadActivities, sourceErrors, seedFirestore } from '@/stores/activities'
 import { saveCurated, removeCurated } from '@/services/api/getoutlahPicks'
 import { searchPlaces } from '@/services/api/onemap'
-import { emptyCurated, toCuratedActivity, ENERGY_LEVELS, CURATED_DESCRIPTION_MAX } from '@/utils/getoutlahPicks'
+import { shrinkImage } from '@/services/profile'
+import {
+  emptyCurated, toCuratedActivity, ENERGY_LEVELS, CURATED_DESCRIPTION_MAX, PICK_IMAGE_WIDTH, PICK_IMAGE_HEIGHT,
+} from '@/utils/getoutlahPicks'
 import { seedActivities } from '@/data/seedActivities'
 import { INTERESTS } from '@/config/preferences'
 import { categoryLabel, priceText } from '@/utils/activityStyle'
@@ -30,7 +31,19 @@ function openForm(activity) {
   Object.assign(form, emptyCurated(), activity ? { ...activity, url: activity.url ?? '', description: activity.description ?? '' } : {})
   editingId.value = activity ? activity.id : null   
   problems.value = []; places.value = []; placeQuery.value = ''; placeError.value = ''
+  imageError.value = ''
   formOpen.value = true
+}
+
+const imageError = ref('')
+const galleryInput = ref(null)
+
+async function onFilePicked(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  imageError.value = ''
+  try { form.imageUrl = await shrinkImage(file, PICK_IMAGE_WIDTH, PICK_IMAGE_HEIGHT) } catch (err) { imageError.value = err.message }
 }
 
 async function findPlace() {
@@ -57,7 +70,6 @@ function save() {
   }, wasEditing ? `Saved "${form.title}".` : `Added "${form.title}". It now shows in Activities and on the map.`)
 }
 
-// First press asks for confirmation, second press removes.
 function remove(a) {
   if (confirming.value !== a.id) { confirming.value = a.id; return }
   confirming.value = null
@@ -80,7 +92,6 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
       Couldn't read activities from Firestore ({{ sourceErrors.firestore }}). The list below is the built-in starter set, not what's saved.
     </p>
 
-    <!-- Add / edit form -->
     <form v-if="formOpen" class="adm-form" @submit.prevent="save">
       <h3 class="adm-form-title">{{ editingId ? 'Edit activity' : 'New activity' }}</h3>
 
@@ -116,11 +127,25 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
       <label class="adm-field adm-check">
         <input id="cur-group" v-model="form.groupFriendly" class="form-check-input" type="checkbox" /> Good for groups
       </label>
+      <div class="adm-field adm-wide">
+        Picture (optional)
+        <img v-if="form.imageUrl" :src="form.imageUrl" alt="Activity picture preview" class="adm-photo" data-testid="pick-image-preview" />
+        <div class="adm-photo-actions">
+          <button type="button" class="gol-btn-soft" data-testid="pick-choose-photo" @click="galleryInput.click()">
+            <i class="bi bi-image"></i> Choose from gallery
+          </button>
+          <button v-if="form.imageUrl" type="button" class="gol-btn-soft adm-photo-remove" @click="form.imageUrl = null">
+            <i class="bi bi-trash3"></i> Remove
+          </button>
+        </div>
+        <input ref="galleryInput" type="file" accept="image/*" class="d-none" data-testid="pick-gallery-input" @change="onFilePicked" />
+        <p v-if="imageError" class="adm-help adm-photo-error" role="alert">{{ imageError }}</p>
+      </div>
+
       <label class="adm-field adm-wide">Link (optional)
         <input id="cur-url" v-model="form.url" class="form-control" type="url" placeholder="https://…" />
       </label>
 
-      <!-- Location: search OneMap, or type coordinates -->
       <div class="adm-field adm-wide">
         Location
         <div class="adm-place">
@@ -154,7 +179,6 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
       </div>
     </form>
 
-    <!-- List -->
     <ul class="adm-orgs">
       <li v-for="a in curated" :key="a.id" class="adm-org">
         <div class="adm-org-text">

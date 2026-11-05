@@ -8,7 +8,7 @@ import AnimatedBrandHero from '@/components/landing/AnimatedBrandHero.vue'
 const router = useRouter()
 const loading = ref(false), success = ref(false), error = ref('')
 const PERKS = [{ icon: 'bi-compass', color: 'var(--gol-cyan)', title: 'Find stuff to do', text: 'Picked for your vibe & budget' }, { icon: 'bi-trophy', color: 'var(--gol-yellow)', title: 'Earn badges', text: 'Points, streaks, levels' }, { icon: 'bi-people', color: 'var(--gol-coral)', title: 'OPENJIO!', text: 'Rope in friends, or make new ones' }]
-async function onGoogle() { error.value = ''; loading.value = true; try { await signInWithGoogle(); success.value = true; try { celebrateLogin() } catch { /* decoration only */ } await new Promise((resolve) => setTimeout(resolve, 700)); await router.push({ name: 'map' }) } catch (err) { if (!isCancelled(err)) error.value = friendlyError(err) } finally { loading.value = false } }
+async function onGoogle() { error.value = ''; loading.value = true; try { await signInWithGoogle(); success.value = true; try { celebrateLogin() } catch {} await new Promise((resolve) => setTimeout(resolve, 700)); await router.push({ name: 'map' }) } catch (err) { if (!isCancelled(err)) error.value = friendlyError(err) } finally { loading.value = false } }
 </script>
 
 <template>

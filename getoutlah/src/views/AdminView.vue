@@ -1,6 +1,4 @@
 <script setup>
-// The admin page: a tab per tool, each tab is a child route in src/router/index.js.
-// The router only lets admins in.
 import '@/assets/discovery.css'
 
 const tabs = [

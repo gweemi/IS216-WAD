@@ -1,4 +1,3 @@
-// Wellbeing, reflections and points / badges belong to ONE account, and follow it to other devices.
 import { describe, it, expect, beforeEach } from 'vitest'
 import { wellbeing, saveCheckIn } from '@/stores/wellbeing'
 import { reflections, setPromptsOn } from '@/stores/reflections'
@@ -21,7 +20,7 @@ describe('per-account wellbeing and reflections', () => {
     expect(wellbeing.history).toHaveLength(1)
 
     switchUser('ben')
-    expect(wellbeing.history).toHaveLength(0) // Ben doesn't see Amy's check-in
+    expect(wellbeing.history).toHaveLength(0)
     saveCheckIn([1, 1, 1, 1, 1])
 
     switchUser('amy')
@@ -42,7 +41,7 @@ describe('per-account wellbeing and reflections', () => {
     switchUser('amy')
     applyRemote('wellbeing', { history: [{ date: '2026-11-01', score: 72 }] }, 'amy')
     expect(wellbeing.history).toEqual([{ date: '2026-11-01', score: 72 }])
-    expect(uploads).toHaveLength(0) // not sent back again
+    expect(uploads).toHaveLength(0)
   })
 
   it('ignores data meant for a different account', () => {
@@ -104,7 +103,7 @@ describe('per-account points and badges', () => {
     applyRemote('gamification', { completed: [outdoorDone], earnedBadges: { 'first-one-out': '2026-11-05' } }, 'amy')
     expect(game.completed.map((a) => a.id)).toEqual(['s3'])
     expect(game.earnedBadges).toEqual({ 'first-one-out': '2026-11-05' })
-    expect(game.ledger).toEqual([]) // missing fields fall back to empty
+    expect(game.ledger).toEqual([])
     expect(uploads).toHaveLength(0)
   })
 
@@ -136,7 +135,7 @@ describe('per-account points and badges', async () => {
 
   it('starts a new account empty and keeps each account’s progress apart', () => {
     switchUser('amy')
-    expect(game.completed).toHaveLength(0) // new accounts start with nothing
+    expect(game.completed).toHaveLength(0)
     game.completed.push({ id: 'x', title: 'Kayak', category: 'outdoors', region: 'east', date: '2026-11-05' })
     game.ledger.push({ date: '2026-11-05', amount: 50, reason: 'Kayak' })
 

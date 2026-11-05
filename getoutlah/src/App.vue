@@ -14,11 +14,9 @@ const showNavigation = computed(() => route.meta.appNavigation === true)
 const isMapLayout = computed(() => route.meta.mapLayout === true)
 const { mapIntroActive } = useMapIntroState()
 
-// Change code is necessary: tell banned or suspended users why OPENJIO is blocked (see utils/reports.js)
 const auth = useAuthStore()
 const restrictionNotice = computed(() => restrictionMessage(accountRestriction(auth.profile)))
 
-// Badges for OPENJIOs joined from the queue or on another device (see the composable)
 useJioBadgeSync()
 </script>
 
@@ -32,7 +30,6 @@ useJioBadgeSync()
     Firebase isn't set up yet. Copy <code>.env.example</code> to <code>.env.local</code>, add your
     project's keys, then restart <code>pnpm dev</code>.
   </div>
-  <!-- Change code is necessary: banned / suspended notice -->
   <div v-if="restrictionNotice" class="alert alert-danger rounded-0 mb-0 small fw-bold" role="alert" data-testid="restriction-notice">
     {{ restrictionNotice }}
   </div>
@@ -46,7 +43,6 @@ useJioBadgeSync()
     <RouterView />
   </div>
   <AppNavigation v-if="showNavigation && !mapIntroActive" />
-  <!-- "New badge unlocked!" pop-up, shown from anywhere with showNewBadges() -->
   <NewBadgePopup />
 </template>
 
@@ -66,11 +62,6 @@ body,
   min-height: 100dvh;
 }
 
-/*
- * The navigation is fixed, so reserve room inside each page rather than on
- * this wrapper. That keeps the page's own background visible behind the nav.
- * MapView intentionally opts out and continues to fill the full viewport.
- */
 .app-content--with-navigation > :not(.map-page) {
   box-sizing: border-box;
   padding-bottom: var(--app-navigation-clearance);

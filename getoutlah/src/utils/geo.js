@@ -1,4 +1,3 @@
-// Straight-line distance in metres between {lat,lng} points.
 export function distanceMeters(a, b) {
   const R = 6371000, rad = (d) => (d * Math.PI) / 180
   const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng)

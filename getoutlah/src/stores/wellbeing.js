@@ -4,7 +4,6 @@ import { registerUserStore } from './userData.js'
 
 export const CHECKIN_INTERVAL_DAYS = 14
 
-// The 5 official WHO-5 statements, from google
 export const WHO5_QUESTIONS = [
   'I have felt cheerful and in good spirits',
   'I have felt calm and relaxed',
@@ -13,7 +12,6 @@ export const WHO5_QUESTIONS = [
   'My daily life has been filled with things that interest me',
 ]
 
-// 5 = best
 export const WHO5_OPTIONS = [
   { value: 5, label: 'All of the time' },
   { value: 4, label: 'Most of the time' },
@@ -23,7 +21,6 @@ export const WHO5_OPTIONS = [
   { value: 0, label: 'At no time' },
 ]
 
-// to calculate their score (0–25) × 4 = score out of 100
 export function who5Score(answers) {
   return answers.reduce((sum, a) => sum + a, 0) * 4
 }
@@ -35,8 +32,6 @@ export function statusFor(score) {
   return { label: 'Having a hard time', tone: 'support' }
 }
 
-// Each account has its own check-ins, saved to Firestore so they show on every device.
-// (src/stores/userData.js + src/services/userDataSync.js). Only the owner can read them.
 export const wellbeing = reactive({ history: [] })
 registerUserStore('wellbeing', wellbeing, () => ({ history: [] }))
 

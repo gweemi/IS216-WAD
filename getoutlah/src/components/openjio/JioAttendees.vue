@@ -1,9 +1,3 @@
-<!--
-  "Who's going" list for an OPENJIO: its own sub-card on the activity details page, under Invite friends.
-  Only the host and people going can see who's going; only the host also sees the chope queue.
-  The parent decides whether to show it (see canSeeAttendees in ActivityDetailView):
-    <JioAttendees :jio="jio" />
--->
 <template>
   <section class="jio-attendees" data-testid="jio-attendees-section" aria-labelledby="jio-attendees-title">
     <h2 id="jio-attendees-title" class="jio-attendees__title">
@@ -22,7 +16,6 @@
         </li>
       </ul>
 
-      <!-- Host only: people who choped a spot, first in line at the top -->
       <div v-if="isHost && queue.length" class="mt-3" data-testid="jio-queue">
         <h3 class="queue-title">In the queue · {{ queue.length }}</h3>
         <p class="muted small mb-2">They get a spot in this order if someone leaves.</p>
@@ -58,7 +51,6 @@ export default {
     isHost() {
       return this.jio.hostId === this.openJioStore.uid
     },
-    // Reload only when who's in it changes, not on every jio update
     people() {
       return [...(this.jio.participants ?? []), '|', ...(this.jio.waitlist ?? [])].join(',')
     },
@@ -92,7 +84,6 @@ export default {
 </script>
 
 <style scoped>
-/* Kept plain: a thin divider above, then a simple list of names */
 .jio-attendees { margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--gol-card-edge); }
 .jio-attendees__title { display: flex; align-items: center; gap: .35rem; font-size: 0.95rem; font-weight: 800; margin: 0 0 0.5rem; }
 .jio-attendees__title i { color: var(--gol-muted); }

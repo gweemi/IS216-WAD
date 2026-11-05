@@ -5,7 +5,7 @@ import { toggleSaved, isSaved, datesOf } from '@/stores/activities'
 import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, durationText } from '@/utils/activityStyle'
 const props = defineProps({ activity: Object })
 const dates = computed(() => datesOf(props.activity))
-const imageBroken = ref(false)   // picture didn't load: show the emoji tile instead
+const imageBroken = ref(false)
 </script>
 
 <template>

@@ -1,7 +1,3 @@
-<!--
-  "Invite friends" pop-up on an activity's page.
-  Usage: <InviteFriendsSheet :open="showInvite" :activity="activity" @close="showInvite = false" />
--->
 <script setup>
 import { ref, watch } from 'vue'
 import { friendList } from '@/stores/friends'
@@ -58,7 +54,6 @@ async function send() {
       </RouterLink>
     </p>
 
-    <!-- Each friend is a Bootstrap checkbox styled as a tappable row -->
     <div v-else class="d-flex flex-column gap-2 overflow-auto" style="max-height: 50vh">
       <label
         v-for="f in friendList"

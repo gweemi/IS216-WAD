@@ -1,4 +1,3 @@
-// The "Get tickets" button on the activity page: where it goes and what it says.
 import { describe, it, expect } from 'vitest'
 import { bookingLink } from '@/utils/activityStyle'
 

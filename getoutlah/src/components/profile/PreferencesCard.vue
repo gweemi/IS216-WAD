@@ -1,9 +1,3 @@
-<!--
-  "My vibe" card on the Profile page: shows the onboarding answers and lets
-  the user change them. Reuses the onboarding questionnaire (PreferencesForm)
-  and savePreferences(), so the Activities page recommendations update straight away
-  (they read useAuthStore().preferences).
--->
 <script setup>
 import { ref, computed } from 'vue'
 import BottomSheet from '@/components/common/BottomSheet.vue'
@@ -14,7 +8,7 @@ import { INTERESTS, BUDGETS, ENERGY_LEVELS, GROUP_PREFERENCES } from '@/config/p
 
 const auth = useAuthStore()
 const open = ref(false)
-const formKey = ref(0) // restarts the form at step 1 each time it opens
+const formKey = ref(0)
 const saving = ref(false)
 const error = ref('')
 const saved = ref(false)
@@ -143,7 +137,6 @@ async function onSubmit(answers) {
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-/* The questionnaire uses the older green theme: give it the app's purple here */
 .form-wrap :deep(.progress-fill) { background: var(--gol-purple); }
 .form-wrap :deep(.btn-primary) {
   --bs-btn-bg: var(--gol-purple);

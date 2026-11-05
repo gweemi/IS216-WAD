@@ -53,7 +53,6 @@ export default {
       return 'One activity a week keeps it going'
     },
     
-    // Show weeks in intervals of 7 so W1–W7 then W8–W14 
     weeks() {
       const start = Math.floor(this.streak / 7) * 7
       return Array.from({ length: 7 }, (_, i) => {

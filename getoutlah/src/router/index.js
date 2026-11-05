@@ -22,7 +22,6 @@ const router = createRouter({
     { path: '/guidelines', name: 'guidelines', component: InformationPageView, meta: { page: 'guidelines' } },
     { path: '/about', name: 'about', component: InformationPageView, meta: { page: 'about' } },
     {
-      // New-user questionnaire (interests, budget, energy, solo/group).
       path: '/onboarding',
       name: 'onboarding',
       component: () => import('@/views/OnboardingView.vue'),
@@ -41,8 +40,6 @@ const router = createRouter({
       component: ActivitiesView,
       meta: appRouteMeta,
     },
-    // The old OPENJIO manage page is gone: jios are listed (and started) from Activities → OPENJIO!
-    // Kept as redirects so old links still work; must stay above /activities/:id.
     { path: '/activities/openjio', redirect: { name: 'activities', query: { view: 'openJio' } } },
     { path: '/activities/openjio/create', redirect: { name: 'activities', query: { view: 'openJio' } } },
     {
@@ -79,21 +76,17 @@ const router = createRouter({
     },
     { path: '/openjio', redirect: { name: 'activities', query: { view: 'openJio' } } },
     {
-      // Admin only. One page with a tab per tool; add new tools as children here.
-      // Firestore rules are the real lock, this only keeps non-admins off the page.
       path: '/admin',
       component: () => import('@/views/AdminView.vue'),
       meta: { ...appRouteMeta, requiresAdmin: true },
       children: [
         { path: '', name: 'admin', redirect: { name: 'admin-activities' } },
         {
-          // Eventbrite organisers + sync, and curated activities.
           path: 'activities',
           name: 'admin-activities',
           component: () => import('@/views/AdminActivitiesView.vue'),
         },
         {
-          // Reported OpenJios waiting for an admin to restore or remove them.
           path: 'reports',
           name: 'admin-reports',
           component: () => import('@/views/AdminReportsView.vue'),
@@ -104,27 +97,21 @@ const router = createRouter({
   ],
 })
 
-// Every page checks who is logged in before it opens.
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
   await auth.init()
 
-  // Pages for logged-in users only.
   if (to.meta.requiresLogin && !auth.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
-  // New users must answer the questionnaire before using the app...
   if (to.meta.requiresLogin && !auth.hasPreferences && to.name !== 'onboarding') {
     return { name: 'onboarding' }
   }
-  // ...and only see it once.
   if (to.name === 'onboarding' && auth.hasPreferences) return { name: 'map' }
 
-  // Admin pages: everyone else goes back to the map.
   if (to.meta.requiresAdmin && !auth.isAdmin) return { name: 'map' }
 
-  // Log-in page: skip it if already logged in.
   if (to.meta.guestOnly && auth.isLoggedIn) return { name: 'map' }
 
   return true

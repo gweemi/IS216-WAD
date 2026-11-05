@@ -1,13 +1,8 @@
-// NEA 2-hour forecast via data.gov.sg. Endpoint has moved before: check https://data.gov.sg if this 404s.
 import { distanceMeters } from '@/utils/geo'
 
 const URL_V2 = 'https://api-open.data.gov.sg/v2/real-time/api/two-hr-forecast'
-// The forecast only changes every 2 hours, and data.gov.sg rate-limits requests without an API key
-// (it answers 429 with no CORS header, which the browser reports as "Failed to fetch").
-// So the last forecast is kept in localStorage: page reloads reuse it instead of asking again,
-// and if a request fails we fall back to it while it's still recent.
-const FRESH_MS = 10 * 60 * 1000 // reuse without asking again
-const STALE_OK_MS = 2 * 60 * 60 * 1000 // still good enough to show if a request fails
+const FRESH_MS = 10 * 60 * 1000
+const STALE_OK_MS = 2 * 60 * 60 * 1000
 const STORAGE_KEY = 'gol-weather-cache'
 
 function readCache() {
@@ -22,9 +17,7 @@ function readCache() {
 function writeCache(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ at: Date.now(), data }))
-  } catch {
-    // storage full or blocked: the forecast still works, just isn't saved
-  }
+  } catch {}
 }
 
 export async function getForecasts() {

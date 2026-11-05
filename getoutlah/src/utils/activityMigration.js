@@ -2,8 +2,6 @@ import { ACTIVITY_SOURCES, canonicalSource, collectionForActivitySource } from '
 
 const managedSources = new Set([ACTIVITY_SOURCES.PICKS, ACTIVITY_SOURCES.EXTERNAL])
 
-// Pure migration helpers shared by the Admin SDK script and unit tests.
-// Refuse to guess a missing or unrelated origin; an operator must resolve it.
 export function classifyLegacyActivity(data, id = '(unknown)') {
   const source = canonicalSource(data.source)
   const collection = collectionForActivitySource(source)

@@ -1,9 +1,3 @@
-// Reasons a user can pick when reporting an OPENJIO.
-// Edit this list freely: the report form and the admin Reports page both read it.
-// Keep each `id` the same once people have used it, so old reports still show the right label.
-//   group: 'activity' = about the activity itself
-//          'host'     = about the person who created it
-//          'other'    = anything else (the user must explain)
 
 export const REPORT_GROUPS = [
   { id: 'activity', label: 'About the activity' },
@@ -12,7 +6,6 @@ export const REPORT_GROUPS = [
 ]
 
 export const REPORT_REASONS = [
-  // About the activity
   { id: 'dangerous', group: 'activity', label: 'Dangerous or unsafe activity' },
   {
     id: 'illegal',
@@ -26,7 +19,6 @@ export const REPORT_REASONS = [
   { id: 'spam', group: 'activity', label: 'Fake or spam activity' },
   { id: 'misleading', group: 'activity', label: 'Misleading time, place or price' },
 
-  // About the host
   { id: 'suspicious_user', group: 'host', label: 'Suspicious or fake account' },
   { id: 'harassment', group: 'host', label: 'Harassment, hate or discrimination', hint: 'including race or religion' },
   {
@@ -37,6 +29,5 @@ export const REPORT_REASONS = [
   },
   { id: 'impersonation', group: 'host', label: 'Pretending to be someone else' },
 
-  // Anything else
   { id: 'other', group: 'other', label: 'Something else', needsDetails: true },
 ]

@@ -1,4 +1,3 @@
-// Checks the "Start a jio" form fills in starting values and catches mistakes.
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
@@ -19,7 +18,6 @@ vi.mock('@/services/api/onemap', () => ({
 }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ user: { uid: 'me' }, profile: {} }) }))
 
-// Two accepted friends in the Friends feature's store
 const { friendsState } = await import('@/stores/friends')
 Object.assign(friendsState, {
   uid: 'me',
@@ -110,7 +108,6 @@ describe('CreateJioSheet', () => {
     await flushPromises()
     expect(createJio).toHaveBeenCalledTimes(1)
     expect(w.emitted('created')?.[0]).toEqual(['new-id'])
-    // Posting a jio earns Big host energy straight away, shown in the badge pop-up
     expect(badgePopup.showNewBadges.mock.calls.at(-1)[0].map((b) => b.id)).toEqual(['big-host-energy'])
   })
 
@@ -155,7 +152,7 @@ describe('CreateJioSheet', () => {
     await w.find('[data-testid="jio-places"] button').trigger('click')
 
     expect(value(w, 'jio-place')).toBe('1 Tampines Walk Singapore 528523')
-    expect(value(w, 'jio-location')).toBe('Tampines Hub') // area name filled in because it was empty
+    expect(value(w, 'jio-location')).toBe('Tampines Hub')
     expect(value(w, 'jio-lat')).toBe('1.3532')
     expect(value(w, 'jio-lng')).toBe('103.9405')
     expect(value(w, 'jio-region')).toBe('east')

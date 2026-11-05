@@ -1,22 +1,9 @@
-// =============================================================
-// Private, per-account data: wellbeing check-ins and reflections / activity moods.
-//
-// Before: each store saved to ONE browser key, so two accounts on the same browser
-// shared it, and another device never saw it.
-// Now:
-//   - each account gets its own browser copy (key ends with the user's uid), and
-//   - src/services/userDataSync.js saves it to Firestore users/{uid}/private/{name},
-//     which only that user can read, so it shows up on all their devices.
-//
-// This file has no Firebase imports, so the stores and their tests stay simple.
-// =============================================================
 import { watch, reactive } from 'vue'
 
-const stores = {} // name → { state, empty, applying, lastJSON }
-// name → true once this account's copy has arrived from Firestore (reactive, so code can wait for it)
+const stores = {}
 const remoteLoaded = reactive({})
 let uid = null
-let remoteWriter = null // (name, data) => void, set by userDataSync.js
+let remoteWriter = null
 
 const cacheKey = (name, u) => `gol-${name}-v3:${u}`
 
@@ -32,12 +19,9 @@ function readCache(name, u) {
 function writeCache(name, u, json) {
   try {
     localStorage.setItem(cacheKey(name, u), json)
-  } catch {
-    /* storage may be blocked */
-  }
+  } catch {}
 }
 
-/** Swap a store's contents without treating it as a change the user made. */
 function replace(name, data) {
   const s = stores[name]
   const fresh = { ...s.empty(), ...data }
@@ -58,17 +42,12 @@ function onLocalChange(name) {
   remoteWriter?.(name, JSON.parse(json))
 }
 
-/**
- * Called once by each store, e.g. registerUserStore('wellbeing', wellbeing, () => ({ history: [] })).
- * Changes are saved straight away ('sync'), so a change can never be saved under the wrong account.
- */
 export function registerUserStore(name, state, empty) {
   stores[name] = { state, empty, applying: false, lastJSON: null }
   replace(name, {})
   watch(state, () => onLocalChange(name), { deep: true, flush: 'sync' })
 }
 
-/** The logged-in account changed (or logged out: null). Shows that account's own data. */
 export function switchUser(newUid) {
   uid = newUid ?? null
   for (const name of Object.keys(stores)) {
@@ -77,7 +56,6 @@ export function switchUser(newUid) {
   }
 }
 
-/** Newer data arrived from Firestore (e.g. saved on another device). */
 export function applyRemote(name, data, forUid) {
   if (!stores[name] || forUid !== uid) return
   replace(name, data)
@@ -85,33 +63,22 @@ export function applyRemote(name, data, forUid) {
   remoteLoaded[name] = true
 }
 
-/** Firestore answered for this store, but the account has nothing saved there yet. */
 export function markRemoteLoaded(name, forUid) {
   if (stores[name] && forUid === uid) remoteLoaded[name] = true
 }
 
-/**
- * Has this account's saved copy arrived from Firestore yet? Reactive.
- * Wait for it before changing a store automatically (not from a tap), so an older
- * copy cached in this browser is never saved over newer data from another device.
- */
 export const isRemoteLoaded = (name) => remoteLoaded[name] === true
 
-/** Delete this browser's saved copies for an account (used when the account is deleted). */
 export function forgetCachedUser(forUid) {
   for (const name of Object.keys(stores)) {
     try {
       localStorage.removeItem(cacheKey(name, forUid))
-    } catch {
-      /* storage may be blocked */
-    }
+    } catch {}
   }
 }
 
-/** What this store holds right now (plain object), e.g. to upload it. */
 export const snapshotOf = (name) => (stores[name] ? JSON.parse(JSON.stringify(stores[name].state)) : null)
 
-/** Does this store hold anything worth saving? */
 export const hasData = (name) => {
   const s = stores[name]
   return Boolean(s) && JSON.stringify(s.state) !== JSON.stringify(s.empty())

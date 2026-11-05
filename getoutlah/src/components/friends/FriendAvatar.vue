@@ -1,4 +1,3 @@
-<!-- Round profile photo, or initials when there is no photo. -->
 <script setup>
 import { computed } from 'vue'
 import { initials } from '@/utils/friends'

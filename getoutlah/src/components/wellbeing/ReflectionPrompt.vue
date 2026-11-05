@@ -21,7 +21,7 @@ import ReflectionSheet from './ReflectionSheet.vue'
 import { reflections, dismissPrompt } from '../../stores/reflections.js'
 
 
-const ASK_AFTER_MINUTES = 0 //0 so check in starts straight away 
+const ASK_AFTER_MINUTES = 0
 
 export default {
   name: 'ReflectionPrompt',
@@ -30,7 +30,7 @@ export default {
     return {
       store: reflections,
       sheetOpen: false,
-      frozenItem: null, // keeps the sheet content stable while it's open
+      frozenItem: null,
       now: Date.now(),
       timer: null,
     }
@@ -124,7 +124,6 @@ export default {
   flex-shrink: 0;
 }
 
-/* animation to slide up from bottom */
 .prompt-enter-active,
 .prompt-leave-active { transition: opacity 0.3s ease, translate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .prompt-enter-from,

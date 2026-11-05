@@ -24,8 +24,6 @@ function emptyState() {
   return { pending: [], entries: [], promptsOn: true, dismissed: [] }
 }
 
-// Each account has its own reflections and moods, saved to Firestore so they show on
-// every device (src/stores/userData.js + src/services/userDataSync.js). Only the owner can read them.
 export const reflections = reactive(emptyState())
 registerUserStore('reflections', reflections, emptyState)
 
@@ -57,7 +55,6 @@ export function saveReflection(pendingItem, mood, note) {
   return entry
 }
 
-/** Change the mood and/or note of a saved reflection. Returns the updated entry (or null). */
 export function updateReflection(id, mood, note) {
   const entry = reflections.entries.find((e) => e.id === id)
   if (!entry) return null
@@ -67,7 +64,6 @@ export function updateReflection(id, mood, note) {
   return entry
 }
 
-/** Delete a saved reflection for good. */
 export function deleteReflection(id) {
   const i = reflections.entries.findIndex((e) => e.id === id)
   if (i !== -1) reflections.entries.splice(i, 1)

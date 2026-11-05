@@ -1,8 +1,3 @@
-/*
- * The app previously used Bootstrap's `bi-*` class names.  This bridge keeps
- * existing templates stable while rendering every UI glyph from Phosphor's
- * regular icon font. New UI should use `ph ph-*` classes directly.
- */
 .bi {
   font-family: "Phosphor" !important;
   font-style: normal;
@@ -59,7 +54,6 @@
 .bi-lightbulb::before { content: "lightbulb"; }
 .bi-lightning-charge-fill::before { content: "lightning"; }
 .bi-lock-fill::before { content: "lock-key"; }
-/* Use the direct glyph: Safari/iOS can fail to resolve this multi-character ligature. */
 .bi-map::before { content: "\e31a"; }
 .bi-mortarboard-fill::before { content: "graduation-cap"; }
 .bi-pause-fill::before { content: "pause"; }
@@ -78,5 +72,4 @@
 .bi-ticket-perforated::before { content: "ticket"; }
 .bi-trash3::before { content: "trash"; }
 .bi-trophy::before { content: "trophy"; }
-/* Phosphor's single-character X has no ligature, so use its font glyph directly. */
 .bi-x-lg::before { content: "\e4f6"; }

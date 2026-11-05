@@ -1,4 +1,3 @@
-// Editing and deleting a saved reflection (My reflections on the Profile page).
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { reflections, updateReflection, deleteReflection } from '@/stores/reflections.js'
@@ -39,7 +38,7 @@ describe('My reflections card', () => {
     expect(w.find('#reflectionNote').element.value).toBe('Bit tired')
 
     await w.find('#reflectionNote').setValue('Actually great')
-    await w.findAll('.mood-btn')[3].trigger('click') // Buzzing
+    await w.findAll('.mood-btn')[3].trigger('click')
     await w.find('[data-testid="save-edit"]').trigger('click')
     expect(reflections.entries[0]).toMatchObject({ mood: 4, note: 'Actually great' })
   })

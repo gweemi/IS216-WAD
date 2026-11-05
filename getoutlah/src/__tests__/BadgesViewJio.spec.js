@@ -1,5 +1,3 @@
-// Checks the Badges page updates straight away when joining or posting an OPENJIO earns a badge,
-// and that the badge bonus is added to the points.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'

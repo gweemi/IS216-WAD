@@ -120,8 +120,6 @@ function waitFor(ms, runId) {
   if (prefersReducedMotion() || ms === 0) return Promise.resolve(onboardingRunId === runId)
   return new Promise((resolve) => {
     const timer = window.setTimeout(() => resolve(onboardingRunId === runId), ms)
-    // A run-id makes old timers harmless; retaining the timer is unnecessary once
-    // its callback fires, but keeping it allows unmount to stop the tile fallback.
     if (runId === onboardingRunId) tileReadyTimer = timer
   })
 }
@@ -176,8 +174,6 @@ function finishLocationChoice(coords = null) {
   removeTemporaryLocationMarker()
   if (coords) {
     onboardingStage.value = 'locationReveal'
-    // Choosing Enable Location during the introduction is an explicit choice to
-    // discover nearby activities, using the same default radius as the normal UI.
     enableNearby(coords, { pulse: true, panToLocation: true })
   }
   const runId = onboardingRunId
@@ -353,8 +349,6 @@ function declineNearbyLocation() {
 function disableNearby() {
   locationRequestId += 1
   nearMeEnabled.value = false
-  // Keep the verified coordinate in this Map session so turning the filter back
-  // on does not request permission again. It is never persisted.
   removeNearbyRadiusCircle()
   removeUserLocationMarker()
 }
@@ -398,9 +392,6 @@ function applyHuntStateToMarkers(markers, animate = false) {
   })
 }
 
-// MarkerCluster inserts the individual marker DOM only after spiderfying/zooming.
-// Reapply the inner marker class on its lifecycle frame so Leaflet's outer
-// coordinate transform remains untouched while eligible children keep bouncing.
 function syncHuntAfterClusterLifecycle(event = {}) {
   requestAnimationFrame(() => {
     applyHuntStateToMarkers(event.markers?.length ? event.markers : [...activityMarkers.values()])
@@ -491,7 +482,6 @@ async function loadSelectedTrail({ retry = false } = {}) {
   hideSelectedTrail()
   try {
     const route = await getNparksRoute(activity, { retry })
-    // A prior request may finish after the user has selected another activity.
     if (request !== trailLoadRequest || selectedActivity.value?.id !== activity.id) return
     selectedRoute.value = route
     trailLoadState.value = 'ready'
@@ -600,7 +590,6 @@ onMounted(async () => {
   window.addEventListener('resize', updateResponsiveMapControls)
   const loadPromise = loadActivities()
   if (onboardingEligible) {
-    // Start after tiles arrive, but never hold the introduction hostage to a slow tile request.
     await new Promise((resolve) => {
       const fallback = window.setTimeout(resolve, 1200)
       tileReadyTimer = fallback
@@ -1321,7 +1310,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-/* Keep Leaflet's real, linked attribution visible above the custom controls. */
 :deep(.leaflet-top.leaflet-right) { top: calc(.5rem + env(safe-area-inset-top)); right: .5rem; }
 :deep(.leaflet-top.leaflet-right .leaflet-control-attribution) { margin: 0; padding: .22rem .38rem; border-radius: 9px; background: rgba(255,253,248,.94); box-shadow: 0 2px 8px rgba(35,25,65,.14); font: 600 .62rem/1.25 var(--gol-font); }
 :deep(.leaflet-top.leaflet-right .leaflet-control-attribution a) { color: var(--gol-purple); }
@@ -1406,7 +1394,6 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Discovery controls: separate desktop surfaces, one compact mobile card. */
 .map-overlay { width:min(92rem, calc(100% - 3rem)); }
 .map-discovery-bar { display:flex; align-items:center; gap:.75rem; width:100%; padding:.75rem; border-radius:24px; background:#fff8ef; box-shadow:0 4px 16px rgba(35,25,65,.12); pointer-events:auto; }
 .map-header-card { flex:0 0 auto; padding:0; background:transparent; box-shadow:none; }

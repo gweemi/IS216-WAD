@@ -1,5 +1,3 @@
-// Checks the Google sign-in rules without a real Google pop-up:
-// Firebase is replaced with fakes, so we control which account "signs in".
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 

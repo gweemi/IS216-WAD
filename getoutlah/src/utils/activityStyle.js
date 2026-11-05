@@ -1,11 +1,9 @@
-// Colour + emoji for each category, matching the app's colour tokens (gol-theme.css).
 import { getInterest } from '@/config/preferences'
 import { canonicalSource, sourceLabel as sharedSourceLabel } from '@/utils/activitySource'
 
 export const categoryColor = (id) => getInterest(id)?.color ?? '#ece6fb'
 export const categoryEmoji = (id) => getInterest(id)?.emoji ?? '✨'
 export const categoryLabel = (id) => getInterest(id)?.label ?? id
-// Purple tile needs white text; the light ones need dark text.
 export const tileTextColor = (id) => (id === 'workshops' ? '#fff' : '#221a3b')
 export const priceText = (a) => (a.cost === 0 ? 'Free' : a.cost == null ? 'Price varies' : '$' + a.cost)
 
@@ -13,7 +11,6 @@ export const priceText = (a) => (a.cost === 0 ? 'Free' : a.cost == null ? 'Price
 
 export const sourceLabel = sharedSourceLabel
 
-// Events running 24 hrs or more: we only know the first start and last end, not the daily hours.
 export const isVaried = (a) => a.endsAt - a.startsAt >= 86400000
 export const durationText = (a) => (isVaried(a) ? 'Varied duration' : `${a.durationHrs ?? '?'} hr`)
 export const fitsHours = (a, max) =>
