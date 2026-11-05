@@ -14,5 +14,5 @@
     ]
   },
   "firestore": { "rules": "firestore.rules" },
-  "emulators": { "firestore": { "port": 8081 }, "ui": { "enabled": true } }
+  "emulators": { "auth": { "port": 9099 }, "firestore": { "port": 8081 }, "ui": { "enabled": true } }
 }
