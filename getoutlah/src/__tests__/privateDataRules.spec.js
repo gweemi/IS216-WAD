@@ -61,4 +61,16 @@ emulatorDescribe('private wellbeing + reflections rules', () => {
     await assertFails(getDoc(doc(ben(), 'users', 'amy', 'private', 'gamification')))
     await assertFails(setDoc(doc(amy(), 'users', 'amy', 'private', 'gamification'), { ...data, extra: true }))
   })
+
+  it('accepts the OPENJIO badge lists (joined / posted jios), but only as lists', async () => {
+    const data = {
+      completed: [], ledger: [{ date: '2026-11-05', amount: 20, reason: 'Badge: Crew energy' }],
+      earnedBadges: { 'crew-energy': '2026-11-05' }, studyBreak: { active: false, since: null },
+      pausedWeeks: [], redemptions: [], joinedJioIds: ['jio-j1'], hostedJioIds: [],
+      updatedAt: serverTimestamp(),
+    }
+    const ref = doc(amy(), 'users', 'amy', 'private', 'gamification')
+    await assertSucceeds(setDoc(ref, data))
+    await assertFails(setDoc(ref, { ...data, joinedJioIds: 'jio-j1' }))
+  })
 })

@@ -19,6 +19,8 @@
       {{ busy ? 'One sec…' : button.label }}
     </button>
     <p v-if="message" class="jio-msg mt-2 mb-0" role="status" data-testid="jio-message">{{ message }}</p>
+    <!-- After joining: same tick pop-up as checking in -->
+    <SuccessPopup :open="joined" title="You have been jioed" @close="joined = false" />
   </div>
   <!-- Change code is necessary: tell people why a reported jio has no buttons -->
   <p v-else-if="current && suspended" class="jio-suspended mb-0" role="status" data-testid="jio-suspended">
@@ -31,16 +33,20 @@ import { mapStores } from 'pinia'
 import { useOpenJioStore } from '@/stores/openjio'
 import { runJioAction, friendlyJioError } from '@/services/openjio'
 import { statusOf, myRole } from '@/utils/openjio'
+import SuccessPopup from '@/components/common/SuccessPopup.vue'
+import { showNewBadges } from '@/components/badges/NewBadgePopup.vue'
+import { recordJioForBadges } from '@/stores/gamification(badges).js'
 
 export default {
   name: 'JioActionButton',
+  components: { SuccessPopup },
   props: {
     jio: { type: Object, default: null },
     jioId: { type: String, default: '' },
     uid: { type: String, default: '' }, // defaults to the logged-in user
   },
   data() {
-    return { busy: false, message: '' }
+    return { busy: false, message: '', joined: false }
   },
   computed: {
     ...mapStores(useOpenJioStore),
@@ -77,8 +83,15 @@ export default {
     async onClick() {
       this.busy = true
       try {
-        const done = await runJioAction(this.button.action, this.current.id)
-        if (done) this.show(done)
+        const action = this.button.action
+        const done = await runJioAction(action, this.current.id)
+        if (done && action === 'join') {
+          // Any badge earned by joining pops up first (2s), then "You have been jioed"
+          this.busy = false
+          const { badges, levelUp } = recordJioForBadges(this.current.id, { hosted: false })
+          await showNewBadges(badges, { levelUp })
+          this.joined = true
+        } else if (done) this.show(done)
       } catch (err) {
         this.show(friendlyJioError(err))
       } finally {

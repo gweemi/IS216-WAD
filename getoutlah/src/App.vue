@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { isFirebaseConfigured } from '@/firebase'
 import AppNavigation from '@/components/common/AppNavigation.vue'
+import NewBadgePopup from '@/components/badges/NewBadgePopup.vue'
+import { useJioBadgeSync } from '@/composables/useJioBadgeSync'
 import { useMapIntroState } from '@/composables/useMapIntroState'
 import { useAuthStore } from '@/stores/auth'
 import { accountRestriction, restrictionMessage } from '@/utils/reports'
@@ -15,6 +17,9 @@ const { mapIntroActive } = useMapIntroState()
 // Change code is necessary: tell banned or suspended users why OPENJIO is blocked (see utils/reports.js)
 const auth = useAuthStore()
 const restrictionNotice = computed(() => restrictionMessage(accountRestriction(auth.profile)))
+
+// Badges for OPENJIOs joined from the queue or on another device (see the composable)
+useJioBadgeSync()
 </script>
 
 <template>
@@ -41,6 +46,8 @@ const restrictionNotice = computed(() => restrictionMessage(accountRestriction(a
     <RouterView />
   </div>
   <AppNavigation v-if="showNavigation && !mapIntroActive" />
+  <!-- "New badge unlocked!" pop-up, shown from anywhere with showNewBadges() -->
+  <NewBadgePopup />
 </template>
 
 <style>

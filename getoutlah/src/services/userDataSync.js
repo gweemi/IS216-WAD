@@ -2,7 +2,8 @@
 // Keeps private per-account data in Firestore so it follows the user across devices:
 //   users/{uid}/private/wellbeing    { history: [{ date, score }], updatedAt }
 //   users/{uid}/private/reflections  { pending, entries, promptsOn, dismissed, updatedAt }
-//   users/{uid}/private/gamification { completed, ledger, earnedBadges, studyBreak, pausedWeeks, redemptions, updatedAt }
+//   users/{uid}/private/gamification { completed, ledger, earnedBadges, studyBreak, pausedWeeks, redemptions,
+//                                      joinedJioIds, hostedJioIds, updatedAt }
 // firestore.rules: only the owner can read or write these. (See src/stores/userData.js.)
 //
 // startUserDataSync(uid) is called from main.js whenever the logged-in user changes.
@@ -11,7 +12,7 @@ import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { useAuthStore } from '@/stores/auth'
 import {
-  switchUser, applyRemote, snapshotOf, hasData, userStoreNames, currentUid, setRemoteWriter,
+  switchUser, applyRemote, markRemoteLoaded, snapshotOf, hasData, userStoreNames, currentUid, setRemoteWriter,
 } from '@/stores/userData'
 // Make sure the stores have registered before we sync them
 import '@/stores/wellbeing'
@@ -80,8 +81,9 @@ export function startUserDataSync(uid) {
           if (snap.exists()) {
             const { updatedAt: _updatedAt, ...data } = snap.data()
             applyRemote(name, data, uid)
-          } else if (hasData(name)) {
-            save(uid, name) // first time: upload what this browser already had for this account
+          } else {
+            markRemoteLoaded(name, uid)
+            if (hasData(name)) save(uid, name) // first time: upload what this browser already had for this account
           }
         },
         (err) => console.warn(`Could not load ${name} from your account:`, err?.code || err),

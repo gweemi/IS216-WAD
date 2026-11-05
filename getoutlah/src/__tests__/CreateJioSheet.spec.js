@@ -9,6 +9,9 @@ vi.mock('@/services/openjio', () => ({
   updateJio: vi.fn(async (id) => id),
   friendlyJioError: (e) => e.message,
 }))
+vi.mock('@/utils/celebrate.js', () => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), celebrateLevelUp: vi.fn() }))
+const badgePopup = vi.hoisted(() => ({ showNewBadges: vi.fn(async () => {}) }))
+vi.mock('@/components/badges/NewBadgePopup.vue', () => badgePopup)
 vi.mock('@/services/api/onemap', () => ({
   searchPlaces: vi.fn(async () => [
     { name: 'Tampines Hub', address: '1 Tampines Walk Singapore 528523', lat: 1.3532, lng: 103.9405 },
@@ -107,6 +110,8 @@ describe('CreateJioSheet', () => {
     await flushPromises()
     expect(createJio).toHaveBeenCalledTimes(1)
     expect(w.emitted('created')?.[0]).toEqual(['new-id'])
+    // Posting a jio earns Big host energy straight away, shown in the badge pop-up
+    expect(badgePopup.showNewBadges.mock.calls.at(-1)[0].map((b) => b.id)).toEqual(['big-host-energy'])
   })
 
   it('pre-fills a host OpenJio and confirms before saving edits', async () => {
