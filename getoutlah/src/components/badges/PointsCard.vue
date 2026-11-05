@@ -4,16 +4,10 @@
     <div class="d-flex align-items-center gap-3 mb-3">
       <span class="gol-icon-tile tile-lime"><i class="bi bi-lightning-charge-fill"></i></span>
       <div>
-        <div class="label">Level {{ level.level }}</div>
-        <div class="big">{{ level.points }} <span class="unit">pts</span></div>
+        <div class="label">Points</div>
+        <div class="big">{{ points }} <span class="unit">pts</span></div>
       </div>
     </div>
-
-    <div class="row-label">
-      <span>Next level</span>
-      <span>{{ level.into }}/{{ level.needed }}</span>
-    </div>
-    <div class="gol-progress mb-3"><span class="bar-purple" :style="{ width: level.percent + '%' }"></span></div>
 
     <div class="row-label">
       <span>This week</span>
@@ -33,7 +27,7 @@
 </template>
 
 <script>
-import { game, levelInfo, pointsThisWeek, WEEKLY_POINT_CAP } from '../../stores/gamification(badges).js'
+import { game, availablePoints, pointsThisWeek, WEEKLY_POINT_CAP } from '../../stores/gamification(badges).js'
 
 export default {
   name: 'PointsCard',
@@ -41,8 +35,9 @@ export default {
     return { store: game, cap: WEEKLY_POINT_CAP }
   },
   computed: {
-    level() {
-      return levelInfo()
+    // What you can still spend (earned minus vouchers)
+    points() {
+      return availablePoints()
     },
     week() {
       return pointsThisWeek()

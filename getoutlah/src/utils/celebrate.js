@@ -1,9 +1,9 @@
 // =============================================================
 // GetOutLah! — confetti celebrations (X-factor: canvas-confetti)
-//   import { celebrateBadge, celebrateCheckIn, celebrateLevelUp } from '../utils/celebrate.js'
+//   import { celebrateBadge, celebrateCheckIn } from '../utils/celebrate.js'
 //
 //   Check in → stars.  Check in AND earn a badge → full-screen confetti instead.
-//   Level up (no badge) → a bigger star shower.  Log in → a quick pop.
+//   Log in → a quick pop.
 // =============================================================
 import confetti from 'canvas-confetti'
 
@@ -59,17 +59,4 @@ export function celebrateCheckIn() {
 // Quick confetti pop after logging in
 export function celebrateLogin() {
   confetti({ ...BASE, particleCount: 70, spread: 80, origin: { y: 0.65 } })
-}
-
-// Star-shaped shower when the user levels up
-export function celebrateLevelUp() {
-  confetti({
-    ...BASE,
-    particleCount: 120,
-    spread: 120,
-    startVelocity: 40,
-    shapes: ['star'],
-    scalar: 1.2,
-    origin: { y: 0.4 },
-  })
 }

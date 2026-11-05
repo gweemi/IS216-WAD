@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const celebrate = vi.hoisted(() => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), celebrateLevelUp: vi.fn() }))
+const celebrate = vi.hoisted(() => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn() }))
 vi.mock('@/utils/celebrate.js', () => celebrate)
 import {
   BADGES,

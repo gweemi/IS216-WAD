@@ -9,7 +9,7 @@ vi.mock('@/services/openjio', () => ({
   updateJio: vi.fn(async (id) => id),
   friendlyJioError: (e) => e.message,
 }))
-vi.mock('@/utils/celebrate.js', () => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), celebrateLevelUp: vi.fn() }))
+vi.mock('@/utils/celebrate.js', () => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn() }))
 const badgePopup = vi.hoisted(() => ({ showNewBadges: vi.fn(async () => {}) }))
 vi.mock('@/components/badges/NewBadgePopup.vue', () => badgePopup)
 vi.mock('@/services/api/onemap', () => ({

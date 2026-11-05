@@ -72,9 +72,8 @@
           {{ reward.pointsGiven ? '+' + reward.pointsGiven : '0' }}<small>pts</small>
         </span>
         <div class="flex-grow-1 min-w-0">
-          <div class="fw-bold">{{ reward.levelledUp ? 'Level up! You’re now Level ' + level.level : reward.message }}</div>
-          <div class="small muted mb-1">Level {{ level.level }} · {{ level.into }}/{{ level.needed }} pts to the next level</div>
-          <div class="gol-progress"><span :style="{ width: level.percent + '%' }"></span></div>
+          <div class="fw-bold">{{ reward.message }}</div>
+          <div class="small muted">You now have {{ points }} pts</div>
         </div>
       </div>
 
@@ -119,7 +118,7 @@ import {
   statusFor,
   latestCheckIn,
 } from '../../stores/wellbeing.js'
-import { awardWellbeingCheckIn, levelInfo } from '../../stores/gamification(badges).js'
+import { awardWellbeingCheckIn, availablePoints } from '../../stores/gamification(badges).js'
 import { allActivities, loadActivities } from '../../stores/activities.js'
 import { useAuthStore } from '../../stores/auth.js'
 import { wellbeingSuggestions } from '../../utils/profile.js'
@@ -150,8 +149,8 @@ export default {
     }
   },
   computed: {
-    level() {
-      return levelInfo()
+    points() {
+      return availablePoints()
     },
     suggestions() {
       if (!this.result) return []

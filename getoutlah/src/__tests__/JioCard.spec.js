@@ -14,7 +14,7 @@ vi.mock('@/services/openjio', () => ({
   friendlyJioError: (e) => e.message,
 }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ user, profile: {} }) }))
-vi.mock('@/utils/celebrate.js', () => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), celebrateLevelUp: vi.fn() }))
+vi.mock('@/utils/celebrate.js', () => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn() }))
 const badgePopup = vi.hoisted(() => ({ showNewBadges: vi.fn(async () => {}) }))
 vi.mock('@/components/badges/NewBadgePopup.vue', () => badgePopup)
 const { resetGamification } = await import('@/stores/gamification(badges).js')
@@ -79,7 +79,6 @@ describe('JioCard', () => {
     expect(calls).toEqual([['join', 'j1']])
     // First join earns Crew energy: its pop-up comes first, then "You have been jioed" instead of a line of text
     expect(badgePopup.showNewBadges.mock.calls[0][0].map((b) => b.id)).toEqual(['crew-energy'])
-    expect(badgePopup.showNewBadges.mock.calls[0][1]).toEqual({ levelUp: null })
     expect(w.find('[data-testid="jio-message"]').exists()).toBe(false)
     expect(document.body.textContent).toContain('You have been jioed')
     w.unmount()

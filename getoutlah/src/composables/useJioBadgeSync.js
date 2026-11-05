@@ -34,7 +34,6 @@ export function useJioBadgeSync() {
       const firstCheck = caughtUp !== uid
       const roles = new Map(all.map((j) => [j.id, myRole(j, uid)]))
       const earned = []
-      let levelUp = null
       for (const [id, role] of roles) {
         // First check after logging in: count every jio I'm in. After that, only someone moved up from the queue
         // (a tap on Join is handled by the button itself, which also shows "You have been jioed").
@@ -44,11 +43,10 @@ export function useJioBadgeSync() {
       }
       caughtUp = uid
       lastRoles = roles
-      if (earned.length) showNewBadges(earned, { levelUp })
+      if (earned.length) showNewBadges(earned)
 
-      function collect(result) {
-        earned.push(...result.badges)
-        levelUp = result.levelUp ?? levelUp
+      function collect(badges) {
+        earned.push(...badges)
       }
     },
     { immediate: true },

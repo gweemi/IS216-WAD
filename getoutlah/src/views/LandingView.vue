@@ -30,7 +30,7 @@ const STATS = [
 const STEPS = [
   { emoji: '🎯', color: 'var(--gol-cyan)', title: 'Set your vibe', text: 'Pick your interests, budget and energy level, solo or with friends.' },
   { emoji: '📍', color: 'var(--gol-coral)', title: 'Pick and go', text: 'Choose an activity or join an OPENJIO!, then check in when you arrive.' },
-  { emoji: '🏆', color: 'var(--gol-yellow)', title: 'Level up', text: 'Collect points and badges, keep your streak, and reflect on how it felt.' },
+  { emoji: '🏆', color: 'var(--gol-yellow)', title: 'Earn rewards', text: 'Collect points and badges, keep your streak, and reflect on how it felt.' },
 ]
 
 const reduceMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches

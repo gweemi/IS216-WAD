@@ -7,7 +7,7 @@
 | Name, picture, university | `users/{uid}.displayName`, `.photoURL`, `.universityName` | Edit profile sheet |
 | Completed (number + list) | `game.completed` in `stores/gamification(badges).js` | "Check in" on an activity |
 | Friends (number) | Accepted friends from the Friends page (`friendList` in `stores/friends.js`, live) | Accepting a friend request |
-| Badges (number), Lv + pts | `badgeList()`, `levelInfo()` in gamification | Badges page |
+| Badges (number), pts | `badgeList()`, `availablePoints()` in gamification | Badges page |
 | Saved | `users/{uid}.saved` | "Save" on an activity |
 | My plans | OPENJIOs you host, go to or queue for | The OPENJIO page |
 | My vibe (preferences) | `users/{uid}.preferences` | Onboarding questionnaire, **Edit** on the profile |
@@ -40,7 +40,7 @@ and whether they appear in "Friends who have done this". Saved in `users/{uid}.p
 
 ## Points for the wellbeing check-in
 Finishing a WHO-5 check-in gives **+20 points**, once every 14 days, whatever the score.
-The points count towards the weekly cap of 300 and the level on the Badges page.
+The points count towards the weekly cap of 300 and show on the Badges page.
 Mood ratings and reflections give no points.
 
 ## Profile pictures

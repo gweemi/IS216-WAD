@@ -2,7 +2,7 @@
 import { reactive } from 'vue'
 import turfDistance from '@turf/distance' 
 import { point } from '@turf/helpers'
-import { celebrateBadge, celebrateCheckIn, celebrateLevelUp } from '../utils/celebrate.js' 
+import { celebrateBadge, celebrateCheckIn } from '../utils/celebrate.js' 
 import { addPendingReflection } from './reflections.js'
 import { registerUserStore } from './userData.js'
 import { getInterest } from '@/config/preferences'
@@ -11,7 +11,6 @@ import { getInterest } from '@/config/preferences'
 export const WEEKLY_POINT_CAP = 300      // max points a student can earn per week
 export const CHECKIN_RADIUS_M = 200      // must be within 200m to check in
 export const POINTS_PER_ACTIVITY = 50    // base points for a verified activity
-export const POINTS_PER_LEVEL = 250      // points needed per level
 
 // Extra points on top of POINTS_PER_ACTIVITY, keyed by activity category (interest ids in
 // src/config/preferences.js). To change a bonus, edit the number; to add one, add a line.
@@ -213,15 +212,6 @@ export function pointsThisWeek() {
   return game.ledger.filter((e) => weekKey(e.date) === wk).reduce((sum, e) => sum + e.amount, 0)
 }
 
-// Levels go by every point ever earned, so redeeming a voucher never takes a level away.
-// points is what you can still spend (earned minus vouchers): that's the number shown to the user.
-export function levelInfo() {
-  const earned = totalPoints()
-  const level = Math.floor(earned / POINTS_PER_LEVEL) + 1
-  const into = earned % POINTS_PER_LEVEL
-  return { level, points: availablePoints(), earned, into, needed: POINTS_PER_LEVEL, percent: Math.round((into / POINTS_PER_LEVEL) * 100) }
-}
-
 function awardPoints(amount, reason) {
   const room = Math.max(0, WEEKLY_POINT_CAP - pointsThisWeek())
   const given = Math.min(amount, room)
@@ -245,19 +235,13 @@ export function daysUntilWellbeingPoints(now = new Date()) {
 export function awardWellbeingCheckIn() {
   const wait = daysUntilWellbeingPoints()
   if (wait > 0) {
-    return { pointsGiven: 0, levelledUp: false, message: `Check-in points come back in ${wait} day${wait === 1 ? '' : 's'}.` }
+    return { pointsGiven: 0, message: `Check-in points come back in ${wait} day${wait === 1 ? '' : 's'}.` }
   }
-  const levelBefore = levelInfo().level
   const pointsGiven = awardPoints(POINTS_PER_WELLBEING_CHECKIN, WELLBEING_REASON)
-  const levelledUp = levelInfo().level > levelBefore
-  try {
-    if (levelledUp) celebrateLevelUp()
-  } catch {
-  }
   const message = pointsGiven
     ? `+${pointsGiven} points for checking in`
     : "You've hit this week's points cap, so no points this time."
-  return { pointsGiven, levelledUp, message }
+  return { pointsGiven, message }
 }
 
 export function currentStreak() {
@@ -334,35 +318,25 @@ function checkBadges() {
   return unlocked
 }
 
-// Badge confetti runs for 2s (utils/celebrate.js); a level-up from the badge bonus gets its own burst after it
-const BADGE_CONFETTI_MS = 2000
-function celebrateNewBadges(levelledUp) {
-  celebrateBadge()
-  if (levelledUp) setTimeout(() => { try { celebrateLevelUp() } catch { /* decoration only */ } }, BADGE_CONFETTI_MS)
-}
-
 /**
  * Joining or posting an OPENJIO counts towards its badge straight away (no check-in needed).
  * Each jio only counts once, even if you leave and join again.
- * Returns { badges, levelUp }: the newly earned badges, and the new level if the bonus levelled you up (else null).
- *   const { badges, levelUp } = recordJioForBadges(jio.id)        // joined
- *   showNewBadges(badges, { levelUp })                            // pop-up (components/badges/NewBadgePopup.vue)
- *   recordJioForBadges(newId, { hosted: true })                   // posted
+ * Returns the newly earned badges.
+ *   showNewBadges(recordJioForBadges(jio.id))                    // joined (pop-up: components/badges/NewBadgePopup.vue)
+ *   showNewBadges(recordJioForBadges(newId, { hosted: true }))   // posted
  */
 export function recordJioForBadges(jioId, { hosted = false } = {}) {
   const list = hosted ? game.hostedJioIds : game.joinedJioIds
   const id = `jio-${jioId}`
-  if (!jioId || list.includes(id)) return { badges: [], levelUp: null }
-  const levelBefore = levelInfo().level
+  if (!jioId || list.includes(id)) return []
   list.push(id)
   const badges = checkBadges()
-  const level = levelInfo().level
   try {
-    if (badges.length) celebrateNewBadges(level > levelBefore)
+    if (badges.length) celebrateBadge()
   } catch {
     // confetti is only decoration
   }
-  return { badges, levelUp: level > levelBefore ? level : null }
+  return badges
 }
 
 export function distanceInMetres(a, b) {
@@ -403,8 +377,6 @@ export async function checkInToActivity(activity, userPosition = null) {
     }
   }
 
-  const levelBefore = levelInfo().level
-
   game.completed.push({
     id: activity.id,
     title: activity.title,
@@ -428,16 +400,14 @@ export async function checkInToActivity(activity, userPosition = null) {
   else if (pointsGiven < pointsEarned) message = `Checked in! +${pointsGiven} points (you've reached this week's cap)`
   else if (bonus > 0) message = `Checked in! +${pointsGiven} points (includes a +${bonus} ${getInterest(activity.category)?.label ?? activity.category} bonus)`
 
-  const levelledUp = levelInfo().level > levelBefore
   try {
-    if (newBadges.length) celebrateNewBadges(levelledUp)
-    else if (levelledUp) celebrateLevelUp()
+    if (newBadges.length) celebrateBadge()
     else celebrateCheckIn()
   } catch {
     // confetti is only decoration
   }
 
-  return { ok: true, distance, pointsGiven, newBadges, levelledUp, level: levelInfo().level, message }
+  return { ok: true, distance, pointsGiven, newBadges, message }
 }
 
 // ---------- for study-break mode ----------

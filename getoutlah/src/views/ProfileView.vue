@@ -1,7 +1,7 @@
 <!--
   Profile tab: "Your corner" (matches the Figma).
   Pulls together most of the app:
-    - Completed / Badges / level  -> stores/gamification(badges).js (Badges page)
+    - Completed / Badges / points -> stores/gamification(badges).js (Badges page)
     - Friends count               -> accepted friends from the Friends feature (stores/friends.js, live)
     - Saved                       -> users/{uid}.saved (Save button on an activity)
     - My plans                    -> OPENJIOs you host, are going to or are queued for (stores/openjio.js)
@@ -22,7 +22,7 @@ import { useOpenJioStore } from '@/stores/openjio'
 import { friendList } from '@/stores/friends'
 import { ensureUserProfile, logOut } from '@/services/auth'
 import { activityById, loadActivities, toggleSaved } from '@/stores/activities'
-import { game, badgeList, levelInfo, setStudyBreak, currentStreak } from '@/stores/gamification(badges).js'
+import { game, badgeList, availablePoints, setStudyBreak, currentStreak } from '@/stores/gamification(badges).js'
 import { reflections, moodInfo } from '@/stores/reflections.js'
 import { handleFor, firstName, savedActivities, buildPlans, completedNewestFirst } from '@/utils/profile'
 import { categoryLabel, priceText, whenText } from '@/utils/activityStyle'
@@ -64,7 +64,7 @@ const photo = computed(() => (auth.profile && 'photoURL' in auth.profile ? auth.
 const handle = computed(() => handleFor(auth.email))
 
 // ---------- Numbers ----------
-const level = computed(() => levelInfo())
+const points = computed(() => availablePoints())
 const badges = computed(() => badgeList())
 const badgesEarned = computed(() => badges.value.filter((b) => b.earned).length)
 const friendsCount = computed(() => friendList.value.length) // live: updates when a request is accepted
@@ -240,8 +240,8 @@ async function confirmDeleteAccount() {
                   <span v-if="auth.profile?.universityName" class="chip chip-lime" data-testid="profile-university">
                     <i class="bi bi-mortarboard-fill"></i> {{ auth.profile.universityName }}
                   </span>
-                  <router-link to="/badges" class="chip chip-yellow" data-testid="profile-level">
-                    <i class="bi bi-lightning-charge-fill"></i> Lv {{ level.level }} · {{ level.points }} pts
+                  <router-link to="/badges" class="chip chip-yellow" data-testid="profile-points">
+                    <i class="bi bi-lightning-charge-fill"></i> {{ points }} pts
                   </router-link>
                 </div>
               </div>

@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-vi.mock('@/utils/celebrate.js', () => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), celebrateLevelUp: vi.fn(), burstFrom: vi.fn() }))
+vi.mock('@/utils/celebrate.js', () => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), burstFrom: vi.fn() }))
 vi.mock('@/composables/useBadgeHunt', () => ({ useBadgeHunt: () => ({ selectTrackedBadge: vi.fn() }) }))
 const { game, recordJioForBadges, resetGamification, totalPoints } = await import('@/stores/gamification(badges).js')
 const { default: BadgesView } = await import('@/views/BadgesView.vue')
