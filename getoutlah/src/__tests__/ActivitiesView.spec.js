@@ -6,7 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 const state = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return {
-    filters: ref({ query: '', categories: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false, prioritiseFreeTime: false }),
+    filters: ref({ query: '', categories: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false }),
     recommended: ref([]),
     loadingActivities: ref(false),
     sourceErrors: ref({}),
@@ -29,7 +29,7 @@ vi.mock('@/stores/activities', () => ({
 vi.mock('@/utils/activeFilters', () => ({ activeFilterPills: () => [] }))
 vi.mock('@/components/ActivityCard.vue', () => ({ default: { template: '<li />' } }))
 vi.mock('@/components/FilterSheet.vue', () => ({ default: { name: 'FilterSheet', props: ['open', 'showSources'], template: '<div />' } }))
-vi.mock('@/components/openjio/JioCard.vue', () => ({ default: { name: 'JioCard', props: ['jio', 'uid', 'showDetails'], template: '<article />' } }))
+vi.mock('@/components/openjio/JioCard.vue', () => ({ default: { name: 'JioCard', props: ['jio', 'uid', 'linkToDetails'], template: '<article />' } }))
 vi.mock('@/stores/openjio', () => ({ useOpenJioStore: () => state.jios }))
 
 const { default: ActivitiesView } = await import('@/views/ActivitiesView.vue')
@@ -47,7 +47,7 @@ async function mountAt(path = '/activities') {
 }
 
 beforeEach(() => {
-  state.filters.value = { query: '', categories: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false, prioritiseFreeTime: false }
+  state.filters.value = { query: '', categories: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false }
   state.recommended.value = []
   state.loadActivities.mockReset()
   state.activityRefreshRequired.value = false

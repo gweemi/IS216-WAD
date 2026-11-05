@@ -151,8 +151,10 @@ export async function getProfiles(uids) {
   }))
 }
 
+// The host and anyone going can see who else is going (people in the queue can't).
 export async function getJioAttendees(_id, { legacyParticipants = [], hostId = null } = {}) {
-  if (currentUser().user.uid !== hostId) throw new Error("Only the host can view who's going.")
+  const uid = currentUser().user.uid
+  if (uid !== hostId && !legacyParticipants.includes(uid)) throw new Error("Only people going can see who's going.")
   return getProfiles(legacyParticipants)
 }
 

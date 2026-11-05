@@ -16,12 +16,12 @@ vi.mock('firebase/firestore', () => ({
 }))
 
 const { useAuthStore } = await import('@/stores/auth')
-const { game, startDemoSession } = await import('@/stores/gamification(badges).js')
+const { game, resetGamification } = await import('@/stores/gamification(badges).js')
 
 describe('Firebase session restoration', () => {
-  it('keeps the in-progress local demo data instead of resetting it', async () => {
+  it('keeps the in-progress badge data instead of resetting it', async () => {
     setActivePinia(createPinia())
-    startDemoSession()
+    resetGamification(true)
     game.completed.push({ id: 'kept-after-refresh', title: 'Kept activity', category: 'outdoors', region: 'east', date: '2026-11-03' })
 
     const store = useAuthStore()

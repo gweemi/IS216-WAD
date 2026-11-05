@@ -5,7 +5,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { allActivities, loadActivities, reloadActivities, sourceErrors, seedFirestore } from '@/stores/activities'
 import { saveCurated, removeCurated } from '@/services/api/getoutlahPicks'
 import { searchPlaces } from '@/services/api/onemap'
-import { emptyCurated, toCuratedActivity, CURATED_TYPES, ENERGY_LEVELS, CURATED_DESCRIPTION_MAX } from '@/utils/getoutlahPicks'
+import { emptyCurated, toCuratedActivity, ENERGY_LEVELS, CURATED_DESCRIPTION_MAX } from '@/utils/getoutlahPicks'
 import { seedActivities } from '@/data/seedActivities'
 import { INTERESTS } from '@/config/preferences'
 import { categoryLabel, priceText } from '@/utils/activityStyle'
@@ -97,9 +97,9 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
           <option v-for="i in INTERESTS" :key="i.id" :value="i.id">{{ i.label }}</option>
         </select>
       </label>
-      <label class="adm-field">Type
-        <select id="cur-type" v-model="form.type" class="form-select">
-          <option v-for="[id, label] in CURATED_TYPES" :key="id" :value="id">{{ label }}</option>
+      <label class="adm-field">Indoor / outdoor
+        <select id="cur-setting" v-model="form.setting" class="form-select">
+          <option>Indoor</option><option>Outdoor</option>
         </select>
       </label>
       <label class="adm-field">Price (S$)
@@ -107,11 +107,6 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
       </label>
       <label class="adm-field">Duration (hours)
         <input id="cur-duration" v-model="form.durationHrs" class="form-control" type="number" min="0.5" max="12" step="0.5" />
-      </label>
-      <label class="adm-field">Indoor / outdoor
-        <select id="cur-setting" v-model="form.setting" class="form-select">
-          <option>Indoor</option><option>Outdoor</option>
-        </select>
       </label>
       <label class="adm-field">Energy
         <select id="cur-energy" v-model="form.energyLevel" class="form-select">

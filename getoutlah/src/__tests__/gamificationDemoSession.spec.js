@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-vi.mock('@/utils/celebrate.js', () => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), celebrateLevelUp: vi.fn() }))
+const celebrate = vi.hoisted(() => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), celebrateLevelUp: vi.fn() }))
+vi.mock('@/utils/celebrate.js', () => celebrate)
 import {
   BADGES,
+  CATEGORY_BONUS_POINTS,
   CHECKIN_RADIUS_M,
   POINTS_PER_ACTIVITY,
   WEEKLY_POINT_CAP,
@@ -12,14 +14,38 @@ import {
   createDemoStartingState,
   currentStreak,
   game,
+  pointsForActivity,
   pointsThisWeek,
-  startDemoSession,
+  resetGamification,
   totalPoints,
   weekKey,
 } from '@/stores/gamification(badges).js'
 
+describe('activity points', () => {
+  it('gives the base points, plus the bonus for outdoors and sports activities', () => {
+    expect(pointsForActivity({ category: 'arts' })).toBe(50)
+    expect(pointsForActivity({ category: 'outdoors' })).toBe(60)
+    expect(pointsForActivity({ category: 'sports' })).toBe(60)
+    expect(pointsForActivity({})).toBe(50)
+  })
+})
+
 describe('shared demo gamification session', () => {
-  beforeEach(() => startDemoSession())
+  beforeEach(() => {
+    resetGamification(true)
+    Object.values(celebrate).forEach((fn) => fn.mockClear())
+  })
+
+  it('plays the stars for a check-in that earns no badge', async () => {
+    const result = await checkInToActivity(
+      { id: 'arts-new', title: 'Gallery visit', category: 'arts', region: 'central', lat: 1.29, lng: 103.85 },
+      { lat: 1.29, lng: 103.85 },
+    )
+    expect(result.ok).toBe(true)
+    expect(result.newBadges).toEqual([])
+    expect(celebrate.celebrateCheckIn).toHaveBeenCalledTimes(1)
+    expect(celebrate.celebrateBadge).not.toHaveBeenCalled()
+  })
 
   it('creates a chronological, internally consistent Badge Hunt starting state', () => {
     const state = createDemoStartingState()
@@ -35,7 +61,7 @@ describe('shared demo gamification session', () => {
     expect(Object.keys(state.earnedBadges)).toHaveLength(4)
     expect(badgeDates.every((date) => state.completed.some((activity) => activity.date === date))).toBe(true)
     expect(Object.values(weeklyPoints).every((points) => points <= WEEKLY_POINT_CAP)).toBe(true)
-    expect(state.ledger.reduce((total, entry) => total + entry.amount, 0)).toBe(350)
+    expect(state.ledger.reduce((total, entry) => total + entry.amount, 0)).toBe(380) // 5 × 50 + 30 bonus (1 sports, 2 outdoors) + 100 in badge bonuses
 
     const badges = BADGES.map((badge) => ({ ...badge, progress: badge.progress(state) }))
     expect(badges.find((badge) => badge.id === 'trailblazer')).toMatchObject({ progress: 2, target: 3 })
@@ -60,9 +86,12 @@ describe('shared demo gamification session', () => {
     expect(result.ok).toBe(true)
     expect(result.distance).toBeLessThanOrEqual(CHECKIN_RADIUS_M)
     expect(result.newBadges.map((badge) => badge.id)).toContain('trailblazer')
+    expect(celebrate.celebrateBadge).toHaveBeenCalledTimes(1) // full-screen, instead of the stars
+    expect(celebrate.celebrateCheckIn).not.toHaveBeenCalled()
     expect(badgeList().find((badge) => badge.id === 'trailblazer')).toMatchObject({ earned: true, progress: 3 })
-    expect(pointsThisWeek()).toBe(POINTS_PER_ACTIVITY * 2 + 30)
-    expect(totalPoints()).toBe(430)
+    expect(result.pointsGiven).toBe(POINTS_PER_ACTIVITY + CATEGORY_BONUS_POINTS.outdoors)
+    expect(pointsThisWeek()).toBe(POINTS_PER_ACTIVITY * 2 + CATEGORY_BONUS_POINTS.outdoors + 30)
+    expect(totalPoints()).toBe(470)
   })
 
   it('recommends only real unfinished badges with qualifying uncompleted activities', () => {

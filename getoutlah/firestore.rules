@@ -165,8 +165,9 @@ service cloud.firestore {
     }
 
     // ---------- Private per-account data (src/services/userDataSync.js) ----------
-    // users/{uid}/private/wellbeing and users/{uid}/private/reflections:
-    // WHO-5 check-ins, moods and reflection notes. ONLY the owner can read or write them.
+    // users/{uid}/private/wellbeing, /reflections and /gamification:
+    // WHO-5 check-ins, moods, reflection notes, and points / badges / check-ins.
+    // ONLY the owner can read or write them.
     function validPrivateData(docId, d) {
       return (docId == 'wellbeing'
                 && d.keys().hasOnly(['history', 'updatedAt'])
@@ -176,7 +177,15 @@ service cloud.firestore {
                 && d.entries is list && d.entries.size() <= 1000
                 && d.pending is list && d.pending.size() <= 200
                 && d.dismissed is list && d.dismissed.size() <= 200
-                && d.promptsOn is bool);
+                && d.promptsOn is bool)
+        || (docId == 'gamification'
+                && d.keys().hasOnly(['completed', 'ledger', 'earnedBadges', 'studyBreak', 'pausedWeeks', 'redemptions', 'updatedAt'])
+                && d.completed is list && d.completed.size() <= 2000
+                && d.ledger is list && d.ledger.size() <= 5000
+                && d.earnedBadges is map
+                && d.studyBreak is map
+                && d.pausedWeeks is list && d.pausedWeeks.size() <= 500
+                && d.redemptions is list && d.redemptions.size() <= 500);
     }
 
     match /users/{uid}/private/{docId} {

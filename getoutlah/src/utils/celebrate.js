@@ -1,6 +1,9 @@
 // =============================================================
 // GetOutLah! — confetti celebrations (X-factor: canvas-confetti)
 //   import { celebrateBadge, celebrateCheckIn, celebrateLevelUp } from '../utils/celebrate.js'
+//
+//   Check in → stars.  Check in AND earn a badge → full-screen confetti instead.
+//   Level up (no badge) → a bigger star shower.  Log in → a quick pop.
 // =============================================================
 import confetti from 'canvas-confetti'
 
@@ -33,18 +36,28 @@ export function burstFrom(el) {
   })
 }
 
-// Big celebration when a NEW badge is earned
+// Full-screen celebration when a NEW badge is earned: confetti rains down across the
+// whole width of the page, with bursts from both sides.
 export function celebrateBadge() {
-  const end = Date.now() + 900
+  const end = Date.now() + 2000
   ;(function frame() {
-    confetti({ ...BASE, particleCount: 5, angle: 60, spread: 60, origin: { x: 0, y: 0.7 } })
-    confetti({ ...BASE, particleCount: 5, angle: 120, spread: 60, origin: { x: 1, y: 0.7 } })
+    confetti({
+      ...BASE, particleCount: 4, angle: 270, spread: 50, startVelocity: 15, gravity: 0.9, ticks: 260,
+      shapes: ['square', 'circle', 'star'], origin: { x: Math.random(), y: -0.05 },
+    })
+    confetti({ ...BASE, particleCount: 3, angle: 60, spread: 60, origin: { x: 0, y: 0.7 } })
+    confetti({ ...BASE, particleCount: 3, angle: 120, spread: 60, origin: { x: 1, y: 0.7 } })
     if (Date.now() < end) requestAnimationFrame(frame)
   })()
 }
 
-// Quick pop when a check-in succeeds
+// Burst of stars when a check-in succeeds (and didn't earn a badge)
 export function celebrateCheckIn() {
+  confetti({ ...BASE, particleCount: 60, spread: 90, startVelocity: 30, shapes: ['star'], scalar: 1.1, origin: { y: 0.65 } })
+}
+
+// Quick confetti pop after logging in
+export function celebrateLogin() {
   confetti({ ...BASE, particleCount: 70, spread: 80, origin: { y: 0.65 } })
 }
 

@@ -4,12 +4,11 @@ import { categories } from '@/data/seedActivities'
 import { regionOf } from '@/utils/eventbriteMap'
 import { ACTIVITY_SOURCES } from '@/utils/activitySource'
 
-export const CURATED_TYPES = [['outdoor', 'Outdoor'], ['events', 'Event'], ['volunteering', 'Volunteering'], ['paid', 'Paid class / venue']]
 export const CURATED_DESCRIPTION_MAX = 1000
 export const ENERGY_LEVELS = [['low', 'Chill'], ['medium', 'Moderate'], ['high', 'High energy']]
 
 export const emptyCurated = () => ({
-  title: '', category: 'outdoors', type: 'outdoor', cost: 0, durationHrs: 2, setting: 'Outdoor',
+  title: '', category: 'outdoors', cost: 0, durationHrs: 2, setting: 'Outdoor',
   energyLevel: 'medium', groupFriendly: true, area: '', lat: null, lng: null, url: '', description: '',
 })
 
@@ -34,7 +33,7 @@ export function toCuratedActivity(form) {
   return {
     problems,
     activity: {
-      title, description, category: form.category, type: form.type, cost, durationHrs, setting: form.setting,
+      title, description, category: form.category, cost, durationHrs, setting: form.setting,
       energyLevel: form.energyLevel, groupFriendly: !!form.groupFriendly,
       area: (form.area ?? '').trim() || 'Singapore', region: regionOf(lat, lng), lat, lng,
       url: (form.url ?? '').trim() || null, source: ACTIVITY_SOURCES.PICKS,
