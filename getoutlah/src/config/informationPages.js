@@ -26,7 +26,7 @@ export const INFORMATION_PAGES = {
     intro: 'These terms set out the simple ground rules for using GETOUTLAH!.',
     sections: [
       { title: '1. Acceptance of terms', paragraphs: ['By using GETOUTLAH!, you agree to use the platform respectfully and in line with these terms and the Community Guidelines.'] },
-      { title: '2. Educational project disclaimer', paragraphs: ['GETOUTLAH! was developed for IS216 Web Application Development at Singapore Management University as an educational project. It is not an official SMU-operated service.'] },
+      { title: '2. Educational project disclaimer', paragraphs: ['GETOUTLAH! was developed for IS216 Web Application Development 2 at Singapore Management University as an educational project. It is not an official SMU-operated service.'] },
       { title: '3. User accounts', paragraphs: ['You are responsible for the Google account you use to sign in and for keeping the profile information you provide accurate. Do not use another person’s account or impersonate another person.'] },
       { title: '4. Acceptable use', paragraphs: ['Do not misuse the platform. This includes harassment, discrimination, spam, impersonation, fraudulent activity listings, malicious links, attempts to access accounts or data without permission, and interference with the platform.'] },
       { title: '5. Activity information', paragraphs: ['Activity details, prices, schedules, capacity and availability can change. Check the organiser’s information and any external registration page before attending.'] },
@@ -66,7 +66,7 @@ export const INFORMATION_PAGES = {
       { icon: 'bi-heart-pulse', title: 'Wellbeing', text: 'Reflect on wellbeing and build healthier routines.' },
     ],
     sections: [
-      { title: 'Built by students', paragraphs: ['Developed by Group G3T7 for IS216 Web Application Development at Singapore Management University (2026).'] },
+      { title: 'Built by students', paragraphs: ['Developed by Group G3T7 for IS216 Web Application Development 2 at Singapore Management University (2026).'] },
       { title: 'A student project', paragraphs: ['GETOUTLAH! is not an official product or service of Singapore Management University.'] },
     ],
   },

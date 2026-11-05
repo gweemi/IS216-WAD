@@ -24,7 +24,7 @@ describe('LandingFooter', () => {
   it('shows the agreed project credit and links to every public page', async () => {
     const { wrapper } = await mountFooter()
 
-    expect(wrapper.text()).toContain('© 2026 GetOutLah! · G3T7 · IS216 Web Application Development, SMU')
+    expect(wrapper.text()).toContain('© 2026 GetOutLah! · G3T7 · IS216 Web Application Development 2, SMU')
     expect(wrapper.findAll('a').map((link) => [link.text(), link.attributes('href')])).toEqual([
       ['Privacy Policy', '/privacy'],
       ['Terms of Use', '/terms'],

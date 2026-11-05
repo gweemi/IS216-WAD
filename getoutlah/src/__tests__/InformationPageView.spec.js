@@ -34,7 +34,7 @@ describe('InformationPageView', () => {
     expect(wrapper.get('h1').text()).toBe('Privacy Policy')
     expect(wrapper.text()).toContain('Last updated: 2 November 2026')
     expect(wrapper.get('.back-link').text()).toContain('Back')
-    expect(wrapper.text()).toContain('© 2026 GetOutLah! · G3T7 · IS216 Web Application Development, SMU')
+    expect(wrapper.text()).toContain('© 2026 GetOutLah! · G3T7 · IS216 Web Application Development 2, SMU')
 
     await wrapper.get('.back-link').trigger('click')
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('landing'))

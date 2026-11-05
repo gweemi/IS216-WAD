@@ -14,7 +14,7 @@ function scrollToTop() {
 <template>
   <footer class="landing-footer">
     <div class="footer-inner">
-      <p class="credit">© 2026 GetOutLah! · G3T7 · IS216 Web Application Development, SMU</p>
+      <p class="credit">© 2026 GetOutLah! · G3T7 · IS216 Web Application Development 2, SMU</p>
       <nav aria-label="Footer navigation" class="footer-links">
         <RouterLink v-for="link in links" :key="link.name" :to="{ name: link.name }" @click="scrollToTop">
           {{ link.label }}
