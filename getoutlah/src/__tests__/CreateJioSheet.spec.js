@@ -180,4 +180,37 @@ describe('CreateJioSheet', () => {
     expect(value(w, 'jio-lat')).toBe('1.34')
     expect(value(w, 'jio-lng')).toBe('103.83')
   })
+
+  it('lets the host enter a whole-group price and saves the per-person price', async () => {
+    createJio.mockClear()
+    const w = open({ title: 'Escape room', category: 'games', location: 'Tampines' })
+    await w.find('[data-testid="jio-capacity"]').setValue(4)
+    await w.find('[data-testid="jio-price-group"]').trigger('click')
+    expect(w.find('[data-testid="jio-price-group"]').attributes('aria-checked')).toBe('true')
+    await w.find('[data-testid="jio-group-cost"]').setValue(100)
+    expect(w.find('[data-testid="jio-price-split"]').text()).toContain('$25 per person')
+
+    await w.find('form').trigger('submit')
+    expect(w.find('[data-testid="jio-confirmation"]').text()).toContain('$25 per person')
+    await w.get('[data-testid="jio-confirm-submit"]').trigger('click')
+    await flushPromises()
+    expect(createJio).toHaveBeenCalledWith(expect.objectContaining({ cost: 25, capacity: 4 }))
+  })
+
+  it('rounds an uneven group split to the cent', async () => {
+    const w = open()
+    await w.find('[data-testid="jio-capacity"]').setValue(3)
+    await w.find('[data-testid="jio-price-group"]').trigger('click')
+    await w.find('[data-testid="jio-group-cost"]').setValue(100)
+    expect(w.find('[data-testid="jio-price-split"]').text()).toContain('$33.33 per person')
+  })
+
+  it('keeps the same overall price when switching between per person and whole group', async () => {
+    const w = open({ cost: 10 })
+    await w.find('[data-testid="jio-capacity"]').setValue(5)
+    await w.find('[data-testid="jio-price-group"]').trigger('click')
+    expect(value(w, 'jio-group-cost')).toBe('50')
+    await w.find('[data-testid="jio-price-solo"]').trigger('click')
+    expect(value(w, 'jio-cost')).toBe('10')
+  })
 })

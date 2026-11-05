@@ -61,8 +61,8 @@ describe('router', () => {
     for (const [path, name] of [
       ['/map', 'map'],
       ['/activities', 'activities'],
-      ['/activities/openjio', 'openjio'],
-      ['/activities/openjio/create', 'openjio-create'],
+      ['/activities/openjio', 'activities'],
+      ['/activities/openjio/create', 'activities'],
       ['/activities/openjio/example/edit', 'openjio-edit'],
       ['/friends', 'friends'],
       ['/badges', 'badges'],

@@ -30,6 +30,7 @@ vi.mock('@/utils/activeFilters', () => ({ activeFilterPills: () => [] }))
 vi.mock('@/components/ActivityCard.vue', () => ({ default: { template: '<li />' } }))
 vi.mock('@/components/FilterSheet.vue', () => ({ default: { name: 'FilterSheet', props: ['open', 'showSources'], template: '<div />' } }))
 vi.mock('@/components/openjio/JioCard.vue', () => ({ default: { name: 'JioCard', props: ['jio', 'uid', 'linkToDetails'], template: '<article />' } }))
+vi.mock('@/components/openjio/StartJioCard.vue', () => ({ default: { name: 'StartJioCard', template: '<button>Start a jio</button>' } }))
 vi.mock('@/stores/openjio', () => ({ useOpenJioStore: () => state.jios }))
 
 const { default: ActivitiesView } = await import('@/views/ActivitiesView.vue')
@@ -87,11 +88,19 @@ describe('ActivitiesView source discovery', () => {
     expect(state.filters.value.sources).toEqual(['openJio'])
   })
 
+  it('only shows the Start a jio card on the OPENJIO tab', async () => {
+    const { wrapper } = await mountAt('/activities')
+    expect(wrapper.find('[data-testid="activities-start-jio"]').exists()).toBe(false)
+  })
+
   it('shows OPENJIO discovery controls only for the OPENJIO source', async () => {
     const { wrapper } = await mountAt('/activities?view=openJio')
     expect(wrapper.text()).toContain('All Jios')
     expect(wrapper.text()).toContain('Friends Only')
-    expect(wrapper.text()).toContain('Manage OPENJIOs')
+    expect(wrapper.text()).not.toContain('Manage OPENJIOs')
+    // The first card in the hosting row is the dashed "Start a jio" card
+    expect(wrapper.find('[data-testid="jio-row-hosting"] li').attributes('data-testid')).toBe('activities-start-jio')
+    expect(wrapper.find('[data-testid="activities-start-jio"]').text()).toBe('Start a jio')
     expect(wrapper.text()).toContain('Explore public jios')
     expect(wrapper.text()).toContain('Invited')
   })
@@ -119,6 +128,22 @@ describe('ActivitiesView source discovery', () => {
     expect(wrapper.find('.act-count').text()).toBe('1 activities')
     await router.push('/activities?view=openJio&visibility=friends_only')
     expect(wrapper.find('.act-count').text()).toBe('1 activities')
+  })
+
+  it('puts jios I host in the first row and other people\'s jios in the second', async () => {
+    state.jios.all = [{ id: 'j-mine' }, { id: 'j-theirs' }, { id: 'j-joined' }]
+    state.recommended.value = [
+      { id: 'a-theirs', jioId: 'j-theirs', source: 'openJio', visibility: 'public', hostedByMe: false },
+      { id: 'a-mine', jioId: 'j-mine', source: 'openJio', visibility: 'public', hostedByMe: true },
+      { id: 'a-joined', jioId: 'j-joined', source: 'openJio', visibility: 'public', hostedByMe: false, viewerRole: 'going' },
+    ]
+    const { wrapper } = await mountAt('/activities?view=openJio')
+    const hosting = wrapper.get('[data-testid="jio-row-hosting"]')
+    const others = wrapper.get('[data-testid="jio-row-others"]')
+    expect(hosting.text()).toContain("My Jios")
+    expect(hosting.findAllComponents({ name: 'JioCard' }).map((c) => c.props('jio').id)).toEqual(['j-mine'])
+    expect(others.findAllComponents({ name: 'JioCard' }).map((c) => c.props('jio').id)).toEqual(['j-theirs', 'j-joined'])
+    expect(wrapper.find('.act-list').exists()).toBe(false)
   })
 
   it('uses the Invited URL view for pending explicit invitations only', async () => {

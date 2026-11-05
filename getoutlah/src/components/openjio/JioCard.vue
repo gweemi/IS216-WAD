@@ -28,7 +28,7 @@
       </span>
     </div>
 
-    <div class="p-3">
+    <div class="jio-body p-3">
       <div class="d-flex justify-content-between align-items-start gap-2">
         <div class="min-w-0">
           <h3 class="jio-title">
@@ -89,7 +89,8 @@
         <i class="bi bi-people" aria-hidden="true"></i> Who's going
       </button>
       <!-- Change code is necessary: report button (hides itself for the host and for cancelled, ended or suspended jios) -->
-      <ReportJioButton :jio="jio" class="mt-2" />
+      <!-- Always pinned to the card's bottom-right corner, however tall the card is -->
+      <ReportJioButton :jio="jio" class="jio-report" />
     </div>
     <JioParticipantsSheet :open="showAttendees" :jio="jio" @close="showAttendees = false" />
   </article>
@@ -194,7 +195,13 @@ export default {
   box-shadow: 0 6px 0 var(--gol-card-edge);
   overflow: hidden;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
+.jio-art { flex-shrink: 0; }
+/* Body fills the rest of the card so the report button can sit at the very bottom */
+.jio-body { flex: 1; display: flex; flex-direction: column; }
+.jio-report { margin-top: auto; padding-top: 0.5rem; align-self: flex-end; }
 .jio-card.is-clickable { cursor: pointer; }
 .jio-card.is-greyed { background: #ece8f0; }
 .jio-card.is-greyed .jio-art { filter: grayscale(0.8); opacity: 0.8; }
