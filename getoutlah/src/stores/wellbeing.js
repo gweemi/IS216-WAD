@@ -1,8 +1,8 @@
 
-import { reactive, watch } from 'vue'
+import { reactive } from 'vue'
+import { registerUserStore } from './userData.js'
 
 export const CHECKIN_INTERVAL_DAYS = 14
-const STORAGE_KEY = 'gol-wellbeing-v2'
 
 // The 5 official WHO-5 statements, from google
 export const WHO5_QUESTIONS = [
@@ -35,27 +35,10 @@ export function statusFor(score) {
   return { label: 'Having a hard time', tone: 'support' }
 }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch (e) {
-  }
-  return { history: [] }
-}
-
-export const wellbeing = reactive(load())
-
-watch(
-  wellbeing,
-  (val) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
-    } catch (e) {
-    }
-  },
-  { deep: true }
-)
+// Each account has its own check-ins, saved to Firestore so they show on every device.
+// (src/stores/userData.js + src/services/userDataSync.js). Only the owner can read them.
+export const wellbeing = reactive({ history: [] })
+registerUserStore('wellbeing', wellbeing, () => ({ history: [] }))
 
 export function latestCheckIn() {
   return wellbeing.history.length ? wellbeing.history[wellbeing.history.length - 1] : null

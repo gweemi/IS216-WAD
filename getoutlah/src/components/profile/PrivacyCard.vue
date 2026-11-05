@@ -85,7 +85,7 @@ async function toggle(id, value) {
 
     <ul class="always list-unstyled mt-3 mb-0">
       <li><i class="ph ph-lock-key"></i> Your email is never shown to other students.</li>
-      <li><i class="ph ph-lock-key"></i> Wellbeing scores, moods and reflections stay on your device.</li>
+      <li><i class="ph ph-lock-key"></i> Wellbeing scores, moods and reflections are only visible to you.</li>
     </ul>
   </section>
 </template>

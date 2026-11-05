@@ -11,6 +11,7 @@ import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './stores/auth'
 import { startFriends } from './services/friends'
+import { startUserDataSync } from './services/userDataSync'
 
 const app = createApp(App)
 
@@ -19,6 +20,13 @@ app.use(router)
 
 // Keep friends, requests and notifications live for whoever is logged in.
 const auth = useAuthStore()
-watch(() => auth.user?.uid ?? null, (uid) => startFriends(uid), { immediate: true })
+watch(
+  () => auth.user?.uid ?? null,
+  (uid) => {
+    startFriends(uid)
+    startUserDataSync(uid) // each account's own wellbeing + reflections, on every device
+  },
+  { immediate: true },
+)
 
 app.mount('#app')
