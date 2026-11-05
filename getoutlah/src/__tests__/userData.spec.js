@@ -69,3 +69,34 @@ describe('firestore.rules', async () => {
     expect(rules).toMatch(/match \/users\/\{uid\}\/private\/\{docId\} \{\s*allow read: if signedIn\(\) && request\.auth\.uid == uid;/)
   })
 })
+
+describe('per-account points and badges', async () => {
+  const { game, totalPoints } = await import('@/stores/gamification(badges).js')
+
+  beforeEach(() => {
+    localStorage.clear()
+    switchUser(null)
+  })
+
+  it('starts a new account from the demo data and keeps each account’s progress apart', () => {
+    switchUser('amy')
+    expect(game.completed).toHaveLength(5) // demo starting point
+    game.completed.push({ id: 'x', title: 'Kayak', category: 'outdoors', region: 'east', date: '2026-11-05' })
+    game.ledger.push({ date: '2026-11-05', amount: 50, reason: 'Kayak' })
+
+    switchUser('ben')
+    expect(game.completed).toHaveLength(5)
+    expect(totalPoints()).toBe(350)
+
+    switchUser('amy')
+    expect(game.completed).toHaveLength(6)
+    expect(totalPoints()).toBe(400)
+  })
+
+  it('shows progress made on another device', () => {
+    switchUser('amy')
+    applyRemote('gamification', { completed: [], ledger: [{ date: '2026-11-05', amount: 20, reason: 'Wellbeing check-in' }], earnedBadges: {}, studyBreak: { active: false, since: null }, pausedWeeks: [], redemptions: [] }, 'amy')
+    expect(game.completed).toHaveLength(0)
+    expect(totalPoints()).toBe(20)
+  })
+})

@@ -1,19 +1,24 @@
 // =============================================================
-// Keeps private per-account data in Firestore so it follows the user across devices:
+// Keeps the user's own data live and in sync across devices:
+//   users/{uid}                       their profile, kept fresh in the auth store
+// and private per-account data in Firestore:
 //   users/{uid}/private/wellbeing    { history: [{ date, score }], updatedAt }
 //   users/{uid}/private/reflections  { pending, entries, promptsOn, dismissed, updatedAt }
+//   users/{uid}/private/gamification { completed, ledger, earnedBadges, studyBreak, pausedWeeks, redemptions, updatedAt }
 // firestore.rules: only the owner can read or write these. (See src/stores/userData.js.)
 //
 // startUserDataSync(uid) is called from main.js whenever the logged-in user changes.
 // =============================================================
 import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/firebase'
+import { useAuthStore } from '@/stores/auth'
 import {
   switchUser, applyRemote, snapshotOf, hasData, userStoreNames, currentUid, setRemoteWriter,
 } from '@/stores/userData'
 // Make sure the stores have registered before we sync them
 import '@/stores/wellbeing'
 import '@/stores/reflections'
+import '@/stores/gamification(badges).js'
 
 const SAVE_DELAY_MS = 400
 let unsubs = []
@@ -53,6 +58,20 @@ export function startUserDataSync(uid) {
   stop()
   switchUser(uid) // show this account's own copy straight away (or empty when logged out)
   if (!uid) return
+
+  // Keep the logged-in user's own profile (name, photo, saved, preferences, privacy...) live,
+  // so the Profile page updates when it changes on another device or tab.
+  unsubs.push(
+    onSnapshot(
+      doc(db, 'users', uid),
+      (snap) => {
+        const auth = useAuthStore()
+        if (snap.metadata.hasPendingWrites || !snap.exists() || auth.user?.uid !== uid) return
+        auth.setProfile(snap.data())
+      },
+      (err) => console.warn('Could not keep your profile up to date:', err?.code || err),
+    ),
+  )
 
   for (const name of userStoreNames()) {
     unsubs.push(

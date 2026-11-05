@@ -4,7 +4,6 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '@/firebase'
 import { getUniversity } from '@/config/universities'
 import { useAuthStore } from '@/stores/auth'
-import { startDemoSession } from '@/stores/gamification(badges).js'
 import { useBadgeHunt } from '@/composables/useBadgeHunt'
 
 const provider = new GoogleAuthProvider()
@@ -19,10 +18,8 @@ provider.setCustomParameters({ prompt: 'select_account' })
 export async function signInWithGoogle() {
   const { user } = await signInWithPopup(auth, provider)
   const profile = await ensureUserProfile(user)
-  // This only runs after an intentional Google login. Firebase's passive
-  // session-restoration listener never calls this service, so refreshes retain
-  // the in-progress local demo session.
-  startDemoSession()
+  // Points, badges and completed activities now belong to the account and sync across
+  // devices (src/services/userDataSync.js), so logging in no longer resets them.
   clearTrackedBadge()
   const store = useAuthStore()
   store.setUser(user)

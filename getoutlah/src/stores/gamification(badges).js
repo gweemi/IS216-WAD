@@ -1,9 +1,10 @@
 
-import { reactive, watch } from 'vue'
+import { reactive } from 'vue'
 import turfDistance from '@turf/distance' 
 import { point } from '@turf/helpers'
 import { celebrateBadge, celebrateCheckIn, celebrateLevelUp } from '../utils/celebrate.js' 
 import { addPendingReflection } from './reflections.js'
+import { registerUserStore } from './userData.js'
 import { getInterest } from '@/config/preferences'
 
 // ---------- Baselines we followed ----------
@@ -11,7 +12,6 @@ export const WEEKLY_POINT_CAP = 300      // max points a student can earn per we
 export const CHECKIN_RADIUS_M = 200      // must be within 200m to check in
 export const POINTS_PER_ACTIVITY = 50    // base points for a verified activity
 export const POINTS_PER_LEVEL = 250      // points needed per level
-const STORAGE_KEY = 'gol-gamification-v2'
 const USE_DEMO_DATA = true
 
 
@@ -180,33 +180,13 @@ export function createDemoStartingState() {
   return s
 }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...emptyState(), ...JSON.parse(raw) }
-  } catch (e) {
-
-  }
-  return USE_DEMO_DATA ? createDemoStartingState() : emptyState()
-}
-
-export const game = reactive(load())
-
-function saveGame(state = game) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch (e) {
-    /* storage may be blocked */
-  }
-}
-
-watch(
-  game,
-  (val) => {
-    saveGame(val)
-  },
-  { deep: true }
-)
+// Each account has its own points, badges and completed activities, saved to Firestore
+// (users/{uid}/private/gamification) so they follow the user to every device.
+// A brand-new account starts from the demo data; after that, progress is kept.
+// See src/stores/userData.js and src/services/userDataSync.js.
+const startingState = () => (USE_DEMO_DATA ? createDemoStartingState() : emptyState())
+export const game = reactive(startingState())
+registerUserStore('gamification', game, startingState)
 
 export function totalPoints() {
   return game.ledger.reduce((sum, e) => sum + e.amount, 0)
@@ -428,7 +408,6 @@ export function setStudyBreak(on) {
 /** Start a new local demo session and persist it before authenticated UI renders. */
 export function startDemoSession() {
   Object.assign(game, createDemoStartingState())
-  saveGame()
 }
 
 // Handy while testing: wipes everything back to empty (or demo) data

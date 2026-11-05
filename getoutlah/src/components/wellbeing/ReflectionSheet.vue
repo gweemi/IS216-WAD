@@ -4,14 +4,14 @@
     <div class="d-flex justify-content-between align-items-start mb-3">
       <div class="min-w-0">
         <p class="gol-eyebrow">{{ step === 'rate' ? 'Only you can see this' : 'Up next for you' }}</p>
-        <h2 class="gol-title sheet-title">{{ step === 'rate' ? 'How did it feel?' : plan.headline }}</h2>
+        <h2 class="gol-title sheet-title">{{ step === 'rate' ? (editing ? 'Edit reflection' : 'How did it feel?') : plan.headline }}</h2>
       </div>
       <button class="gol-close" aria-label="Close" @click="close"><i class="bi bi-x-lg"></i></button>
     </div>
 
     <!-- mood part and small note -->
-    <div v-if="step === 'rate' && item">
-      <div class="activity-chip mb-3"><i class="bi bi-geo-alt-fill"></i> {{ item.activityTitle }}</div>
+    <div v-if="step === 'rate' && (item || editing)">
+      <div class="activity-chip mb-3"><i class="bi bi-geo-alt-fill"></i> {{ (editing || item).activityTitle }}</div>
 
       <div class="mood-grid mb-3" role="radiogroup" aria-label="How did it feel?">
         <button
@@ -43,8 +43,22 @@
         <span>{{ note.length }}/500</span>
       </div>
 
-      <button class="gol-btn-primary mb-2" :disabled="!mood && !note.trim()" @click="save">Save reflection</button>
-      <button class="skip-btn" @click="skip">Skip this one</button>
+      <!-- Editing a saved reflection: save changes or delete it -->
+      <template v-if="editing">
+        <button class="gol-btn-primary mb-2" :disabled="!mood && !note.trim()" data-testid="save-edit" @click="saveEdit">Save changes</button>
+        <button
+          class="skip-btn delete-btn"
+          :class="{ confirm: confirmDelete }"
+          data-testid="delete-reflection"
+          @click="confirmDelete ? removeReflection() : (confirmDelete = true)"
+        >
+          <i class="bi bi-trash3"></i> {{ confirmDelete ? 'Tap again to delete for good' : 'Delete reflection' }}
+        </button>
+      </template>
+      <template v-else>
+        <button class="gol-btn-primary mb-2" :disabled="!mood && !note.trim()" @click="save">Save reflection</button>
+        <button class="skip-btn" @click="skip">Skip this one</button>
+      </template>
     </div>
 
     <div v-else-if="step === 'suggest'">
@@ -75,7 +89,7 @@
 
 <script>
 import BottomSheet from '../common/BottomSheet.vue'
-import { MOODS, reflections, saveReflection, skipReflection } from '../../stores/reflections.js'
+import { MOODS, reflections, saveReflection, skipReflection, updateReflection, deleteReflection } from '../../stores/reflections.js'
 import { game } from '../../stores/gamification(badges).js'
 import { suggestNext } from '../../utils/moodSuggestions.js'
 import { seedActivities } from '../../data/seedActivities.js'
@@ -88,9 +102,10 @@ export default {
     open: { type: Boolean, default: false },
     item: { type: Object, default: null }, 
     suggestFrom: { type: Object, default: null }, 
+    editing: { type: Object, default: null }, // a saved reflection to change or delete
     activities: { type: Array, default: () => seedActivities },
   },
-  emits: ['close', 'saved', 'pick'],
+  emits: ['close', 'saved', 'deleted', 'pick'],
   data() {
     return {
       moods: MOODS,
@@ -98,15 +113,19 @@ export default {
       step: 'rate',
       mood: null,
       note: '',
+      confirmDelete: false,
       plan: { headline: '', message: '', tip: null, items: [] },
     }
   },
   watch: {
     open(isOpen) {
       if (!isOpen) return
-      this.mood = null
-      this.note = ''
-      if (this.suggestFrom) {
+      this.mood = this.editing?.mood ?? null
+      this.note = this.editing?.note ?? ''
+      this.confirmDelete = false
+      if (this.editing) {
+        this.step = 'rate'
+      } else if (this.suggestFrom) {
         this.buildPlan(this.suggestFrom.mood || 3, { ...this.suggestFrom, checkedInAt: this.suggestFrom.date })
         this.step = 'suggest'
       } else {
@@ -130,6 +149,16 @@ export default {
       this.$emit('saved', entry)
       this.buildPlan(this.mood || 3, lastActivity) 
       this.step = 'suggest'
+    },
+    saveEdit() {
+      const entry = updateReflection(this.editing.id, this.mood, this.note)
+      this.$emit('saved', entry)
+      this.close()
+    },
+    removeReflection() {
+      deleteReflection(this.editing.id)
+      this.$emit('deleted', this.editing.id)
+      this.close()
     },
     skip() {
       skipReflection(this.item)
@@ -194,6 +223,8 @@ export default {
   display: block; width: 100%; background: none; border: none;
   font-family: var(--gol-font); font-weight: 800; color: var(--gol-muted); padding: 0.4rem;
 }
+.delete-btn { color: var(--gol-coral-text); }
+.delete-btn.confirm { background: #ffe9e4; border-radius: 999px; }
 
 
 .suggest-card {

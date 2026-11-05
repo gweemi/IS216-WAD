@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Name, picture, university | `users/{uid}.displayName`, `.photoURL`, `.universityName` | Edit profile sheet |
 | Completed (number + list) | `game.completed` in `stores/gamification(badges).js` | "Check in" on an activity |
-| Friends (number) | `users/{uid}.friendIds` (a list of uids) | **Friends page: please save friends here** |
+| Friends (number) | Accepted friends from the Friends page (`friendList` in `stores/friends.js`, live) | Accepting a friend request |
 | Badges (number), Lv + pts | `badgeList()`, `levelInfo()` in gamification | Badges page |
 | Saved | `users/{uid}.saved` | "Save" on an activity |
 | My plans | OPENJIOs you host, go to or queue for | The OPENJIO page |

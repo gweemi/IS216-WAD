@@ -2,7 +2,7 @@
   Profile tab: "Your corner" (matches the Figma).
   Pulls together most of the app:
     - Completed / Badges / level  -> stores/gamification(badges).js (Badges page)
-    - Friends count               -> users/{uid}.friendIds (Friends page)
+    - Friends count               -> accepted friends from the Friends feature (stores/friends.js, live)
     - Saved                       -> users/{uid}.saved (Save button on an activity)
     - My plans                    -> OPENJIOs you host, are going to or are queued for (stores/openjio.js)
                                      + OPENJIOs you host, go to or queue for (stores/openjio.js)
@@ -19,6 +19,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useOpenJioStore } from '@/stores/openjio'
+import { friendList } from '@/stores/friends'
 import { ensureUserProfile, logOut } from '@/services/auth'
 import { activityById, loadActivities, toggleSaved } from '@/stores/activities'
 import { game, badgeList, levelInfo, setStudyBreak, currentStreak } from '@/stores/gamification(badges).js'
@@ -62,7 +63,7 @@ const handle = computed(() => handleFor(auth.email))
 const level = computed(() => levelInfo())
 const badges = computed(() => badgeList())
 const badgesEarned = computed(() => badges.value.filter((b) => b.earned).length)
-const friendsCount = computed(() => auth.profile?.friendIds?.length ?? 0)
+const friendsCount = computed(() => friendList.value.length) // live: updates when a request is accepted
 const completedCount = computed(() => game.completed.length)
 
 // ---------- Study-break mode (pauses the streak on the Badges page) ----------

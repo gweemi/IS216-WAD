@@ -89,16 +89,15 @@ describe('Google sign-in', () => {
     expect(fake.savedDocs['users/uid-123'].points).toBe(120)
   })
 
-  it('restarts the shared badge demo before queuing the map introduction', async () => {
+  it('keeps the account’s points and badges when logging in (they sync per account now)', async () => {
     game.completed.push({ id: 'extra', title: 'Extra outdoor activity', category: 'outdoors', region: 'east', date: '2026-11-03' })
     game.ledger.push({ date: '2026-11-03', amount: 50, reason: 'Extra outdoor activity' })
     fake.user = googleUser('enmin@gmail.com')
 
     await signInWithGoogle()
 
-    expect(game.completed).toHaveLength(5)
-    expect(game.completed.some((activity) => activity.id === 'extra')).toBe(false)
-    expect(totalPoints()).toBe(350)
+    expect(game.completed.some((activity) => activity.id === 'extra')).toBe(true)
+    expect(totalPoints()).toBe(400)
     expect(useAuthStore().mapIntroPending).toBe(true)
   })
 
