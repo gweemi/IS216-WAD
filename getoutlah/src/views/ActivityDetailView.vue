@@ -1,6 +1,6 @@
 <script setup>
 import '@/assets/discovery.css'
-import { ref, computed, watch, watchEffect, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, watchEffect, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { activityById, datesOf, weatherAt, toggleSaved, isSaved, loadActivities } from '@/stores/activities'
 import { friendsWhoDid } from '@/stores/ports'
@@ -15,8 +15,8 @@ import StartJioButton from '@/components/openjio/StartJioButton.vue'
 import { prefillFromActivity, myRole, statusOf } from '@/utils/openjio'
 import ReportJioButton from '@/components/reports/ReportJioButton.vue'
 import JioAttendees from '@/components/openjio/JioAttendees.vue'
-import BottomSheet from '@/components/common/BottomSheet.vue'
-import BadgeTile from '@/components/badges/BadgeTile.vue'
+import SuccessPopup from '@/components/common/SuccessPopup.vue'
+import { showNewBadges } from '@/components/badges/NewBadgePopup.vue'
 import { useOpenJioStore } from '@/stores/openjio'
 
 const route = useRoute()
@@ -72,27 +72,19 @@ const doCheckIn = async () => {
     recordCheckIn(a.id).catch(() => {})
     message.value = r.message
     earnedBadges.value = r.newBadges ?? []
-    showCheckInPopups()
+    showCheckInPopups(r.levelledUp ? r.level : null)
   } catch (error) { message.value = error.message }
 }
 
-// After checking in: new badges pop up first (2s), then the "checked in" pop-up
-const BADGE_POPUP_MS = 2000
-const popup = ref(null) // 'badges' | 'checked-in' | null
-let popupTimer = null
-function showCheckInPopups() {
-  clearTimeout(popupTimer)
-  if (earnedBadges.value.length) {
-    popup.value = 'badges'
-    popupTimer = setTimeout(() => { popup.value = 'checked-in' }, BADGE_POPUP_MS)
-  } else {
-    popup.value = 'checked-in'
-  }
+// After checking in: new badges pop up first (2s, see NewBadgePopup), then the "checked in" pop-up
+const popup = ref(null) // 'checked-in' | null
+async function showCheckInPopups(levelUp = null) {
+  await showNewBadges(earnedBadges.value, { levelUp })
+  popup.value = 'checked-in'
 }
 function closePopup() {
   popup.value = null
 }
-onBeforeUnmount(() => clearTimeout(popupTimer))
 </script>
 
 <template>
@@ -193,33 +185,12 @@ onBeforeUnmount(() => clearTimeout(popupTimer))
         </div>
       </div>
       <p v-else class="mt-4 fw-bold">Activity not found (or still loading).</p>
-      <!-- New badges from this check-in: shows first, can't be dismissed, moves on by itself after 2s -->
-      <BottomSheet :open="popup === 'badges'" label="New badge">
-        <div class="text-center checkin-pop" data-testid="new-badge-popup">
-          <p class="gol-eyebrow">New badge{{ earnedBadges.length > 1 ? 's' : '' }} unlocked!</p>
-          <div class="d-flex justify-content-center flex-wrap gap-3">
-            <div v-for="b in earnedBadges" :key="b.id" class="checkin-pop__badge">
-              <BadgeTile :badge="{ ...b, earned: true }" :celebrate="true" />
-            </div>
-          </div>
-        </div>
-      </BottomSheet>
-
       <!-- Always shown after a successful check-in: only the X closes it -->
-      <BottomSheet :open="popup === 'checked-in'" label="Checked in">
-        <div class="d-flex justify-content-end">
-          <button type="button" class="gol-close" aria-label="Close" data-testid="close-checked-in" @click="closePopup">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <div class="text-center checkin-pop" data-testid="checked-in-popup">
-          <i class="bi bi-check-circle-fill checkin-pop__tick" aria-hidden="true"></i>
-          <h2 class="checkin-pop__title">You have successfully checked in!</h2>
-          <router-link :to="{ name: 'profile', hash: '#reflections' }" class="gol-btn-primary det-link justify-content-center" data-testid="do-reflection">
-            <i class="bi bi-journal-text"></i> Do Reflection
-          </router-link>
-        </div>
-      </BottomSheet>
+      <SuccessPopup :open="popup === 'checked-in'" title="You have successfully checked in!" @close="closePopup">
+        <router-link :to="{ name: 'profile', hash: '#reflections' }" class="gol-btn-primary det-link justify-content-center" data-testid="do-reflection">
+          <i class="bi bi-journal-text"></i> Do Reflection
+        </router-link>
+      </SuccessPopup>
 
       <InviteFriendsSheet
         :open="showInvite"
@@ -244,14 +215,6 @@ onBeforeUnmount(() => clearTimeout(popupTimer))
 /* The picture starts invisible and fades in once it has downloaded */
 .det-hero-img { opacity: 0; transition: opacity 0.3s ease-out; }
 .det-hero-img.is-loaded { opacity: 1; }
-
-/* Pop-ups after checking in */
-.checkin-pop { padding: .5rem 0 .25rem; }
-.checkin-pop__badge { width: 120px; pointer-events: none; }
-.checkin-pop__badge :deep(.progress-wrap) { display: none; }
-.checkin-pop__badge :deep(.name) { font-weight: 900; }
-.checkin-pop__tick { display: block; font-size: 3.5rem; color: #2fa96b; line-height: 1; margin-bottom: .6rem; }
-.checkin-pop__title { font-size: 1.3rem; font-weight: 900; margin: 0 0 1.1rem; }
 
 /* Already checked in: grey and not clickable */
 .gol-btn-primary.det-checked-in,

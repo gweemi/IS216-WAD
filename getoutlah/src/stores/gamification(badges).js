@@ -64,8 +64,9 @@ export const BADGES = [
     target: 1,
     unit: 'OPENJIO',
     bonus: 20,
-    progress: (s) => s.completed.filter((a) => a.isOpenJio && !a.hostedByMe).length,
-    qualifies: (a) => Boolean(a.isOpenJio) && !a.hostedByMe,
+    // Counts as soon as you join (see recordJioForBadges), plus any OPENJIO check-ins from before
+    progress: (s) => new Set([...(s.joinedJioIds ?? []), ...s.completed.filter((a) => a.isOpenJio && !a.hostedByMe).map((a) => a.id)]).size,
+    qualifies: (a, s) => Boolean(a.isOpenJio) && !a.hostedByMe && !(s.joinedJioIds ?? []).includes(a.id),
   },
   {
     id: 'big-host-energy',
@@ -77,7 +78,8 @@ export const BADGES = [
     target: 1,
     unit: 'hosted',
     bonus: 30,
-    progress: (s) => s.completed.filter((a) => a.hostedByMe).length,
+    // Counts as soon as you post one (see recordJioForBadges), plus any hosted check-ins from before
+    progress: (s) => new Set([...(s.hostedJioIds ?? []), ...s.completed.filter((a) => a.hostedByMe).map((a) => a.id)]).size,
     qualifies: (a) => Boolean(a.hostedByMe),
   },
   {
@@ -155,6 +157,8 @@ function emptyState() {
     studyBreak: { active: false, since: null },
     pausedWeeks: [],   
     redemptions: [],  
+    joinedJioIds: [],   // OPENJIOs joined, as activity ids ("jio-<id>"), for Crew energy
+    hostedJioIds: [],   // OPENJIOs posted, for Big host energy
   }
 }
 
@@ -209,11 +213,13 @@ export function pointsThisWeek() {
   return game.ledger.filter((e) => weekKey(e.date) === wk).reduce((sum, e) => sum + e.amount, 0)
 }
 
+// Levels go by every point ever earned, so redeeming a voucher never takes a level away.
+// points is what you can still spend (earned minus vouchers): that's the number shown to the user.
 export function levelInfo() {
-  const pts = totalPoints()
-  const level = Math.floor(pts / POINTS_PER_LEVEL) + 1
-  const into = pts % POINTS_PER_LEVEL
-  return { level, points: pts, into, needed: POINTS_PER_LEVEL, percent: Math.round((into / POINTS_PER_LEVEL) * 100) }
+  const earned = totalPoints()
+  const level = Math.floor(earned / POINTS_PER_LEVEL) + 1
+  const into = earned % POINTS_PER_LEVEL
+  return { level, points: availablePoints(), earned, into, needed: POINTS_PER_LEVEL, percent: Math.round((into / POINTS_PER_LEVEL) * 100) }
 }
 
 function awardPoints(amount, reason) {
@@ -328,6 +334,36 @@ function checkBadges() {
   return unlocked
 }
 
+// Badge confetti runs for 2s (utils/celebrate.js); a level-up from the badge bonus gets its own burst after it
+const BADGE_CONFETTI_MS = 2000
+function celebrateNewBadges(levelledUp) {
+  celebrateBadge()
+  if (levelledUp) setTimeout(() => { try { celebrateLevelUp() } catch { /* decoration only */ } }, BADGE_CONFETTI_MS)
+}
+
+/**
+ * Joining or posting an OPENJIO counts towards its badge straight away (no check-in needed).
+ * Each jio only counts once, even if you leave and join again.
+ * Returns { badges, levelUp }: the newly earned badges, and the new level if the bonus levelled you up (else null).
+ *   const { badges, levelUp } = recordJioForBadges(jio.id)        // joined
+ *   showNewBadges(badges, { levelUp })                            // pop-up (components/badges/NewBadgePopup.vue)
+ *   recordJioForBadges(newId, { hosted: true })                   // posted
+ */
+export function recordJioForBadges(jioId, { hosted = false } = {}) {
+  const list = hosted ? game.hostedJioIds : game.joinedJioIds
+  const id = `jio-${jioId}`
+  if (!jioId || list.includes(id)) return { badges: [], levelUp: null }
+  const levelBefore = levelInfo().level
+  list.push(id)
+  const badges = checkBadges()
+  const level = levelInfo().level
+  try {
+    if (badges.length) celebrateNewBadges(level > levelBefore)
+  } catch {
+    // confetti is only decoration
+  }
+  return { badges, levelUp: level > levelBefore ? level : null }
+}
 
 export function distanceInMetres(a, b) {
   return turfDistance(point([a.lng, a.lat]), point([b.lng, b.lat]), { units: 'meters' })
@@ -394,13 +430,14 @@ export async function checkInToActivity(activity, userPosition = null) {
 
   const levelledUp = levelInfo().level > levelBefore
   try {
-    if (newBadges.length) celebrateBadge()
+    if (newBadges.length) celebrateNewBadges(levelledUp)
     else if (levelledUp) celebrateLevelUp()
     else celebrateCheckIn()
-  } catch (e) {
+  } catch {
+    // confetti is only decoration
   }
 
-  return { ok: true, distance, pointsGiven, newBadges, levelledUp, message }
+  return { ok: true, distance, pointsGiven, newBadges, levelledUp, level: levelInfo().level, message }
 }
 
 // ---------- for study-break mode ----------

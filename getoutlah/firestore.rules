@@ -176,13 +176,17 @@ service cloud.firestore {
                 && d.dismissed is list && d.dismissed.size() <= 200
                 && d.promptsOn is bool)
         || (docId == 'gamification'
-                && d.keys().hasOnly(['completed', 'ledger', 'earnedBadges', 'studyBreak', 'pausedWeeks', 'redemptions', 'updatedAt'])
+                && d.keys().hasOnly(['completed', 'ledger', 'earnedBadges', 'studyBreak', 'pausedWeeks', 'redemptions',
+                                     'joinedJioIds', 'hostedJioIds', 'updatedAt'])
                 && d.completed is list && d.completed.size() <= 2000
                 && d.ledger is list && d.ledger.size() <= 5000
                 && d.earnedBadges is map
                 && d.studyBreak is map
                 && d.pausedWeeks is list && d.pausedWeeks.size() <= 500
-                && d.redemptions is list && d.redemptions.size() <= 500);
+                && d.redemptions is list && d.redemptions.size() <= 500
+                // OPENJIOs joined / posted, for the Crew energy and Big host energy badges (optional: older saves don't have them)
+                && (!('joinedJioIds' in d) || (d.joinedJioIds is list && d.joinedJioIds.size() <= 2000))
+                && (!('hostedJioIds' in d) || (d.hostedJioIds is list && d.hostedJioIds.size() <= 2000)));
     }
 
     match /users/{uid}/private/{docId} {

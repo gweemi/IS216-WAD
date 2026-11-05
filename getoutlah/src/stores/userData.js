@@ -10,9 +10,11 @@
 //
 // This file has no Firebase imports, so the stores and their tests stay simple.
 // =============================================================
-import { watch } from 'vue'
+import { watch, reactive } from 'vue'
 
 const stores = {} // name → { state, empty, applying, lastJSON }
+// name → true once this account's copy has arrived from Firestore (reactive, so code can wait for it)
+const remoteLoaded = reactive({})
 let uid = null
 let remoteWriter = null // (name, data) => void, set by userDataSync.js
 
@@ -69,7 +71,10 @@ export function registerUserStore(name, state, empty) {
 /** The logged-in account changed (or logged out: null). Shows that account's own data. */
 export function switchUser(newUid) {
   uid = newUid ?? null
-  for (const name of Object.keys(stores)) replace(name, uid ? readCache(name, uid) : {})
+  for (const name of Object.keys(stores)) {
+    remoteLoaded[name] = false
+    replace(name, uid ? readCache(name, uid) : {})
+  }
 }
 
 /** Newer data arrived from Firestore (e.g. saved on another device). */
@@ -77,7 +82,20 @@ export function applyRemote(name, data, forUid) {
   if (!stores[name] || forUid !== uid) return
   replace(name, data)
   writeCache(name, uid, stores[name].lastJSON)
+  remoteLoaded[name] = true
 }
+
+/** Firestore answered for this store, but the account has nothing saved there yet. */
+export function markRemoteLoaded(name, forUid) {
+  if (stores[name] && forUid === uid) remoteLoaded[name] = true
+}
+
+/**
+ * Has this account's saved copy arrived from Firestore yet? Reactive.
+ * Wait for it before changing a store automatically (not from a tap), so an older
+ * copy cached in this browser is never saved over newer data from another device.
+ */
+export const isRemoteLoaded = (name) => remoteLoaded[name] === true
 
 /** What this store holds right now (plain object), e.g. to upload it. */
 export const snapshotOf = (name) => (stores[name] ? JSON.parse(JSON.stringify(stores[name].state)) : null)

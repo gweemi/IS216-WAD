@@ -241,6 +241,8 @@ import BottomSheet from '@/components/common/BottomSheet.vue'
 import { INTERESTS } from '@/config/preferences'
 import { VISIBILITY, REGIONS, LIMITS, validateJio } from '@/utils/openjio'
 import { createJio, updateJio, friendlyJioError } from '@/services/openjio'
+import { recordJioForBadges } from '@/stores/gamification(badges).js'
+import { showNewBadges } from '@/components/badges/NewBadgePopup.vue'
 import { friendsState, friendList } from '@/stores/friends'
 import { searchPlaces } from '@/services/api/onemap'
 import { regionOf } from '@/utils/eventbriteMap'
@@ -464,6 +466,11 @@ export default {
           ? await updateJio(this.editJio.id, this.pendingJio)
           : await createJio(this.pendingJio)
         this.confirmationOpen = false
+        // Posting a jio counts towards Big host energy straight away; a new badge pops up for 2s
+        if (!this.isEditing) {
+          const { badges, levelUp } = recordJioForBadges(id, { hosted: true })
+          showNewBadges(badges, { levelUp })
+        }
         this.$emit(this.isEditing ? 'updated' : 'created', id)
       } catch (err) {
         this.error = friendlyJioError(err)
