@@ -21,15 +21,19 @@
       </span>
     </div>
     <TransitionGroup tag="ul" name="refl" class="list-unstyled mb-2 d-grid gap-2">
-      <li v-for="r in shown" :key="r.id" class="refl-row">
-        <span class="face" :class="mood(r) ? 'dot--' + mood(r).color : ''">
-          <i class="bi" :class="mood(r) ? mood(r).icon : 'bi-pencil'"></i>
-        </span>
-        <div class="min-w-0">
-          <div class="row-title">{{ r.activityTitle }}</div>
-          <div class="row-meta">{{ formatDate(r.date) }}<template v-if="mood(r)"> · {{ mood(r).label }}</template></div>
-          <p v-if="r.note" class="row-note mb-0">"{{ r.note }}"</p>
-        </div>
+      <li v-for="r in shown" :key="r.id">
+        <!-- Tap a reflection to change its mood or note, or delete it -->
+        <button class="refl-row" :aria-label="'Edit reflection for ' + r.activityTitle" data-testid="reflection-row" @click="openEdit(r)">
+          <span class="face" :class="mood(r) ? 'dot--' + mood(r).color : ''">
+            <i class="bi" :class="mood(r) ? mood(r).icon : 'bi-pencil'"></i>
+          </span>
+          <span class="min-w-0 flex-grow-1 text-start">
+            <span class="d-block row-title">{{ r.activityTitle }}</span>
+            <span class="d-block row-meta">{{ formatDate(r.date) }}<template v-if="mood(r)"> · {{ mood(r).label }}</template><template v-if="r.editedOn"> · edited</template></span>
+            <span v-if="r.note" class="d-block row-note">"{{ r.note }}"</span>
+          </span>
+          <i class="bi bi-pencil edit-icon" aria-hidden="true"></i>
+        </button>
       </li>
     </TransitionGroup>
 
@@ -44,7 +48,7 @@
       </button>
     </div>
 
-    <ReflectionSheet :open="sheetOpen" :item="sheetItem" :suggest-from="sheetSuggestFrom" @close="sheetOpen = false" @pick="openActivity" />
+    <ReflectionSheet :open="sheetOpen" :item="sheetItem" :suggest-from="sheetSuggestFrom" :editing="sheetEditing" @close="sheetOpen = false" @pick="openActivity" />
   </section>
 </template>
 
@@ -56,7 +60,7 @@ export default {
   name: 'ReflectionsCard',
   components: { ReflectionSheet },
   data() {
-    return { store: reflections, showAll: false, sheetOpen: false, sheetItem: null, sheetSuggestFrom: null }
+    return { store: reflections, showAll: false, sheetOpen: false, sheetItem: null, sheetSuggestFrom: null, sheetEditing: null }
   },
   computed: {
     insight() {
@@ -83,11 +87,19 @@ export default {
     openReflect(p) {
       this.sheetItem = p
       this.sheetSuggestFrom = null
+      this.sheetEditing = null
       this.sheetOpen = true
     },
     openSuggestions() {
       this.sheetItem = null
+      this.sheetEditing = null
       this.sheetSuggestFrom = this.latest
+      this.sheetOpen = true
+    },
+    openEdit(entry) {
+      this.sheetItem = null
+      this.sheetSuggestFrom = null
+      this.sheetEditing = entry
       this.sheetOpen = true
     },
     openActivity(activity) {
@@ -120,9 +132,14 @@ export default {
 .dot--cyan { background: var(--gol-cyan); }
 .dot--lime { background: var(--gol-lime); }
 .refl-row {
-  display: flex; gap: 0.7rem; align-items: flex-start;
+  display: flex; gap: 0.7rem; align-items: flex-start; width: 100%;
   background: var(--gol-bg); border-radius: 14px; padding: 0.6rem 0.75rem;
+  border: 2px solid transparent; color: var(--gol-ink); font-family: var(--gol-font);
+  transition: border-color 0.15s;
 }
+.refl-row:hover { border-color: var(--gol-purple-soft); }
+.refl-row:focus-visible { outline: 3px solid var(--gol-purple-soft); }
+.edit-icon { color: var(--gol-purple); font-size: 0.95rem; align-self: center; flex-shrink: 0; }
 .row-title { font-weight: 900; font-size: 0.88rem; }
 .row-meta { font-size: 0.75rem; font-weight: 600; color: var(--gol-muted); }
 .row-note { font-size: 0.82rem; font-style: italic; margin-top: 0.15rem; }

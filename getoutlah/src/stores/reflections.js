@@ -57,6 +57,22 @@ export function saveReflection(pendingItem, mood, note) {
   return entry
 }
 
+/** Change the mood and/or note of a saved reflection. Returns the updated entry (or null). */
+export function updateReflection(id, mood, note) {
+  const entry = reflections.entries.find((e) => e.id === id)
+  if (!entry) return null
+  entry.mood = mood || null
+  entry.note = (note || '').trim()
+  entry.editedOn = today()
+  return entry
+}
+
+/** Delete a saved reflection for good. */
+export function deleteReflection(id) {
+  const i = reflections.entries.findIndex((e) => e.id === id)
+  if (i !== -1) reflections.entries.splice(i, 1)
+}
+
 export function skipReflection(pendingItem) {
   removePending(pendingItem.activityId)
 }

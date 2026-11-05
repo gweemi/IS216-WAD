@@ -13,7 +13,6 @@ vi.mock('@/stores/auth', async () => {
     profile: {
       displayName: 'En Min Seah',
       universityName: 'SMU',
-      friendIds: ['f1', 'f2', 'f3'],
       saved: ['a1'],
       plans: ['a2'],
     },
@@ -51,6 +50,7 @@ vi.mock('vue-router', () => ({
 
 const { default: ProfileView } = await import('@/views/ProfileView.vue')
 const { resetGamification } = await import('@/stores/gamification(badges).js')
+const { friendsState, resetFriendsState } = await import('@/stores/friends')
 
 const mountPage = () =>
   mount(ProfileView, {
@@ -62,6 +62,15 @@ const mountPage = () =>
 describe('ProfileView', () => {
   beforeEach(() => {
     resetGamification(true) // the 5 demo activities + badges
+    // 3 accepted friends + 1 request still pending (not counted), like the Friends page keeps them
+    resetFriendsState()
+    friendsState.uid = 'me'
+    friendsState.friendships = [
+      { id: 'f1_me', members: ['f1', 'me'], status: 'accepted', requestedBy: 'me', names: { f1: 'Amy' } },
+      { id: 'f2_me', members: ['f2', 'me'], status: 'accepted', requestedBy: 'f2', names: { f2: 'Ben' } },
+      { id: 'f3_me', members: ['f3', 'me'], status: 'accepted', requestedBy: 'me', names: { f3: 'Cai' } },
+      { id: 'f4_me', members: ['f4', 'me'], status: 'pending', requestedBy: 'f4', names: { f4: 'Dee' } },
+    ]
     calls.logOut = 0
     calls.routes = []
   })
@@ -74,6 +83,13 @@ describe('ProfileView', () => {
     expect(w.find('[data-testid="stat-completed"]').text()).toContain('5')
     expect(w.find('[data-testid="stat-friends"]').text()).toContain('3')
     expect(w.find('[data-testid="stat-badges"]').text()).toMatch(/\d+\s*Badges/)
+  })
+
+  it('updates the Friends number as soon as a request is accepted', async () => {
+    const w = mountPage()
+    friendsState.friendships[3].status = 'accepted'
+    await w.vm.$nextTick()
+    expect(w.find('[data-testid="stat-friends"]').text()).toContain('4')
   })
 
   it('opens Saved and My plans', async () => {
