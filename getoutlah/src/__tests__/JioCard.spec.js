@@ -74,8 +74,8 @@ describe('JioCard', () => {
     expect(w.find('[data-testid="jio-message"]').text()).toContain("You're in")
   })
 
-  it('shows Chope next spot when full', () => {
-    expect(button(card({ participants: ['host', 'a', 'b'] })).text()).toBe('Chope next spot')
+  it('shows Chope a spot when full', () => {
+    expect(button(card({ participants: ['host', 'a', 'b'] })).text()).toBe('Chope a spot')
   })
 
   it('shows your place in the queue', () => {
