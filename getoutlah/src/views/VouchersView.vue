@@ -1,4 +1,4 @@
-<!-- ✨ NEW PAGE: Redeem Voucher (opened from the Badges page) -->
+
 <script setup>
 import { computed, ref } from 'vue'
 import { VOUCHERS, availablePoints, redeemVoucher, myVouchers } from '../stores/gamification(badges).js'
@@ -55,23 +55,9 @@ function confirmRedeem() {
         </div>
       </template>
 
-      <!-- Vouchers you can afford -->
-      <h2 class="section-title">Available Vouchers</h2>
-      <p v-if="!available.length" class="empty">Keep getting out to earn more points. Your first voucher is 150 pts away!</p>
-      <div class="row g-3 g-md-4">
-        <div v-for="(v, i) in available" :key="v.id" class="col-6 col-md-4">
-          <article class="voucher" :style="{ '--i': i }">
-            <span class="coin"><span class="emo">{{ v.icon }}</span><span class="rays" aria-hidden="true"></span></span>
-            <h3 class="v-name">{{ v.name }}</h3>
-            <span class="cost">{{ v.cost }} pts</span>
-            <button type="button" class="btn-redeem" @click="askToRedeem(v)">Redeem</button>
-          </article>
-        </div>
-      </div>
-
       <!-- Vouchers that need more points -->
       <template v-if="more.length">
-        <h2 class="section-title mt-5">More Vouchers</h2>
+        <h2 class="section-title mt-5">Vouchers</h2>
         <div class="row g-3 g-md-4">
           <div v-for="v in more" :key="v.id" class="col-6 col-md-4">
             <article class="voucher locked">
