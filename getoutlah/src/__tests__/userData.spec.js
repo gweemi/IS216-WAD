@@ -134,19 +134,19 @@ describe('per-account points and badges', async () => {
     switchUser(null)
   })
 
-  it('starts a new account from the demo data and keeps each account’s progress apart', () => {
+  it('starts a new account empty and keeps each account’s progress apart', () => {
     switchUser('amy')
-    expect(game.completed).toHaveLength(5) // demo starting point
+    expect(game.completed).toHaveLength(0) // new accounts start with nothing
     game.completed.push({ id: 'x', title: 'Kayak', category: 'outdoors', region: 'east', date: '2026-11-05' })
     game.ledger.push({ date: '2026-11-05', amount: 50, reason: 'Kayak' })
 
     switchUser('ben')
-    expect(game.completed).toHaveLength(5)
-    expect(totalPoints()).toBe(350)
+    expect(game.completed).toHaveLength(0)
+    expect(totalPoints()).toBe(0)
 
     switchUser('amy')
-    expect(game.completed).toHaveLength(6)
-    expect(totalPoints()).toBe(400)
+    expect(game.completed).toHaveLength(1)
+    expect(totalPoints()).toBe(50)
   })
 
   it('shows progress made on another device', () => {
