@@ -1,10 +1,3 @@
-<!--
-  Pop-up with a green tick and a message, used after checking in and after joining a jio.
-  Only the X closes it (tapping outside or Esc does nothing).
-    <SuccessPopup :open="done" title="You have been jioed" @close="done = false">
-      ...optional buttons...
-    </SuccessPopup>
--->
 <template>
   <BottomSheet :open="open" :label="title">
     <div class="d-flex justify-content-end">

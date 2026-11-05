@@ -1,4 +1,3 @@
-// Checks which jios go where: Activities (public), invites, and "My jios".
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { friendsState, resetFriendsState } from '@/stores/friends'

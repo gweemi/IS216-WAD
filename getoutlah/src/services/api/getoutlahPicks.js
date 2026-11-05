@@ -1,5 +1,3 @@
-// Save and remove admin-picked GetOutLah Picks. They live in their own
-// Firestore collection; the activity store combines them with external listings.
 import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { toCuratedActivity } from '@/utils/getoutlahPicks'
@@ -7,7 +5,6 @@ import { ACTIVITY_COLLECTIONS } from '@/utils/activitySource'
 
 const picks = ACTIVITY_COLLECTIONS.getoutlahPicks
 
-// New activity when id is empty, otherwise replaces that activity.
 export async function saveCurated(form, id) {
   const { problems, activity } = toCuratedActivity(form)
   if (problems.length) throw new Error(problems.join(' '))

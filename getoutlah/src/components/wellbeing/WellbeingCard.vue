@@ -1,6 +1,5 @@
 <template>
   <section class="gol-card wellbeing-card">
-    <!-- Card Part -->
     <div class="d-flex align-items-center gap-3 mb-2">
       <button class="head-btn d-flex align-items-center gap-3 flex-grow-1" @click="showHistory = true">
         <span class="gol-icon-tile tile-cyan"><i class="bi bi-heart-pulse"></i></span>

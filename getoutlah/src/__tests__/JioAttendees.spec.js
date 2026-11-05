@@ -1,4 +1,3 @@
-// Checks the "Who's going" list on the activity details page: the host also sees the chope queue.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'

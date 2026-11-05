@@ -1,9 +1,3 @@
-<!--
-  "Start a jio" placeholder card: a soft purple dashed tile (like "add photo" tiles in other apps)
-  that sits first in the OPENJIO! list. Clicking it opens the create form.
-    <StartJioCard @created="onCreated" />
-  Suspended or banned users see it greyed out with the reason, like StartJioButton.
--->
 <template>
   <div class="start-jio-card-wrap">
     <button
@@ -38,7 +32,6 @@ export default {
     return { open: false }
   },
   computed: {
-    // null if the user can start jios, otherwise the lines to show
     notice() {
       return startJioNotice(accountRestriction(useAuthStore().profile))
     },

@@ -1,4 +1,3 @@
-// Filter options shared by FilterSheet.vue, and the pills the Activities page shows for the ones in use.
 import { categoryLabel, sourceLabel } from '@/utils/activityStyle'
 
 export const BUDGETS = [[null, 'Any'], [0, 'Free'], [10, 'Under $10'], [20, 'Under $20'], [50, 'Under $50']]
@@ -7,7 +6,6 @@ export const ENERGY = [['Any', 'Any'], ['low', 'Chill'], ['medium', 'Moderate'],
 
 const labelFor = (options, value) => options.find(([v]) => v === value)[1]
 
-// One pill per filter in use: { id, label, remove }. The search box and free-time switch are always on screen, so they get none.
 export function activeFilterPills(f) {
   const pills = []
   const add = (id, label, remove) => pills.push({ id, label, remove })

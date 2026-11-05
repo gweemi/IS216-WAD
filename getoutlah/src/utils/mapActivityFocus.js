@@ -15,7 +15,6 @@ export function getActivityFocusTarget(map, activity, { isMobile = false, target
 
   const size = map.getSize()
   const zoom = Math.max(map.getZoom(), targetZoom)
-  // On compact screens, reserve the lower portion of the map for the preview card.
   const desiredPosition = { x: size.x / 2, y: size.y * (isMobile ? 0.4 : 0.5) }
   const activityPoint = map.project(coordinates, zoom)
   const centrePoint = [

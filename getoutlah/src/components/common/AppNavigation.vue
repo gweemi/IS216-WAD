@@ -10,7 +10,6 @@ const links = [
   { name: 'profile', label: 'Profile', icon: 'bi-person' },
 ]
 
-// Coral dot on Friends when there's something new.
 const friendsAlert = computed(() => unreadCount.value + incomingRequests.value.length > 0)
 </script>
 
@@ -93,7 +92,6 @@ const friendsAlert = computed(() => unreadCount.value + incomingRequests.value.l
   .app-navigation {
     right: auto;
     bottom: 1.5rem;
-    /* Anchor to the visual viewport so a route's scrollbar cannot shift the bar. */
     left: 50vw;
     width: min(620px, calc(100vw - 2rem));
     padding: 0.55rem;

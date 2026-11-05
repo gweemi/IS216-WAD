@@ -35,7 +35,6 @@ export default {
     return { store: game, cap: WEEKLY_POINT_CAP }
   },
   computed: {
-    // What you can still spend (earned minus vouchers)
     points() {
       return availablePoints()
     },

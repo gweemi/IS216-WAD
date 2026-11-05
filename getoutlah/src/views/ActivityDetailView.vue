@@ -34,7 +34,6 @@ const dates = computed(() => (activity.value ? datesOf(activity.value) : []))
 const booking = computed(() => bookingLink(activity.value))
 const heroImage = computed(() => activity.value?.imageLargeUrl ?? activity.value?.imageUrl ?? null)
 const brokenImage = ref(null)
-// Change code is necessary: the picture fades in once it has downloaded, instead of popping in
 const loadedImage = ref(null)
 
 const SHORT_WORDS = 50
@@ -47,14 +46,11 @@ const shownDescription = computed(() => {
   const first100 = text.match(new RegExp(`^(\\s*\\S+){${SHORT_WORDS}}`))[0]  
   return first100 + '…'
 })
-// Already checked in here: the Check in button turns grey
 const checkedIn = computed(() => !!activity.value && game.completed.some((a) => a.id === activity.value.id))
 const saved = computed(() => (activity.value ? isSaved(activity.value.id) : false))
 const jios = useOpenJioStore()
 const jio = computed(() => (activity.value?.type === 'openJio' ? jios.all.find((j) => j.id === activity.value.jioId) ?? null : null))
 const jioSuspended = computed(() => jio.value?.status === 'suspended')
-// Same rule as JioCard: only the host can edit, and only while the jio is open or full.
-// Only the host and people going can see who's going (same rule as the server check in getJioAttendees)
 const canSeeAttendees = computed(() => !!jio.value && ['host', 'going'].includes(myRole(jio.value, jios.uid)))
 const canEditJio = computed(() => !!jio.value && myRole(jio.value, jios.uid) === 'host' && ['open', 'full'].includes(statusOf(jio.value)))
 
@@ -83,8 +79,7 @@ const doCheckIn = async () => {
   } catch (error) { message.value = error.message }
 }
 
-// After checking in: new badges pop up first (2s, see NewBadgePopup), then the "checked in" pop-up
-const popup = ref(null) // 'checked-in' | null
+const popup = ref(null)
 async function showCheckInPopups() {
   await showNewBadges(earnedBadges.value)
   popup.value = 'checked-in'
@@ -106,7 +101,6 @@ function closeDistancePopup() {
       <div v-if="activity" class="det-layout mt-3">
         <div class="gol-card det-main">
           <div class="det-hero" :style="{ background: categoryColor(activity.category), color: tileTextColor(activity.category) }">
-            <!-- Change code is necessary: added class + @load so the picture fades in -->
             <img v-if="heroImage && heroImage !== brokenImage" :src="heroImage" alt=""
               class="det-hero-img" :class="{ 'is-loaded': loadedImage === heroImage }"
               @load="loadedImage = heroImage" @error="brokenImage = heroImage" />
@@ -161,7 +155,6 @@ function closeDistancePopup() {
             <i class="bi bi-people"></i> Friends who have done this: {{ friendsDid.map((f) => f.name).join(', ') }}
           </p>
 
-          <!-- Host: Cancel jio and Edit OPENJIO side by side -->
           <div v-if="activity.type === 'openJio'" class="det-jio-actions mt-3">
             <JioActionButton :jio-id="activity.jioId" />
             <router-link v-if="canEditJio" :to="{ name: 'openjio-edit', params: { id: activity.jioId } }"
@@ -189,13 +182,11 @@ function closeDistancePopup() {
             <StartJioButton v-if="activity.type !== 'openJio'" label="OpenJio this" variant="soft"
               :prefill="prefillFromActivity(activity)" />
           </div>
-          <!-- OPENJIO: who's going, as its own sub-card under Invite friends (host and people going only) -->
           <JioAttendees v-if="canSeeAttendees" :jio="jio" />
           <p v-if="message" class="det-msg">{{ message }}</p>
         </div>
       </div>
       <p v-else class="mt-4 fw-bold">Activity not found (or still loading).</p>
-      <!-- Always shown after a successful check-in: only the X closes it -->
       <SuccessPopup :open="popup === 'checked-in'" title="You have successfully checked in!" @close="closePopup">
         <router-link :to="{ name: 'profile', hash: '#reflections' }" class="gol-btn-primary det-link justify-content-center" data-testid="do-reflection">
           <i class="bi bi-journal-text"></i> Do Reflection
@@ -222,16 +213,13 @@ function closeDistancePopup() {
 </template>
 
 <style scoped>
-/* Change code is necessary: smoother arrival of the activity page */
 
-/* The content fades in and rises a little, instead of appearing all at once */
 .det-layout { animation: det-enter 0.3s ease-out both; }
 @keyframes det-enter {
-  from { opacity: 0; transform: translateY(12px); }   /* start: invisible, a little lower */
-  to { opacity: 1; transform: none; }                 /* end: fully visible, in place */
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
 }
 
-/* The picture starts invisible and fades in once it has downloaded */
 .det-hero-img { opacity: 0; transition: opacity 0.3s ease-out; }
 .det-hero-img.is-loaded { opacity: 1; }
 
@@ -243,11 +231,9 @@ function closeDistancePopup() {
 .distance-popup h2 { margin: 0 0 .5rem; font: 900 1.35rem/1.2 var(--gol-font); }
 .distance-popup p { margin: 0 0 1.25rem; color: var(--gol-muted); font-weight: 700; }
 
-/* Already checked in: grey and not clickable */
 .gol-btn-primary.det-checked-in,
 .gol-btn-primary.det-checked-in:disabled { background: #d9d6e0; color: #6b6878; border-color: #b9b5c4; box-shadow: 0 4px 0 #b9b5c4; opacity: 1; cursor: default; }
 
-/* People who turn on "Reduce motion" on their phone get no animation */
 @media (prefers-reduced-motion: reduce) {
   .det-layout { animation: none; }
   .det-hero-img { transition: none; }

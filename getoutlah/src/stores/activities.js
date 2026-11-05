@@ -1,4 +1,3 @@
-// All GetOutLah Picks, external listings, and OPENJIO!s, plus shared filters.
 import { ref, computed } from 'vue'
 import { collection, getDocs, writeBatch, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db, isFirebaseConfigured } from '@/firebase'
@@ -12,20 +11,17 @@ import { fitsHours } from '@/utils/activityStyle'
 import { ACTIVITY_COLLECTIONS, ACTIVITY_SOURCES, activityFromCollection } from '@/utils/activitySource'
 
 const defaultFilters = () => ({
-  query: '', categories: [], regions: [], sources: [], // empty = all; otherwise canonical activity source values
+  query: '', categories: [], regions: [], sources: [],
   maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false,
 })
 
 export const filters = ref(defaultFilters())
 export const resetFilters = () => { filters.value = defaultFilters() }
 
-const baseActivities = ref([])   // GetOutLah Picks + external listings, both from Firestore
+const baseActivities = ref([])
 export const forecasts = ref([])
 export const loadingActivities = ref(false)
-export const sourceErrors = ref({})   // which outside source failed, so the screen can say so
-// A cached pre-migration browser bundle may still try to read `activities` after
-// the cutover rule denies it. New bundles normally never hit that rule, but this
-// flag gives any Firestore permission failure a useful recovery message.
+export const sourceErrors = ref({})
 export const activityRefreshRequired = ref(false)
 export const openJioLoadError = computed(() => useOpenJioStore().error)
 
@@ -46,11 +42,8 @@ export async function loadActivities() {
 
 
   
-  useOpenJioStore().start() // live public OpenJios (see allActivities)
+  useOpenJioStore().start()
 
-  // GetOutLah Picks and external listings have separate Firestore collections,
-  // but all downstream UI still receives one list.
-  // The built-in list only stands in when both collections can't be reached.
   let stored = null
   activityRefreshRequired.value = false
   if (isFirebaseConfigured) {
@@ -85,40 +78,32 @@ export async function loadActivities() {
   loadingActivities.value = false
 }
 
-// After an admin adds, edits or removes something, so every page shows the change.
 export function reloadActivities() {
   baseActivities.value = []
   return loadActivities()
 }
 
-// Everything you can do: stored activities + upcoming OPENJIO!s shown as activities.
 export const allActivities = computed(() => {
   const jios = useOpenJioStore()
   return [...baseActivities.value, ...jios.discoverableUpcoming.map((j) => toActivity(j, jios.uid))]
 })
 export const activityById = (id) => allActivities.value.find((a) => a.id === id)
 
-// Repeats of one event (an Eventbrite series, or the same title at the same place) are shown as ONE card.
-// An OPENJIO! is always its own event: one started from an activity shares its title and place,
-// and grouping them would hide a card and list the undated activity as an "Invalid Date".
 const repeatKey = (a) => {
   if (a.type === 'openJio') return `jio:${a.id}`
   return a.seriesId ? `series:${a.seriesId}` : `${(a.title || '').trim().toLowerCase()}|${a.area || ''}`
 }
-// Every upcoming date of an activity, soonest first. Just [activity] if it doesn't repeat.
 export const datesOf = (activity, list = allActivities.value, now = Date.now()) => {
   const key = repeatKey(activity)
   return list
     .filter((b) => b.id === activity.id || (repeatKey(b) === key && (b.startsAt == null || b.startsAt >= now)))
     .sort((x, y) => (x.startsAt || Infinity) - (y.startsAt || Infinity))
 }
-// Keeps the first (best-ranked) date of each repeating event and drops the rest.
 export const oneCardPerEvent = (list) => {
   const seen = new Set()
   return list.filter((a) => !seen.has(repeatKey(a)) && seen.add(repeatKey(a)))
 }
 
-// Each line: "this filter is off, OR the activity matches it".
 export const filtered = computed(() => {
   const f = filters.value, q = f.query.trim().toLowerCase()
   return allActivities.value.filter((a) =>
@@ -138,7 +123,6 @@ export const weatherAt = (a) => {
   return n ? { area: n.area, forecast: n.forecast, rainy: isRainy(n.forecast) } : null
 }
 
-// Personalised order: preferences + weather + balance after a high-energy activity.
 export const recommended = computed(() => {
   const p = useAuthStore().preferences || {}
   const last = game.completed.at(-1)
@@ -156,7 +140,6 @@ export const recommended = computed(() => {
   return oneCardPerEvent([...filtered.value].map((a) => ({ a, s: score(a) })).sort((x, y) => y.s - x.s).map((x) => x.a))
 })
 
-// Admin: copy the starter dataset into Firestore.
 export async function seedFirestore() {
   if (useAuthStore().profile?.role !== 'admin') throw new Error('Admins only')
   const batch = writeBatch(db)

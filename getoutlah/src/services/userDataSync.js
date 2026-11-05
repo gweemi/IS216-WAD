@@ -1,27 +1,16 @@
-// =============================================================
-// Keeps private per-account data in Firestore so it follows the user across devices:
-//   users/{uid}/private/wellbeing    { history: [{ date, score }], updatedAt }
-//   users/{uid}/private/reflections  { pending, entries, promptsOn, dismissed, updatedAt }
-//   users/{uid}/private/gamification { completed, ledger, earnedBadges, studyBreak, pausedWeeks, redemptions,
-//                                      joinedJioIds, hostedJioIds, updatedAt }
-// firestore.rules: only the owner can read or write these. (See src/stores/userData.js.)
-//
-// startUserDataSync(uid) is called from main.js whenever the logged-in user changes.
-// =============================================================
 import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { useAuthStore } from '@/stores/auth'
 import {
   switchUser, applyRemote, markRemoteLoaded, snapshotOf, hasData, userStoreNames, currentUid, setRemoteWriter,
 } from '@/stores/userData'
-// Make sure the stores have registered before we sync them
 import '@/stores/wellbeing'
 import '@/stores/reflections'
 import '@/stores/gamification(badges).js'
 
 const SAVE_DELAY_MS = 400
 let unsubs = []
-const timers = {} // name → pending save
+const timers = {}
 
 const refFor = (uid, name) => doc(db, 'users', uid, 'private', name)
 
@@ -33,7 +22,6 @@ function save(uid, name) {
   })
 }
 
-// Wait a moment so several quick changes are saved together
 setRemoteWriter((name) => {
   const uid = currentUid()
   clearTimeout(timers[name])
@@ -55,11 +43,9 @@ function stop() {
 export function startUserDataSync(uid) {
   if ((uid ?? null) === currentUid() && (unsubs.length || !uid)) return
   stop()
-  switchUser(uid) // show this account's own copy straight away (or empty when logged out)
+  switchUser(uid)
   if (!uid) return
 
-  // Keep the logged-in user's own profile (name, photo, saved, preferences, privacy...) live,
-  // so the Profile page updates when it changes on another device or tab.
   unsubs.push(
     onSnapshot(
       doc(db, 'users', uid),
@@ -77,13 +63,13 @@ export function startUserDataSync(uid) {
       onSnapshot(
         refFor(uid, name),
         (snap) => {
-          if (snap.metadata.hasPendingWrites || timers[name]) return // our own change is on its way
+          if (snap.metadata.hasPendingWrites || timers[name]) return
           if (snap.exists()) {
             const { updatedAt: _updatedAt, ...data } = snap.data()
             applyRemote(name, data, uid)
           } else {
             markRemoteLoaded(name, uid)
-            if (hasData(name)) save(uid, name) // first time: upload what this browser already had for this account
+            if (hasData(name)) save(uid, name)
           }
         },
         (err) => console.warn(`Could not load ${name} from your account:`, err?.code || err),

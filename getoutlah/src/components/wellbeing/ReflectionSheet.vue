@@ -9,7 +9,6 @@
       <button class="gol-close" aria-label="Close" @click="close"><i class="bi bi-x-lg"></i></button>
     </div>
 
-    <!-- mood part and small note -->
     <div v-if="step === 'rate' && (item || editing)">
       <div class="activity-chip mb-3"><i class="bi bi-geo-alt-fill"></i> {{ (editing || item).activityTitle }}</div>
 
@@ -43,7 +42,6 @@
         <span>{{ note.length }}/500</span>
       </div>
 
-      <!-- Editing a saved reflection: save changes or delete it -->
       <template v-if="editing">
         <button class="gol-btn-primary mb-2" :disabled="!mood && !note.trim()" data-testid="save-edit" @click="saveEdit">Save changes</button>
         <button
@@ -102,7 +100,7 @@ export default {
     open: { type: Boolean, default: false },
     item: { type: Object, default: null }, 
     suggestFrom: { type: Object, default: null }, 
-    editing: { type: Object, default: null }, // a saved reflection to change or delete
+    editing: { type: Object, default: null },
     activities: { type: Array, default: () => seedActivities },
   },
   emits: ['close', 'saved', 'deleted', 'pick'],

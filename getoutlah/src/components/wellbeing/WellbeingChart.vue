@@ -1,4 +1,3 @@
-<!--To display the scores in a line chart to see diff-->
 <template>
   <div class="gol-chart">
     <svg

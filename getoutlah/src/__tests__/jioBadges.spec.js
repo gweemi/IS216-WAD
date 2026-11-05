@@ -1,12 +1,9 @@
-// Checks that joining or posting an OPENJIO earns its badge straight away, the badge pop-up's timing
-// and text (points after the weekly cap), and badges for being moved up from the queue.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, reactive } from 'vue'
 const celebrate = vi.hoisted(() => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), burstFrom: vi.fn() }))
 vi.mock('@/utils/celebrate.js', () => celebrate)
 
-// Fake logged-in user, live jios and "saved data arrived from Firestore" flag for useJioBadgeSync
 const auth = vi.hoisted(() => ({ user: { uid: 'me' } }))
 const jioStore = vi.hoisted(() => ({ value: null }))
 const loaded = vi.hoisted(() => ({ value: null }))

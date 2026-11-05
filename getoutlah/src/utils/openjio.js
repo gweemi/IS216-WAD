@@ -1,10 +1,3 @@
-// =============================================================
-// OPENJIO! rules: plain functions, no Firebase.
-// Everything here takes a jio object and returns an answer, so it is
-// easy to test (src/__tests__/openjio.spec.js) and reuse on any page.
-// The Firestore calls live in src/services/openjio.js.
-// See OPENJIO.md for the data format.
-// =============================================================
 import { INTERESTS } from '@/config/preferences'
 import { ACTIVITY_SOURCES } from '@/utils/activitySource'
 
@@ -20,18 +13,13 @@ export const LIMITS = {
   titleMax: 60,
   descriptionMax: 300,
   locationMax: 80,
-  minCapacity: 2, // the host plus at least one other person
+  minCapacity: 2,
   maxCapacity: 50,
   maxCost: 500,
   maxInvites: 50,
 }
 
-// ---------- Checking the create form ----------
 
-/**
- * Returns a list of problems with a new jio ([] means it's fine).
- * firestore.rules checks the same things, so a broken form can't save bad data.
- */
 export function validateJio(form, now = new Date()) {
   const problems = []
   const title = (form?.title ?? '').trim()
@@ -47,7 +35,6 @@ export function validateJio(form, now = new Date()) {
 
   if (!REGIONS.includes(form?.region)) problems.push('Pick a region.')
 
-  // Coordinates are optional, but if given they must both be in Singapore (same bounds as the admin form)
   const lat = form?.lat, lng = form?.lng
   if (lat != null || lng != null) {
     const inSingapore = typeof lat === 'number' && typeof lng === 'number'
@@ -90,15 +77,12 @@ export function validateJio(form, now = new Date()) {
   return problems
 }
 
-// ---------- Reading a jio ----------
 
 export const slotsLeft = (jio) => jio.slotsLeft ?? Math.max(0, jio.capacity - (jio.participants?.length ?? jio.participantCount ?? 0))
 
 export const endTime = (jio) => new Date(jio.startAt.getTime() + jio.durationMins * 60000)
 
-/** 'suspended' | 'cancelled' | 'ended' | 'full' | 'open' */
 export function statusOf(jio, now = new Date()) {
-  // Change code is necessary: reported jios are suspended until an admin reviews them (see utils/reports.js)
   if (jio.status === 'suspended') return 'suspended'
   if (jio.status === 'cancelled') return 'cancelled'
   if (endTime(jio) <= now) return 'ended'
@@ -106,7 +90,6 @@ export function statusOf(jio, now = new Date()) {
   return 'open'
 }
 
-/** How this user is connected to the jio: 'host' | 'going' | 'queued' | 'none' */
 export function myRole(jio, uid) {
   if (jio.viewerRole) return jio.viewerRole
   if (jio.hostId === uid) return 'host'
@@ -115,17 +98,10 @@ export function myRole(jio, uid) {
   return 'none'
 }
 
-/** Did the host explicitly invite this user? */
 export const isInvited = (jio, uid) => jio.viewerInvited ?? (jio.invited ?? []).includes(uid)
 
-/** 1 = next in line. 0 = not in the queue. */
 export const queuePosition = (jio, uid) => jio.viewerQueuePosition ?? jio.waitlist.indexOf(uid) + 1
 
-/**
- * Can this user see the jio?
- * Public: everyone. Friends only: the host, an accepted friend of the host,
- * or anyone already in it. Invite-only and legacy `friends` use the invite list.
- */
 export function canSee(jio, uid, friendIds = []) {
   if (jio.visibility === 'public') return true
   if (jio.visibility === 'friends_only') {
@@ -134,10 +110,6 @@ export function canSee(jio, uid, friendIds = []) {
   return myRole(jio, uid) !== 'none' || isInvited(jio, uid)
 }
 
-// ---------- Changing a jio ----------
-// Each function gets the jio as it is in the database right now and returns
-// the new { participants, waitlist }. If the change isn't allowed, it throws
-// an Error with a message we can show the user.
 
 function mustBeActive(jio, uid, now) {
   if (!canSee(jio, uid)) throw new Error('This jio is for invited friends only.')
@@ -148,18 +120,16 @@ function mustBeActive(jio, uid, now) {
   return status
 }
 
-/** Join a jio that still has space. */
 export function applyJoin(jio, uid, now = new Date()) {
   const status = mustBeActive(jio, uid, now)
   if (jio.participants.includes(uid)) throw new Error("You're already going.")
   if (status === 'full') throw new Error('Someone got the last spot first. You can chope the next one.')
   return {
     participants: [...jio.participants, uid],
-    waitlist: jio.waitlist.filter((id) => id !== uid), // leave the queue if they were in it
+    waitlist: jio.waitlist.filter((id) => id !== uid),
   }
 }
 
-/** Chope: join the queue for a full jio. */
 export function applyChope(jio, uid, now = new Date()) {
   const status = mustBeActive(jio, uid, now)
   if (jio.participants.includes(uid)) throw new Error("You're already going.")
@@ -168,10 +138,6 @@ export function applyChope(jio, uid, now = new Date()) {
   return { participants: jio.participants, waitlist: [...jio.waitlist, uid] }
 }
 
-/**
- * Leave a jio. If anyone choped, the first person in the queue
- * gets the freed spot automatically.
- */
 export function applyLeave(jio, uid) {
   if (jio.status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (jio.status === 'cancelled') throw new Error('This jio was cancelled, so there is nothing to leave.')
@@ -181,12 +147,11 @@ export function applyLeave(jio, uid) {
   const participants = jio.participants.filter((id) => id !== uid)
   const waitlist = [...jio.waitlist]
   if (waitlist.length && participants.length < jio.capacity) {
-    participants.push(waitlist.shift()) // next in line moves up
+    participants.push(waitlist.shift())
   }
   return { participants, waitlist }
 }
 
-/** Give up your place in the queue. */
 export function applyLeaveQueue(jio, uid) {
   if (jio.status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (jio.status === 'cancelled') throw new Error('This jio was cancelled, so there is no queue.')
@@ -194,7 +159,6 @@ export function applyLeaveQueue(jio, uid) {
   return { participants: jio.participants, waitlist: jio.waitlist.filter((id) => id !== uid) }
 }
 
-// ---------- Display helpers ----------
 
 export function statusLabel(jio, now = new Date()) {
   const s = statusOf(jio, now)
@@ -202,7 +166,6 @@ export function statusLabel(jio, now = new Date()) {
     const n = slotsLeft(jio)
     return `Open · ${n} spot${n === 1 ? '' : 's'} left`
   }
-  // Change code is necessary: added suspended
   return { full: 'Full', ended: 'Ended', cancelled: 'Cancelled', suspended: 'Suspended' }[s]
 }
 
@@ -218,23 +181,15 @@ export function whenText(jio) {
   })
 }
 
-/**
- * The jio in the same shape as the activities in src/data/seedActivities.js,
- * so the Activities list, activity details, map, check-ins and badges can
- * treat OPENJIOs like any other activity.
- */
 export function toActivity(jio, uid) {
   return {
     id: `jio-${jio.id}`,
     jioId: jio.id,
     title: jio.title,
-    // Full text for the details page (the card shows one line)
     description: jio.description ?? '',
     category: jio.category,
     type: 'openJio',
     source: ACTIVITY_SOURCES.OPEN_JIO,
-    // Keep the server-owned discovery visibility when this Jio is rendered
-    // through the shared Activities pipeline.
     visibility: jio.visibility,
     cost: jio.cost,
     durationHrs: jio.durationMins / 60,
@@ -255,11 +210,6 @@ export function toActivity(jio, uid) {
   }
 }
 
-/**
- * Starting values for the create form from an activity on the Activities page
- * (curated, Eventbrite, etc.), for an "OpenJio this" button.
- * Pass the result to <StartJioButton :prefill="..."> or <CreateJioSheet :prefill="...">.
- */
 export function prefillFromActivity(activity) {
   return {
     title: activity.title,

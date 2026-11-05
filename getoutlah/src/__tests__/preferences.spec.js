@@ -1,4 +1,3 @@
-// Checks the questionnaire rules and that answers are saved correctly.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { readFileSync } from 'node:fs'
@@ -57,8 +56,6 @@ describe('validatePreferences', () => {
 })
 
 describe('the options match firestore.rules', () => {
-  // If someone adds an option in src/config/preferences.js but forgets
-  // firestore.rules, the database would refuse to save it. This catches that.
   const rules = readFileSync(resolve(process.cwd(), 'firestore.rules'), 'utf8')
   const listAfter = (marker) => {
     const start = rules.indexOf(marker)
@@ -93,14 +90,14 @@ describe('savePreferences', () => {
     expect(saved.calls).toHaveLength(1)
     expect(saved.calls[0].ref).toBe('users/uid-123')
     expect(saved.calls[0].data.preferences).toEqual({
-      interests: ['food', 'arts'], // duplicates removed
+      interests: ['food', 'arts'],
       maxBudget: 20,
       energyLevel: 'high',
       groupPreference: 'group',
     })
     expect(saved.calls[0].data.preferencesVersion).toBe(PREFERENCES_VERSION)
     expect(store.hasPreferences).toBe(true)
-    expect(store.profile.displayName).toBe('En Min') // rest of the profile kept
+    expect(store.profile.displayName).toBe('En Min')
   })
 
   it('requires users with an earlier preference version to answer onboarding again', () => {

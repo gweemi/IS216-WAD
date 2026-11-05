@@ -8,7 +8,6 @@
       </button>
     </div>
 
-    <!-- STEP 1: Intro -->
     <div v-if="step === 'intro'" class="text-center">
       <div class="gol-icon-tile hero-tile mx-auto mb-3"><i class="bi bi-heart-pulse"></i></div>
       <h2 class="gol-title mb-2">How have you been?</h2>
@@ -27,7 +26,6 @@
       <button class="gol-btn-primary" @click="start">Start check-in</button>
     </div>
 
-    <!-- STEP 2: Questions -->
     <div v-else-if="typeof step === 'number'">
       <div class="d-flex align-items-center gap-2 mb-3">
         <div class="gol-progress flex-grow-1">
@@ -58,7 +56,6 @@
       </button>
     </div>
 
-    <!-- STEP 3: Result -->
     <div v-else-if="step === 'result' && result" class="text-center">
       <div class="score-ring mx-auto mb-3">
         <span class="score">{{ result.score }}</span>
@@ -169,7 +166,6 @@ export default {
     },
   },
   watch: {
-    // for reset 
     open(isOpen) {
       if (isOpen) {
         this.step = 'intro'

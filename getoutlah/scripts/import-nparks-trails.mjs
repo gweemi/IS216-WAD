@@ -1,6 +1,3 @@
-// Developer-run importer for the vetted initial three-trail NParks catalog.
-// Rehearsal: FIRESTORE_EMULATOR_HOST=127.0.0.1:8081 GCLOUD_PROJECT=getoutlah-nparks-local node scripts/import-nparks-trails.mjs --preflight --backup /private/tmp/nparks-backup.json
-// Production: node scripts/import-nparks-trails.mjs --production --adc --project getoutlah-4d959 --database '(default)' --preflight --backup /absolute/path/nparks-backup.json
 import { access, readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { initializeApp, applicationDefault } from 'firebase-admin/app'
@@ -54,9 +51,6 @@ const external = db.collection(ACTIVITY_COLLECTIONS.externalListings)
 const targetIds = VERIFIED_NPARKS_TRAILS.map((trail) => trail.id)
 const targetSnapshots = await Promise.all(targetIds.map((id) => external.doc(id).get()))
 const existing = new Map(targetSnapshots.filter((snapshot) => snapshot.exists).map((snapshot) => [snapshot.id, snapshot.data()]))
-// Expected initial documents are static, so post-write verification does not
-// depend on another data.gov.sg request. Preflight and apply separately prove
-// the live GeoJSON still validates against this catalog.
 const expectedWrites = VERIFIED_NPARKS_TRAILS.map((trail) => ({ id: trail.id, merge: false, data: nparksActivity(trail) }))
 if (mode !== '--verify') {
   const geojson = await downloadGeojson()

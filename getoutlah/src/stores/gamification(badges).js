@@ -7,20 +7,15 @@ import { addPendingReflection } from './reflections.js'
 import { registerUserStore } from './userData.js'
 import { getInterest } from '@/config/preferences'
 
-// ---------- Baselines we followed ----------
-export const WEEKLY_POINT_CAP = 300      // max points a student can earn per week
-export const CHECKIN_RADIUS_M = 200      // must be within 200m to check in
-export const POINTS_PER_ACTIVITY = 50    // base points for a verified activity
+export const WEEKLY_POINT_CAP = 300
+export const CHECKIN_RADIUS_M = 200
+export const POINTS_PER_ACTIVITY = 50
 
-// Extra points on top of POINTS_PER_ACTIVITY, keyed by activity category (interest ids in
-// src/config/preferences.js). To change a bonus, edit the number; to add one, add a line.
-// Changes only affect future check-ins: past awards are stored as fixed amounts in the ledger.
 export const CATEGORY_BONUS_POINTS = {
   outdoors: 10,
   sports: 10,
 }
 
-/** Points a check-in at this activity is worth before the weekly cap. */
 export function pointsForActivity(activity) {
   return POINTS_PER_ACTIVITY + (CATEGORY_BONUS_POINTS[activity?.category] ?? 0)
 }
@@ -63,7 +58,6 @@ export const BADGES = [
     target: 1,
     unit: 'OPENJIO',
     bonus: 20,
-    // Counts as soon as you join (see recordJioForBadges), plus any OPENJIO check-ins from before
     progress: (s) => new Set([...(s.joinedJioIds ?? []), ...s.completed.filter((a) => a.isOpenJio && !a.hostedByMe).map((a) => a.id)]).size,
     qualifies: (a, s) => Boolean(a.isOpenJio) && !a.hostedByMe && !(s.joinedJioIds ?? []).includes(a.id),
   },
@@ -77,7 +71,6 @@ export const BADGES = [
     target: 1,
     unit: 'hosted',
     bonus: 30,
-    // Counts as soon as you post one (see recordJioForBadges), plus any hosted check-ins from before
     progress: (s) => new Set([...(s.hostedJioIds ?? []), ...s.completed.filter((a) => a.hostedByMe).map((a) => a.id)]).size,
     qualifies: (a) => Boolean(a.hostedByMe),
   },
@@ -113,11 +106,6 @@ export const BADGES = [
   { id: 'event-chaser', name: 'Event chaser', desc: 'Complete 3 events around Singapore.', icon: 'bi-calendar-event', emoji: '🎟️', category: 'events', color: 'lime', target: 3, unit: 'events', bonus: 30, progress: (s) => s.completed.filter((a) => a.category === 'events').length, qualifies: (a) => a.category === 'events' },
 ]
 
-/**
- * One shared visual treatment for badges wherever they appear in the app.
- * Category badges inherit the category's canonical colour; broader goals use
- * the app's purple accent.
- */
 export function badgePresentation(badge) {
   return {
     emoji: badge?.emoji ?? '🏆',
@@ -125,12 +113,10 @@ export function badgePresentation(badge) {
   }
 }
 
-// ---------- Date helpers ----------
-// Weeks start on Monday. A week is identified by its Monday "YYYY-MM-DD".
 export function weekKey(date = new Date()) {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)
-  const day = (d.getDay() + 6) % 7 // Mon=0 ... Sun=6
+  const day = (d.getDay() + 6) % 7
   d.setDate(d.getDate() - day)
   return toISODate(d)
 }
@@ -156,19 +142,11 @@ function emptyState() {
     studyBreak: { active: false, since: null },
     pausedWeeks: [],   
     redemptions: [],  
-    joinedJioIds: [],   // OPENJIOs joined, as activity ids ("jio-<id>"), for Crew energy
-    hostedJioIds: [],   // OPENJIOs posted, for Big host energy
+    joinedJioIds: [],
+    hostedJioIds: [],
   }
 }
 
-/**
- * Sample progress for tests and local experiments (resetGamification(true)).
- * Real accounts never start with this; they start empty.
- *
- * Activities are replayed from oldest to newest so completed activities,
- * badge dates and the points ledger all tell the same story. The two outdoor
- * activities deliberately leave Trailblazer one check-in away from unlocking.
- */
 export function createDemoStartingState() {
   const s = emptyState()
   const today = new Date()
@@ -185,7 +163,6 @@ export function createDemoStartingState() {
     s.completed.push(activity)
     s.ledger.push({ date: activity.date, amount: pointsForActivity(activity), reason: activity.title })
 
-    // Award each badge on the date the activity actually unlocked it.
     for (const badge of BADGES) {
       if (!s.earnedBadges[badge.id] && badge.progress(s) >= badge.target) {
         s.earnedBadges[badge.id] = activity.date
@@ -196,10 +173,6 @@ export function createDemoStartingState() {
   return s
 }
 
-// Each account has its own points, badges and check-ins, saved to Firestore
-// users/{uid}/private/gamification so they follow the user to every device
-// (src/stores/userData.js + src/services/userDataSync.js). Only the owner can read them.
-// New accounts start empty: no demo data.
 export const game = reactive(emptyState())
 registerUserStore('gamification', game, emptyState)
 
@@ -219,7 +192,6 @@ function awardPoints(amount, reason) {
   return given
 }
 
-// ---------- Wellbeing check-in Part  ----------
 export const POINTS_PER_WELLBEING_CHECKIN = 20
 export const WELLBEING_POINTS_EVERY_DAYS = 14
 const WELLBEING_REASON = 'Wellbeing check-in'
@@ -283,7 +255,6 @@ export function badgeById(id) {
   return badgeList().find((badge) => badge.id === id) ?? null
 }
 
-/** Whether an uncompleted activity can genuinely advance an unfinished badge. */
 export function canActivityProgressBadge(badgeOrId, activity, state = game) {
   const badge = typeof badgeOrId === 'string' ? BADGES.find((item) => item.id === badgeOrId) : badgeOrId
   return Boolean(badge && activity?.id && !state.earnedBadges[badge.id]
@@ -291,7 +262,6 @@ export function canActivityProgressBadge(badgeOrId, activity, state = game) {
     && badge.qualifies?.(activity, state))
 }
 
-/** Map-ready opportunities, ranked by proximity to completion then visible choices. */
 export function badgeOpportunities(activities = [], state = game) {
   return badgeList()
     .filter((badge) => !badge.earned)
@@ -305,7 +275,6 @@ export function badgeOpportunities(activities = [], state = game) {
     .sort((a, b) => a.remaining - b.remaining || b.eligibleActivities.length - a.eligibleActivities.length || a.index - b.index)
 }
 
-// Checks every badge and awards any newly unlocked ones. Returns the new badges.
 function checkBadges() {
   const unlocked = []
   for (const b of BADGES) {
@@ -318,13 +287,6 @@ function checkBadges() {
   return unlocked
 }
 
-/**
- * Joining or posting an OPENJIO counts towards its badge straight away (no check-in needed).
- * Each jio only counts once, even if you leave and join again.
- * Returns the newly earned badges.
- *   showNewBadges(recordJioForBadges(jio.id))                    // joined (pop-up: components/badges/NewBadgePopup.vue)
- *   showNewBadges(recordJioForBadges(newId, { hosted: true }))   // posted
- */
 export function recordJioForBadges(jioId, { hosted = false } = {}) {
   const list = hosted ? game.hostedJioIds : game.joinedJioIds
   const id = `jio-${jioId}`
@@ -333,9 +295,7 @@ export function recordJioForBadges(jioId, { hosted = false } = {}) {
   const badges = checkBadges()
   try {
     if (badges.length) celebrateBadge()
-  } catch {
-    // confetti is only decoration
-  }
+  } catch {}
   return badges
 }
 
@@ -403,14 +363,11 @@ export async function checkInToActivity(activity, userPosition = null) {
   try {
     if (newBadges.length) celebrateBadge()
     else celebrateCheckIn()
-  } catch {
-    // confetti is only decoration
-  }
+  } catch {}
 
   return { ok: true, distance, pointsGiven, newBadges, message }
 }
 
-// ---------- for study-break mode ----------
 export function setStudyBreak(on) {
   if (on && !game.studyBreak.active) {
     game.studyBreak = { active: true, since: toISODate(new Date()) }
@@ -427,12 +384,10 @@ export function setStudyBreak(on) {
   }
 }
 
-// Handy while testing: wipes everything back to empty (or demo) data
 export function resetGamification(withDemo = false) {
   Object.assign(game, withDemo ? createDemoStartingState() : emptyState())
 }
 
-// Partner vouchers (sample list; change names/costs with your team)
 export const VOUCHERS = [
   { id: 'cafe-5', name: '$5 Café Voucher', cost: 75, icon: '☕' },
   { id: 'retail-10', name: '10% Retail Discount', cost: 250, icon: '🛍️' },
@@ -442,18 +397,15 @@ export const VOUCHERS = [
   { id: 'merch', name: 'Exclusive Merch', cost: 600, icon: '⭐' },
 ]
  
-// Points you can still spend = all points earned - points spent on vouchers
 export function availablePoints() {
   const spent = (game.redemptions || []).reduce((sum, r) => sum + r.cost, 0)
   return Math.max(0, totalPoints() - spent)
 }
  
-// Vouchers this user has redeemed, newest first
 export function myVouchers() {
   return [...(game.redemptions || [])].reverse()
 }
  
-// Redeem a voucher. Returns { ok, message, redemption }
 export function redeemVoucher(voucherId) {
   const v = VOUCHERS.find((x) => x.id === voucherId)
   if (!v) return { ok: false, message: 'That voucher no longer exists.' }
@@ -462,6 +414,6 @@ export function redeemVoucher(voucherId) {
   const redemption = { voucherId: v.id, name: v.name, icon: v.icon, cost: v.cost, code, date: toISODate(new Date()) }
   if (!game.redemptions) game.redemptions = []
   game.redemptions.push(redemption)
-  try { celebrateBadge() } catch { }
+  try { celebrateBadge() } catch {}
   return { ok: true, message: `Redeemed ${v.name}!`, redemption }
 }

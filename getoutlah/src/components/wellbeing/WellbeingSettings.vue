@@ -1,9 +1,3 @@
-<!--
-  The two wellbeing rows for the Settings pop-up (matches Figma):
-    • Study-break mode   – pauses streaks; points and badges are kept
-    • Reflection prompts – shows/hides the "How was it?" banner after check-ins
-  Usage in the Settings pop-up (as the first rows):  <WellbeingSettings />
--->
 <template>
   <div class="d-grid gap-2">
     <label v-for="row in rows" :key="row.id" class="toggle-row d-flex justify-content-between align-items-center gap-3" :for="row.id">

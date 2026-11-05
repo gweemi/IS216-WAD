@@ -1,7 +1,4 @@
 <script setup>
-// The new-user questionnaire, step by step.
-// Reusable: the onboarding page uses it, and a profile page can reuse it
-// to let people edit their answers (pass their current preferences as `initial`).
 import { computed, reactive, ref } from 'vue'
 import {
   INTERESTS,
@@ -12,7 +9,7 @@ import {
 } from '@/config/preferences'
 
 const props = defineProps({
-  initial: { type: Object, default: null }, // existing preferences, when editing
+  initial: { type: Object, default: null },
   saving: { type: Boolean, default: false },
   error: { type: String, default: '' },
   submitLabel: { type: String, default: 'Finish' },
@@ -21,7 +18,7 @@ const emit = defineEmits(['submit'])
 
 const answers = reactive({
   interests: [...(props.initial?.interests ?? [])],
-  maxBudget: props.initial ? props.initial.maxBudget : undefined, // null is a real answer
+  maxBudget: props.initial ? props.initial.maxBudget : undefined,
   energyLevel: props.initial?.energyLevel ?? '',
   groupPreference: props.initial?.groupPreference ?? '',
 })
@@ -65,7 +62,6 @@ function back() {
 
 <template>
   <div class="prefs-form">
-    <!-- Progress -->
     <div class="prefs-progress-label">
       <span data-testid="prefs-step">Step {{ step + 1 }} of {{ steps.length }}</span>
       <span>{{ Math.round(((step + 1) / steps.length) * 100) }}% complete</span>
@@ -77,7 +73,6 @@ function back() {
     <h2 class="prefs-title" data-testid="prefs-title">{{ steps[step].title }}</h2>
     <p class="prefs-subtitle">{{ steps[step].subtitle }}</p>
 
-    <!-- Step 1: interests (pick many) -->
     <div v-if="step === 0" class="option-grid" role="group" aria-label="Interests">
       <button
         v-for="opt in INTERESTS"
@@ -96,7 +91,6 @@ function back() {
       </button>
     </div>
 
-    <!-- Step 2: budget (pick one) -->
     <div v-else-if="step === 1" class="option-list" role="radiogroup" aria-label="Budget">
       <button
         v-for="opt in BUDGETS"
@@ -113,7 +107,6 @@ function back() {
       </button>
     </div>
 
-    <!-- Step 3: energy level + solo/group (pick one each) -->
     <div v-else>
       <h3 class="prefs-group-title">Energy level</h3>
       <div class="option-grid three mb-4" role="radiogroup" aria-label="Energy level">
@@ -163,7 +156,6 @@ function back() {
       {{ error }}
     </div>
 
-    <!-- Navigation -->
     <div class="prefs-actions">
       <button
         type="button"

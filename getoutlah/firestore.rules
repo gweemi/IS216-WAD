@@ -1,11 +1,5 @@
 rules_version = '2';
 
-// Anyone signed in with Google can use the app.
-// A profile may only be tagged with a university if the person's Google email
-// really belongs to that university (so a Gmail user can't claim to be from SMU).
-//
-// Keep the university domains in sync with src/config/universities.js,
-// and the questionnaire options in sync with src/config/preferences.js.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -22,7 +16,6 @@ service cloud.firestore {
         && myEmail().matches('^[^@\\s]+@' + pattern + '$');
     }
 
-    // universityId / universityName must match the signed-in email, or both be null.
     function universityIsHonest(data) {
       return (data.universityId == null && data.universityName == null)
         || (data.universityId == 'smu'  && data.universityName == 'SMU'  && emailEndsWith('([a-z0-9-]+\\.)*smu\\.edu\\.sg'))
@@ -33,7 +26,6 @@ service cloud.firestore {
         || (data.universityId == 'suss' && data.universityName == 'SUSS' && emailEndsWith('suss\\.edu\\.sg'));
     }
 
-    // Questionnaire answers must use the options in src/config/preferences.js.
     function validPreferences(p) {
       return p.keys().hasOnly(['interests', 'maxBudget', 'energyLevel', 'groupPreference'])
         && p.interests is list
@@ -46,14 +38,11 @@ service cloud.firestore {
         && p.groupPreference in ['solo', 'group', 'either'];
     }
 
-    // Admins are made by hand in the Firebase console (users/{uid}.role == 'admin').
     function isAdmin() {
       return signedIn()
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin';
     }
 
-    // Change code is necessary: banned or suspended users can't start, join or report OPENJIOs.
-    // Admins set users/{uid}.banned and users/{uid}.suspendedUntil from the Reports page.
     function canAct() {
       let me = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return signedIn()
@@ -61,9 +50,6 @@ service cloud.firestore {
         && (!(me.get('suspendedUntil', null) is timestamp) || request.time >= me.suspendedUntil);
     }
 
-    // Activities are stored in source-owned collections. The daily GitHub Action
-    // uses the Admin SDK and bypasses these rules. Keep this in sync with
-    // src/utils/activitySource.js and src/utils/getoutlahPicks.js.
     function validActivity(d, expectedSource) {
       return d.title is string && d.title.size() >= 1 && d.title.size() <= 120
         && d.source == expectedSource
@@ -73,22 +59,17 @@ service cloud.firestore {
               d.category in ['outdoors', 'sports', 'arts', 'food', 'workshops',
                              'events', 'games', 'wellness', 'volunteering']
               && d.lat is number && d.lng is number
+              && (d.get('imageUrl', null) == null || (d.imageUrl is string && d.imageUrl.size() <= 300000))
               && (d.get('description', null) == null || d.description.size() <= 1000)));
     }
 
-    // Final post-cutover rule. During the maintenance window, deploy the
-    // collection rules below first and change this legacy match to read-only
-    // so cached clients cannot make stale writes. Once the new frontend is
-    // live, deny legacy reads as well (this final state).
     match /activities/{id} {
       allow read, write: if false;
     }
 
     match /getoutlahPicks/{id} {
       allow read: if signedIn();
-      // request.resource.data is available for creates and updates only.
       allow create, update: if isAdmin() && validActivity(request.resource.data, 'getoutlahPicks');
-      // Deletes have no request.resource.data, so authorise independently.
       allow delete: if isAdmin();
     }
 
@@ -98,16 +79,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // App settings only admins use, e.g. config/eventbrite = the organisers we sync.
     match /config/{id} {
       allow read, write: if isAdmin();
     }
 
-    // Profile page edits (see PROFILE.md). Each check only runs when that field changes.
     function changed(field) {
       return request.resource.data.diff(resource.data).affectedKeys().hasAny([field]);
     }
-    // Privacy switches (src/config/privacy.js)
     function validPrivacy(p) {
       return p is map
         && p.keys().hasOnly(['showPhoto', 'showUniversity', 'discoverable', 'shareActivity'])
@@ -119,32 +97,24 @@ service cloud.firestore {
     function validProfileEdits(d) {
       return (!changed('displayName')
                 || (d.displayName is string && d.displayName.size() >= 1 && d.displayName.size() <= 40))
-        // photoURL: a Google picture link, or a small picture saved as text (data URL), or null
         && (!changed('photoURL') || d.photoURL == null
                 || (d.photoURL is string && d.photoURL.size() <= 300000))
         && (!changed('privacy') || validPrivacy(d.privacy));
     }
 
     match /users/{uid} {
-      // Signed-in users can see profiles (needed for friends and leaderboards).
-      // What friends see is filtered by the owner's privacy settings in the app (visibleProfile).
       allow read: if signedIn();
 
-      // You can only create your own profile, with your own email, starting at 0 points.
       allow create: if signedIn()
         && request.auth.uid == uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.points == 0
-        && !('role' in request.resource.data)   // nobody can sign up as admin
+        && !('role' in request.resource.data)
         && universityIsHonest(request.resource.data);
 
-      // You can edit your own profile, but not your email, university, points or role.
-      // Admins are made by hand in the Firebase console.
-      // Questionnaire answers (preferences) must be valid.
       allow update: if signedIn()
         && request.auth.uid == uid
         && !request.resource.data.diff(resource.data)
-             // Change code is necessary: added 'banned', 'suspendedUntil' (only admins may change these)
              .affectedKeys().hasAny(['email', 'universityId', 'universityName', 'points', 'role', 'banned', 'suspendedUntil'])
         && (!request.resource.data.diff(resource.data)
               .affectedKeys().hasAny(['preferences', 'preferencesVersion'])
@@ -152,20 +122,14 @@ service cloud.firestore {
                 && request.resource.data.preferencesVersion == 2))
         && validProfileEdits(request.resource.data);
 
-      // Change code is necessary: admins can ban, suspend or lift (from the Reports page), and nothing else
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['banned', 'suspendedUntil'])
         && (!('banned' in request.resource.data) || request.resource.data.banned == true)
         && (!('suspendedUntil' in request.resource.data) || request.resource.data.suspendedUntil is timestamp);
 
-      // Delete account (Profile → Delete account): only your own profile
       allow delete: if signedIn() && request.auth.uid == uid;
     }
 
-    // ---------- Private per-account data (src/services/userDataSync.js) ----------
-    // users/{uid}/private/wellbeing, /reflections and /gamification:
-    // WHO-5 check-ins, moods, reflection notes, and points / badges / check-ins.
-    // ONLY the owner can read or write them.
     function validPrivateData(docId, d) {
       return (docId == 'wellbeing'
                 && d.keys().hasOnly(['history', 'updatedAt'])
@@ -185,7 +149,6 @@ service cloud.firestore {
                 && d.studyBreak is map
                 && d.pausedWeeks is list && d.pausedWeeks.size() <= 500
                 && d.redemptions is list && d.redemptions.size() <= 500
-                // OPENJIOs joined / posted, for the Crew energy and Big host energy badges (optional: older saves don't have them)
                 && (!('joinedJioIds' in d) || (d.joinedJioIds is list && d.joinedJioIds.size() <= 2000))
                 && (!('hostedJioIds' in d) || (d.hostedJioIds is list && d.hostedJioIds.size() <= 2000)));
     }
@@ -198,8 +161,6 @@ service cloud.firestore {
       allow delete: if signedIn() && request.auth.uid == uid;
     }
 
-    // ---------- OPENJIO! (see OPENJIO.md) ----------
-    // Keep these limits in sync with validateJio() in src/utils/openjio.js.
     function pairId(a, b) {
       return a < b ? a + '_' + b : b + '_' + a;
     }
@@ -221,17 +182,13 @@ service cloud.firestore {
         && d.cost is number && d.cost >= 0 && d.cost <= 500
         && d.capacity is int && d.capacity >= 2 && d.capacity <= 50
         && d.visibility in ['public', 'friends_only', 'invite_only', 'friends']
-        // Change code is necessary: added 'suspended' (a reported jio waiting for an admin)
         && d.status in ['open', 'cancelled', 'suspended']
         && d.participants is list && d.participants.size() <= d.capacity
-        && d.participants.size() == d.participants.toSet().size() // no duplicates
+        && d.participants.size() == d.participants.toSet().size()
         && d.waitlist is list && d.waitlist.size() <= 200
-        // Invite-only and legacy jios list who is invited.
         && (!('invited' in d) || (d.invited is list && d.invited.size() <= 50));
     }
 
-    // Public jios: anyone. Friends-only: accepted friends of the host.
-    // Invite-only and legacy `friends`: explicit invitees only.
     function mayJoin(jio, uid) {
       return jio.visibility == 'public'
         || (jio.visibility == 'friends_only' && areFriends(jio.hostId, uid))
@@ -240,9 +197,6 @@ service cloud.firestore {
         || jio.waitlist.hasAny([uid]);
     }
 
-    // Join, chope or leave: you may only add or remove yourself.
-    // The one exception: when you leave, the first person in the queue
-    // moves into your spot.
     function fairSpotChange() {
       let me = request.auth.uid;
       let before = resource.data;
@@ -251,16 +205,11 @@ service cloud.firestore {
       return after.diff(before).affectedKeys().hasOnly(['participants', 'waitlist'])
         && before.status == 'open'
         && mayJoin(before, me)
-        // Change code is necessary: banned or suspended users can still leave, but can't join or chope
         && (canAct() || !after.participants.toSet().union(after.waitlist.toSet()).hasAny([me]))
         && after.participants.hasAny([before.hostId])
-        // only you (or someone from the queue) can be added to the going list
         && after.participants.toSet().difference(beforeEveryone).hasOnly([me])
-        // only you can be added to the queue
         && after.waitlist.toSet().difference(before.waitlist.toSet()).hasOnly([me])
-        // only you can be removed from the going list
         && before.participants.toSet().difference(after.participants.toSet()).hasOnly([me])
-        // only you can leave the queue, unless the person moved up into a spot
         && before.waitlist.toSet().difference(after.waitlist.toSet())
              .difference(after.participants.toSet()).hasOnly([me]);
     }
@@ -277,8 +226,6 @@ service cloud.firestore {
         && after.invited.toSet() == before.invited.toSet().difference([me].toSet());
     }
 
-    // Change code is necessary: reporting a jio suspends it. Only allowed in the same batch as the
-    // user's own report (reports/{jioId}_{uid}), so a jio is never suspended without a report.
     function reportSuspendsJio(jioId) {
       return resource.data.status == 'open'
         && request.resource.data.status == 'suspended'
@@ -287,13 +234,10 @@ service cloud.firestore {
     }
 
     match /openjios/{jioId} {
-      // This is a lightweight school-project setup: signed-in users may read
-      // the collection and the app applies visibility filtering for discovery.
       allow read: if signedIn();
 
-      // You can only host as yourself, and start as the only person going.
       allow create: if signedIn()
-        && canAct() // Change code is necessary: banned or suspended users can't start jios
+        && canAct()
         && request.resource.data.keys().hasOnly(['title', 'category', 'description', 'location',
              'region', 'lat', 'lng', 'startAt', 'durationMins', 'cost', 'capacity', 'visibility',
              'hostId', 'hostName', 'participants', 'waitlist', 'invited', 'status', 'createdAt'])
@@ -310,35 +254,25 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && validJio(request.resource.data);
 
-      // Hosts edit event details; participants can only change their own spot.
       allow update: if signedIn() && validJio(request.resource.data) && (
         (resource.data.hostId == request.auth.uid
           && !request.resource.data.diff(resource.data).affectedKeys()
                .hasAny(['hostId', 'hostName', 'participants', 'waitlist', 'createdAt'])
-          // Change code is necessary: hosts can't edit or cancel while suspended, or un-suspend it themselves
           && resource.data.status != 'suspended'
           && request.resource.data.status in ['open', 'cancelled'])
         || fairSpotChange()
         || fairInviteDecline()
-        // Change code is necessary: reporting suspends the jio; admins can restore it
         || reportSuspendsJio(jioId)
         || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
       );
-      // Change code is necessary: hosts can't delete while suspended; admins can remove a reported jio
       allow delete: if signedIn()
         && ((resource.data.hostId == request.auth.uid && resource.data.status != 'suspended') || isAdmin());
     }
 
-    // Change code is necessary: this whole Reports section is new
-    // ---------- Reports (see src/utils/reports.js) ----------
-    // reports/{jioId}_{reporterId}: one report per person per jio.
     match /reports/{reportId} {
-      // Admins see every report; a user can check their own (to know if they already reported).
-      // resource == null means it doesn't exist yet, which tells them nothing.
       allow read: if isAdmin()
         || (signedIn() && (resource == null || resource.data.reporterId == request.auth.uid));
 
-      // Report someone else's open jio, as yourself. Banned or suspended users can't report.
       allow create: if canAct()
         && reportId == request.resource.data.jioId + '_' + request.auth.uid
         && request.resource.data.keys().hasOnly(['jioId', 'jioTitle', 'hostId', 'hostName',
@@ -352,7 +286,6 @@ service cloud.firestore {
         && get(openJioPath(request.resource.data.jioId)).data.hostId == request.resource.data.hostId
         && request.resource.data.hostId != request.auth.uid;
 
-      // Only admins resolve reports, and only these fields change.
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['status', 'outcome', 'resolvedBy', 'resolvedAt'])
@@ -360,16 +293,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ---------- Friends & notifications ----------
     function openJioPath(jioId) {
       return /databases/$(database)/documents/openjios/$(jioId);
     }
 
-    // friendships/{uidA_uidB}: a friend request (pending) or a friendship (accepted).
     match /friendships/{id} {
       allow read: if signedIn() && request.auth.uid in resource.data.members;
 
-      // Send a request: you're one of the two people, you're the requester, it starts pending.
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['members', 'requestedBy', 'status', 'names', 'photos', 'createdAt'])
         && request.resource.data.members is list
@@ -380,7 +310,6 @@ service cloud.firestore {
         && request.resource.data.requestedBy == request.auth.uid
         && request.resource.data.status == 'pending';
 
-      // Accept: only the person who received the request, and only the status changes.
       allow update: if signedIn()
         && request.auth.uid in resource.data.members
         && request.auth.uid != resource.data.requestedBy
@@ -388,17 +317,12 @@ service cloud.firestore {
         && request.resource.data.status == 'accepted'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt']);
 
-      // Decline, cancel or unfriend: either person.
       allow delete: if signedIn() && request.auth.uid in resource.data.members;
     }
 
-    // notifications/{id}: only the person it's for (and the person who sent it) can read it.
     match /notifications/{id} {
-      // The receiver reads them; the sender may too, so Delete account can find and remove what they sent.
       allow read: if signedIn() && (resource.data.to == request.auth.uid || resource.data.from == request.auth.uid);
 
-      // You can only send as yourself, to someone else.
-      // Requests need a pending request from you; everything else needs you to be friends.
       allow create: if signedIn()
         && request.resource.data.from == request.auth.uid
         && request.resource.data.to is string
@@ -410,7 +334,6 @@ service cloud.firestore {
             && get(friendshipPath(request.auth.uid, request.resource.data.to)).data.requestedBy == request.auth.uid)
           || (request.resource.data.type in ['friend_accepted', 'activity_invite']
             && areFriends(request.auth.uid, request.resource.data.to))
-          // Anyone who has successfully joined may notify that jio's host.
           || (request.resource.data.type == 'openjio_join'
             && request.resource.data.jioId is string
             && request.resource.data.jioTitle is string
@@ -420,15 +343,12 @@ service cloud.firestore {
             && get(openJioPath(request.resource.data.jioId)).data.title == request.resource.data.jioTitle)
         );
 
-      // The receiver can mark it read or delete it.
       allow update: if signedIn()
         && resource.data.to == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-      // The receiver can delete it, and so can the sender (when deleting their account).
       allow delete: if signedIn() && (resource.data.to == request.auth.uid || resource.data.from == request.auth.uid);
     }
 
-    // Everything else is closed until we add rules for it.
     match /{document=**} {
       allow read, write: if false;
     }

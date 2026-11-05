@@ -131,8 +131,6 @@ emulatorDescribe('activity collection migration on Firestore Emulator', () => {
     expectOk(run(['--validate']))
     expectOk(run(['--apply', '--manifest', manifest]))
     expectOk(run(['--verify']))
-    // A retry is safe because destinations now match exactly, but each run
-    // needs a new immutable manifest instead of overwriting the first one.
     const overwriteManifest = run(['--apply', '--manifest', manifest])
     expect(overwriteManifest.status).not.toBe(0)
     expect(overwriteManifest.stderr).toContain('EEXIST')

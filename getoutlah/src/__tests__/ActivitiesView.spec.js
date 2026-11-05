@@ -99,7 +99,6 @@ describe('ActivitiesView source discovery', () => {
     expect(wrapper.text()).toContain('All Jios')
     expect(wrapper.text()).toContain('Friends Only')
     expect(wrapper.text()).not.toContain('Manage OPENJIOs')
-    // The first card in the hosting row is the dashed "Start a jio" card
     expect(wrapper.find('[data-testid="jio-row-hosting"] li').attributes('data-testid')).toBe('activities-start-jio')
     expect(wrapper.find('[data-testid="activities-start-jio"]').text()).toBe('Start a jio')
     expect(wrapper.text()).toContain('Explore public jios')

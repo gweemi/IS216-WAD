@@ -12,7 +12,6 @@
       </span>
       <span v-if="!badge.earned" class="locked-tag">LOCKED</span>
 
-      <!-- animation part when click -->
       <span v-if="popping" class="burst" aria-hidden="true">
         <span
           v-for="n in 10"
@@ -85,9 +84,7 @@ export default {
       this.pop()
       try {
         burstFrom(this.$refs.ring) 
-      } catch (e) {
-        /* decoration only */
-      }
+      } catch (e) {}
       this.timers.push(setTimeout(() => this.$emit('select', this.badge), OPEN_DELAY_MS))
     },
   },
@@ -145,7 +142,7 @@ export default {
   line-height: 1.2;
 }
 
-.popping { position: relative; z-index: 2; } /* sparkles fly around the badges */
+.popping { position: relative; z-index: 2; }
 .popping .ring { animation: badge-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .popping .badge-emoji { animation: icon-wiggle 0.6s ease; }
 .popping .name { animation: name-bounce 0.6s ease; }
@@ -167,7 +164,6 @@ export default {
   50% { transform: translateY(-3px); }
 }
 
-/* Shiny light sweeping across the badge */
 .shine {
   position: absolute;
   inset: -20%;
@@ -180,7 +176,6 @@ export default {
   to { transform: translateX(120%); }
 }
 
-/* Sparkle burst */
 .burst {
   position: absolute;
   inset: 0;

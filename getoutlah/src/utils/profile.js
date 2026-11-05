@@ -1,12 +1,7 @@
-// =============================================================
-// Profile page helpers: plain functions, no Firebase, so they are easy to test
-// (src/__tests__/profile.spec.js). The Firestore calls live in src/services/profile.js.
-// =============================================================
 import { statusOf, myRole } from '@/utils/openjio'
 
 export const NAME_MAX = 40
 
-/** Returns a problem to show the user, or '' if the name is fine. */
 export function validateDisplayName(name) {
   const n = (name ?? '').trim()
   if (!n) return 'Your name can’t be empty.'
@@ -14,30 +9,20 @@ export function validateDisplayName(name) {
   return ''
 }
 
-/** "enmin.seah.2025@smu.edu.sg" -> "@enmin.seah.2025" */
 export const handleFor = (email) => (email ? '@' + email.split('@')[0] : '')
 
-/** "En Min Seah" -> "EM" (shown when there is no profile picture) */
 export function initialsFor(name) {
   const parts = (name ?? '').trim().split(/\s+/).filter(Boolean)
   return (parts.slice(0, 2).map((p) => p[0]).join('') || '?').toUpperCase()
 }
 
-/** "En Min Seah" -> "En". Used in "Looking good, En". */
 export const firstName = (name) => (name ?? '').trim().split(/\s+/)[0] || 'you'
 
-// ---------- Lists on the profile ----------
 
-/** Saved activity ids -> the activities (skips ones that no longer exist). */
 export function savedActivities(savedIds = [], findActivity) {
   return savedIds.map((id) => findActivity(id)).filter(Boolean)
 }
 
-/**
- * "My plans": OPENJIOs the user hosts, is going to or is queued for.
- * Ended, cancelled and already-checked-in ones are left out. Soonest first:
- *   { key, id, title, category, when (ms), kind: 'jio', role, to }
- */
 export function buildPlans({ jios = [], uid, completedIds = [], now = new Date() }) {
   const done = new Set(completedIds)
   return jios
@@ -56,16 +41,10 @@ export function buildPlans({ jios = [], uid, completedIds = [], now = new Date()
     .sort((x, y) => x.when - y.when)
 }
 
-/** Completed activities, newest first. */
 export const completedNewestFirst = (completed = []) =>
   [...completed].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
 
-// ---------- Wellbeing suggestions ("Keep the energy going") ----------
 
-/**
- * Picks up to `n` activities to suggest after a wellbeing check-in.
- * Doing well -> things they're into, any energy. Running low -> calm, gentle ones.
- */
 export function wellbeingSuggestions(score, activities = [], interests = [], n = 2) {
   const low = score < 50
   const calmCats = ['wellness', 'arts', 'outdoors', 'games']
@@ -86,6 +65,6 @@ export function wellbeingSuggestions(score, activities = [], interests = [], n =
     .map((a) => ({ a, s: rank(a) }))
     .sort((x, y) => y.s - x.s)
     .map((x) => x.a)
-    .filter((a) => !seen.has(a.title) && seen.add(a.title)) // one card per repeating event
+    .filter((a) => !seen.has(a.title) && seen.add(a.title))
     .slice(0, n)
 }

@@ -1,4 +1,3 @@
-// Checks the grey dashed "Start a jio" card at the top of the OPENJIO! list.
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 

@@ -7,7 +7,6 @@ import { categoryLabel, sourceLabel } from '@/utils/activityStyle'
 import { SOURCE_OPTIONS } from '@/utils/activitySource'
 import { BUDGETS, HOURS, ENERGY } from '@/utils/activeFilters'
 import { REGIONS } from '@/config/regions'
-// Works with v-if="open" OR :open="open" (the Map page can use either).
 const props = defineProps({
   open: { type: Boolean, default: true },
   showCategories: { type: Boolean, default: true },

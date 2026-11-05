@@ -1,4 +1,3 @@
-// Who is logged in, shared across the whole app (Pinia store).
 import { defineStore } from 'pinia'
 import { markRaw } from 'vue'
 import { onAuthStateChanged } from 'firebase/auth'
@@ -10,27 +9,23 @@ let readyPromise = null
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: null, // Firebase user (kept raw so Vue doesn't wrap Firebase internals)
-    profile: null, // their document from Firestore: users/{uid}
-    ready: false, // true once Firebase has told us whether someone is logged in
-    mapIntroPending: false, // consumed once when Map opens after an explicit sign-in
-    badgeWelcomePending: false, // explicit-login only; never queued by Firebase restoration
+    user: null,
+    profile: null,
+    ready: false,
+    mapIntroPending: false,
+    badgeWelcomePending: false,
   }),
 
   getters: {
     email: (state) => state.user?.email ?? '',
     isLoggedIn: (state) => Boolean(state.user),
-    /** Has this user finished the new-user questionnaire? */
     hasPreferences: (state) =>
       Boolean(state.profile?.preferences) && state.profile?.preferencesVersion === PREFERENCES_VERSION,
-    /** The questionnaire answers, or null. See PREFERENCES.md. */
     preferences: (state) => state.profile?.preferences ?? null,
-    /** Admins are made by hand in the Firebase console (users/{uid}.role == 'admin'). */
     isAdmin: (state) => state.profile?.role === 'admin',
   },
 
   actions: {
-    /** Start listening to Firebase once. Resolves after the first check. */
     init() {
       if (!readyPromise) {
         readyPromise = new Promise((resolve) => {
@@ -56,7 +51,6 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    /** Update straight away after signing in, without waiting for Firebase's listener. */
     setUser(user) {
       this.user = user ? markRaw(user) : null
       if (!user) {
@@ -66,12 +60,10 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    /** Queue the map introduction for the first Map visit after Google sign-in. */
     queueMapIntro() {
       this.mapIntroPending = true
     },
 
-    /** Queue the one-time badge selector after an intentional Google login. */
     queueBadgeWelcome() { this.badgeWelcomePending = true },
     consumeBadgeWelcome() {
       const pending = this.badgeWelcomePending
@@ -79,7 +71,6 @@ export const useAuthStore = defineStore('auth', {
       return pending
     },
 
-    /** Return and clear the current login session's pending map introduction. */
     consumeMapIntro() {
       const pending = this.mapIntroPending
       this.mapIntroPending = false

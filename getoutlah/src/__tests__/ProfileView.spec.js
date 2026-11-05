@@ -1,4 +1,3 @@
-// The Profile page: shows the user's numbers and opens Saved / Completed / My plans.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
@@ -66,8 +65,7 @@ const mountPage = () =>
 
 describe('ProfileView', () => {
   beforeEach(() => {
-    resetGamification(true) // the 5 demo activities + badges
-    // 3 accepted friends + 1 request still pending (not counted), like the Friends page keeps them
+    resetGamification(true)
     resetFriendsState()
     friendsState.uid = 'me'
     friendsState.friendships = [
@@ -102,7 +100,7 @@ describe('ProfileView', () => {
     await w.find('[data-testid="tile-saved"]').trigger('click')
     expect(w.text()).toContain('Pottery taster')
     await w.find('[data-testid="tile-plans"]').trigger('click')
-    expect(w.text()).toContain('Join or host an OPENJIO!') // no jios in this test
+    expect(w.text()).toContain('Join or host an OPENJIO!')
   })
 
   it('opens Completed from the number on the profile card', async () => {
@@ -170,7 +168,6 @@ describe('ProfileView', () => {
     expect(w.get('[data-testid="delete-account-dialog"]').text()).toContain('Delete your account?')
     expect(deleteCalls.count).toBe(0)
 
-    await w.get('[data-testid="delete-account-input"]').setValue('DELETE')
     await w.get('[data-testid="delete-account-confirm"]').trigger('click')
     await flushPromises()
     expect(deleteCalls.count).toBe(1)

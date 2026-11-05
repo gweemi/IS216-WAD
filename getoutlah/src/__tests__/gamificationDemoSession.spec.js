@@ -61,7 +61,7 @@ describe('shared demo gamification session', () => {
     expect(Object.keys(state.earnedBadges)).toHaveLength(4)
     expect(badgeDates.every((date) => state.completed.some((activity) => activity.date === date))).toBe(true)
     expect(Object.values(weeklyPoints).every((points) => points <= WEEKLY_POINT_CAP)).toBe(true)
-    expect(state.ledger.reduce((total, entry) => total + entry.amount, 0)).toBe(380) // 5 × 50 + 30 bonus (1 sports, 2 outdoors) + 100 in badge bonuses
+    expect(state.ledger.reduce((total, entry) => total + entry.amount, 0)).toBe(380)
 
     const badges = BADGES.map((badge) => ({ ...badge, progress: badge.progress(state) }))
     expect(badges.find((badge) => badge.id === 'trailblazer')).toMatchObject({ progress: 2, target: 3 })
@@ -86,7 +86,7 @@ describe('shared demo gamification session', () => {
     expect(result.ok).toBe(true)
     expect(result.distance).toBeLessThanOrEqual(CHECKIN_RADIUS_M)
     expect(result.newBadges.map((badge) => badge.id)).toContain('trailblazer')
-    expect(celebrate.celebrateBadge).toHaveBeenCalledTimes(1) // full-screen, instead of the stars
+    expect(celebrate.celebrateBadge).toHaveBeenCalledTimes(1)
     expect(celebrate.celebrateCheckIn).not.toHaveBeenCalled()
     expect(badgeList().find((badge) => badge.id === 'trailblazer')).toMatchObject({ earned: true, progress: 3 })
     expect(result.pointsGiven).toBe(POINTS_PER_ACTIVITY + CATEGORY_BONUS_POINTS.outdoors)

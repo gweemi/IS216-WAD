@@ -1,4 +1,3 @@
-// Privacy settings on the Profile page, and how the Friends features apply them.
 import { describe, it, expect, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'

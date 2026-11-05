@@ -1,11 +1,7 @@
-// NParks hiking-route metadata shared by the developer importer, admin screen and map.
-// Firestore holds only stable NParks feature references; reviewed GeoJSON lives in local assets.
 export const NPARKS_DATASET_ID = 'd_84e6db6c43ffb8b17803334ec2b5c95d'
 export const NPARKS_PROVIDER = 'nparks'
 export const NPARKS_CONTENT_TYPE = 'route'
 
-// These definitions have both matching current GeoJSON features and an NParks-documented
-// public trailhead. Coordinates intentionally point at an access point, not a line centroid.
 export const VERIFIED_NPARKS_TRAILS = Object.freeze([
   {
     id: 'np-tree-top-walk', title: 'HSBC TreeTop Walk', area: 'Central Catchment Nature Reserve',

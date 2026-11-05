@@ -1,13 +1,12 @@
-// Eventbrite only gives the first start and last end, so events of 24 hrs or more show "Varied duration".
 import { describe, expect, it } from 'vitest'
 import { fromEventbrite } from '@/utils/eventbriteMap'
 import { durationText, fitsHours, isVaried } from '@/utils/activityStyle'
 import { activeFilterPills } from '@/utils/activeFilters'
 
 const timed = (startUtc, endUtc) => fromEventbrite({ start: { utc: startUtc }, end: { utc: endUtc } })
-const sameDay = timed('2026-11-07T02:00:00Z', '2026-11-07T07:00:00Z')       // 5 hrs
-const twoDays = timed('2026-11-07T02:00:00Z', '2026-11-08T07:00:00Z')       // 29 hrs
-const threeDays = timed('2026-11-06T02:00:00Z', '2026-11-09T02:00:00Z')     // exactly 72 hrs
+const sameDay = timed('2026-11-07T02:00:00Z', '2026-11-07T07:00:00Z')
+const twoDays = timed('2026-11-07T02:00:00Z', '2026-11-08T07:00:00Z')
+const threeDays = timed('2026-11-06T02:00:00Z', '2026-11-09T02:00:00Z')
 
 describe('Eventbrite duration', () => {
   it('keeps the real length of events under 24 hrs', () => {

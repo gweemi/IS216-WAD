@@ -1,6 +1,4 @@
 <script setup>
-// Admin: reported OPENJIOs. Each jio shows once, with every report about it.
-// A reported jio stays suspended until an admin picks one of the actions below.
 import { ref, computed, onMounted } from 'vue'
 import { getOpenReports, resolveReportedJio } from '@/services/api/reports'
 import { groupReportsByJio, reasonLabel, SUSPENSION_DAYS } from '@/utils/reports'
@@ -9,11 +7,10 @@ const emit = defineEmits(['changed'])
 
 const reports = ref([]), loading = ref(true), loadError = ref('')
 const busy = ref(false), message = ref('')
-const confirming = ref('')   // "jioId:action" of the button pressed once
+const confirming = ref('')
 
 const groups = computed(() => groupReportsByJio(reports.value))
 
-// The buttons for each reported jio. Every one except Restore asks for a second press.
 const ACTIONS = [
   { id: 'restore', label: 'Restore', style: 'gol-btn-soft', done: 'Restored. The OPENJIO is open again.' },
   { id: 'remove', label: 'Remove post', style: 'adm-danger', confirm: true, done: 'Post removed.' },
@@ -52,8 +49,6 @@ async function act(group, action) {
   busy.value = false
 }
 
-// When a report was made, e.g. "3 Nov 2026, 14:05".
-// Right after sending, Firestore hasn't filled in the time yet, so say "just now".
 function when(timestamp) {
   if (!timestamp) {
     return 'just now'

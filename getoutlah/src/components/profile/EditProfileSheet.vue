@@ -1,10 +1,3 @@
-<!--
-  "Edit profile" pop-up: change display name and profile picture.
-  The picture can come from the camera or the gallery.
-    - Phones/tablets: "Take a photo" opens the phone's own camera app (capture attribute).
-    - Laptops: "Take a photo" opens the webcam right here (getUserMedia), then "Snap".
-  <EditProfileSheet :open="showEdit" @close="showEdit = false" />
--->
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import BottomSheet from '@/components/common/BottomSheet.vue'
@@ -18,7 +11,7 @@ const emit = defineEmits(['close', 'saved'])
 
 const auth = useAuthStore()
 const name = ref('')
-const photo = ref(null) // what the preview shows (data URL / Google URL / null)
+const photo = ref(null)
 const photoChanged = ref(false)
 const error = ref('')
 const saving = ref(false)
@@ -34,7 +27,6 @@ const hasChanges = computed(
   () => photoChanged.value || name.value.trim() !== (auth.profile?.displayName ?? auth.user?.displayName ?? ''),
 )
 
-// Fill the form every time the pop-up opens
 watch(
   () => props.open,
   (isOpen) => {
@@ -47,10 +39,9 @@ watch(
   },
 )
 
-// ---------- Picture: gallery ----------
 async function onFilePicked(e) {
   const file = e.target.files?.[0]
-  e.target.value = '' // so picking the same file again still triggers
+  e.target.value = ''
   if (!file) return
   error.value = ''
   try {
@@ -61,12 +52,10 @@ async function onFilePicked(e) {
   }
 }
 
-// ---------- Picture: camera ----------
 const isTouchDevice = () => window.matchMedia?.('(pointer: coarse)').matches
 
 async function takePhoto() {
   error.value = ''
-  // Phones: the built-in camera app is nicer (and works without extra permissions)
   if (isTouchDevice() || !navigator.mediaDevices?.getUserMedia) {
     cameraInput.value.click()
     return
@@ -105,7 +94,6 @@ function removePhoto() {
   photoChanged.value = true
 }
 
-// ---------- Save ----------
 async function save() {
   if (nameProblem.value || saving.value) return
   saving.value = true
@@ -133,7 +121,6 @@ async function save() {
       <button class="gol-close" aria-label="Close" @click="emit('close')"><i class="bi bi-x-lg"></i></button>
     </div>
 
-    <!-- Webcam view (laptops) -->
     <div v-if="cameraOn" class="camera mb-3">
       <video ref="video" playsinline muted aria-label="Camera preview"></video>
       <div class="d-flex gap-2 mt-2">
@@ -155,7 +142,6 @@ async function save() {
           <i class="bi bi-trash3"></i> Remove
         </button>
       </div>
-      <!-- Hidden file pickers. capture="user" = open the front camera on phones -->
       <input ref="cameraInput" type="file" accept="image/*" capture="user" class="d-none" @change="onFilePicked" />
       <input ref="galleryInput" type="file" accept="image/*" class="d-none" data-testid="gallery-input" @change="onFilePicked" />
     </div>
@@ -219,6 +205,6 @@ async function save() {
   object-fit: cover;
   border-radius: 22px;
   background: var(--gol-ink);
-  transform: scaleX(-1); /* mirror, like a selfie camera */
+  transform: scaleX(-1);
 }
 </style>

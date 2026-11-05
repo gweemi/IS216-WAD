@@ -18,13 +18,12 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 
-// Keep friends, requests and notifications live for whoever is logged in.
 const auth = useAuthStore()
 watch(
   () => auth.user?.uid ?? null,
   (uid) => {
     startFriends(uid)
-    startUserDataSync(uid) // each account's own wellbeing + reflections, on every device
+    startUserDataSync(uid)
   },
   { immediate: true },
 )

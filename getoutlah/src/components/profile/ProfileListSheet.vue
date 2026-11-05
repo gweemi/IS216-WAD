@@ -1,11 +1,3 @@
-<!--
-  One pop-up used for "Saved", "Completed" and "My plans" on the Profile page.
-  items: [{ key, title, category, meta, to, pill, mood }]
-    meta = small grey line under the title, pill = small label on the right,
-    mood = emoji shown on the right (completed activities), to = where tapping goes.
-  removeLabel: when set, each row gets a small button that emits "remove"
-    (rows with removable: false don't get one).
--->
 <script setup>
 import { useRouter } from 'vue-router'
 import BottomSheet from '@/components/common/BottomSheet.vue'
@@ -17,7 +9,7 @@ defineProps({
   title: { type: String, required: true },
   items: { type: Array, default: () => [] },
   emptyText: { type: String, default: 'Nothing here yet.' },
-  emptyCta: { type: Object, default: null }, // { to, label }
+  emptyCta: { type: Object, default: null },
   removeLabel: { type: String, default: '' },
   removeIcon: { type: String, default: 'bi-x-lg' },
 })

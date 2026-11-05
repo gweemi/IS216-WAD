@@ -1,10 +1,3 @@
-<!--
-  Small "Report" button for an OPENJIO. It opens the report form itself.
-  Hidden for the host, and for jios that are cancelled, ended or already suspended.
-  Pass the jio, or just its id (e.g. on the activity details page):
-    <ReportJioButton :jio="jio" />
-    <ReportJioButton :jio-id="activity.jioId" />
--->
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
@@ -23,21 +16,20 @@ const jios = useOpenJioStore()
 const showForm = ref(false)
 const thanks = ref(false)
 
-// The jio passed in, or the live one from the store
 const current = computed(() => props.jio ?? jios.all.find((j) => j.id === props.jioId) ?? null)
 const restriction = computed(() => accountRestriction(auth.profile))
 const canReport = computed(() => {
   if (!current.value || !auth.user) {
-    return false // jio still loading, or not logged in
+    return false
   }
   if (current.value.hostId === auth.user.uid) {
-    return false // can't report your own jio
+    return false
   }
   const status = statusOf(current.value)
   return status !== 'cancelled' && status !== 'ended' && status !== 'suspended'
 })
 
-onMounted(() => { if (!props.jio) jios.start() })   // needed when only an id was given
+onMounted(() => { if (!props.jio) jios.start() })
 </script>
 
 <template>

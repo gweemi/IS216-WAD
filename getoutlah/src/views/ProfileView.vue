@@ -1,19 +1,3 @@
-<!--
-  Profile tab: "Your corner" (matches the Figma).
-  Pulls together most of the app:
-    - Completed / Badges / points -> stores/gamification(badges).js (Badges page)
-    - Friends count               -> accepted friends from the Friends feature (stores/friends.js, live)
-    - Saved                       -> users/{uid}.saved (Save button on an activity)
-    - My plans                    -> OPENJIOs you host, are going to or are queued for (stores/openjio.js)
-                                     + OPENJIOs you host, go to or queue for (stores/openjio.js)
-    - My wellbeing                -> WHO-5 check-in, gives points (components/wellbeing)
-    - My reflections              -> private notes after activities (components/wellbeing/ReflectionsCard)
-    - Study-break mode            -> pauses the weekly streak (Badges page, setStudyBreak)
-    - Admin button                -> only for users with role 'admin', goes to /admin/activities
-    - My vibe                     -> onboarding preferences, editable (services/preferences.js)
-    - Privacy                     -> what other students see (config/privacy.js visibleProfile)
-  See PROFILE.md for how the pieces connect.
--->
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -42,8 +26,8 @@ const auth = useAuthStore()
 const jios = useOpenJioStore()
 
 const showEdit = ref(false)
-const sheet = ref(null) // 'saved' | 'completed' | 'plans' | null
-const lastSheet = ref('saved') // keeps the content while the pop-up slides away
+const sheet = ref(null)
+const lastSheet = ref('saved')
 watch(sheet, (s) => s && (lastSheet.value = s))
 const message = ref('')
 const logoutOpen = ref(false)
@@ -51,33 +35,28 @@ const loggingOut = ref(false)
 const logoutError = ref('')
 
 onMounted(async () => {
-  // "Do Reflection" after a check-in opens /profile#reflections: jump to that card
   if (window.location.hash === '#reflections') document.getElementById('reflections')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   if (!auth.profile && auth.user) auth.setProfile(await ensureUserProfile(auth.user))
   loadActivities().catch(() => {})
   jios.start()
 })
 
-// ---------- Who ----------
 const displayName = computed(() => auth.profile?.displayName || auth.user?.displayName || 'there')
 const photo = computed(() => (auth.profile && 'photoURL' in auth.profile ? auth.profile.photoURL : auth.user?.photoURL) ?? null)
 const handle = computed(() => handleFor(auth.email))
 
-// ---------- Numbers ----------
 const points = computed(() => availablePoints())
 const badges = computed(() => badgeList())
 const badgesEarned = computed(() => badges.value.filter((b) => b.earned).length)
-const friendsCount = computed(() => friendList.value.length) // live: updates when a request is accepted
+const friendsCount = computed(() => friendList.value.length)
 const completedCount = computed(() => game.completed.length)
 
-// ---------- Study-break mode (pauses the streak on the Badges page) ----------
 const studyBreak = computed(() => game.studyBreak.active)
 const streak = computed(() => currentStreak())
 function onStudyBreak(e) {
   setStudyBreak(e.target.checked)
 }
 
-// ---------- Lists ----------
 const shortDate = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
 const savedItems = computed(() =>
@@ -90,7 +69,6 @@ const savedItems = computed(() =>
   })),
 )
 
-// The mood the user gave in their reflection (shown as an emoji in the Completed list)
 const MOOD_EMOJI = { 1: '😩', 2: '😐', 3: '🙂', 4: '🤩' }
 function moodOf(activityId) {
   const entry = reflections.entries.findLast((r) => r.activityId === activityId && r.mood)
@@ -185,7 +163,6 @@ async function confirmLogOut() {
   await router.replace({ name: 'login' })
 }
 
-// ---------- Delete account ----------
 const deleteOpen = ref(false)
 const deleting = ref(false)
 const deleteError = ref('')
@@ -200,7 +177,7 @@ async function confirmDeleteAccount() {
     deleteOpen.value = false
     await router.replace({ name: 'login' })
   } catch (err) {
-    deleteError.value = friendlyDeleteError(err) // empty if they just closed the Google pop-up
+    deleteError.value = friendlyDeleteError(err)
   } finally {
     deleting.value = false
   }
@@ -215,14 +192,12 @@ async function confirmDeleteAccount() {
           <p class="gol-eyebrow">Your corner</p>
           <h1 class="gol-title" data-testid="profile-greeting">Looking good, {{ firstName(displayName) }}</h1>
         </div>
-        <!-- Only admins see this (users/{uid}.role == 'admin'). Firestore rules are the real lock. -->
         <router-link v-if="auth.isAdmin" to="/admin/activities" class="admin-btn" data-testid="admin-link">
           <i class="bi bi-shield-lock-fill"></i> Admin
         </router-link>
       </header>
 
       <div class="row g-3">
-        <!-- Left: who you are + your lists -->
         <div class="col-12 col-lg-5 d-grid gap-3 align-content-start">
           <section class="me-card" aria-label="Your profile">
             <span class="blob" aria-hidden="true"></span>
@@ -279,11 +254,9 @@ async function confirmDeleteAccount() {
           <PrivacyCard />
         </div>
 
-        <!-- Right: how you're doing -->
         <div class="col-12 col-lg-7 d-grid gap-3 align-content-start">
           <WellbeingCard />
 
-          <!-- Study-break mode: pause the streak during exams (shared with the Badges page) -->
           <section class="gol-card study-card" :class="{ on: studyBreak }" data-testid="study-break">
             <div class="d-flex align-items-center gap-3">
               <span class="gol-icon-tile study-tile"><i class="bi" :class="studyBreak ? 'bi-pause-fill' : 'bi-book'"></i></span>
@@ -310,7 +283,6 @@ async function confirmDeleteAccount() {
             <router-link to="/badges" class="streak-link"><i class="bi bi-trophy"></i> See my streak and badges <i class="bi bi-arrow-right"></i></router-link>
           </section>
 
-          <!-- Private notes after activities (Ashley's reflections) -->
           <ReflectionsCard id="reflections" />
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-1">
             <span class="signed-in">Logged in as {{ auth.email }}</span>
@@ -360,7 +332,6 @@ async function confirmDeleteAccount() {
 .page-inner { max-width: 1100px; }
 .min-w-0 { min-width: 0; }
 
-/* Purple "me" card */
 .me-card {
   position: relative;
   overflow: hidden;
@@ -462,7 +433,6 @@ async function confirmDeleteAccount() {
 }
 .edit-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #2f1785; }
 
-/* Saved / Completed / My plans */
 .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
 .tile {
   display: flex;
@@ -485,7 +455,6 @@ async function confirmDeleteAccount() {
 .tile-title { font-weight: 900; font-size: 0.95rem; }
 .tile-count { font-weight: 700; font-size: 0.75rem; color: var(--gol-muted); }
 
-/* On phones the summary tiles have enough width for a clearer, centred layout. */
 @media (max-width: 575.98px) {
   .tile { align-items: center; text-align: center; }
 }
@@ -529,7 +498,7 @@ async function confirmDeleteAccount() {
 
 .signed-in { font-size: 0.8rem; font-weight: 700; color: var(--gol-muted); word-break: break-all; }
 .logout {
-  display: inline-flex; /* keeps the icon and the text apart (it overlapped on some phones) */
+  display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   white-space: nowrap;

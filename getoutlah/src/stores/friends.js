@@ -1,9 +1,3 @@
-// =============================================================
-// GetOutLah! — Friends & notifications state
-//   import { friendsState, friendList, unreadCount } from '@/stores/friends'
-// The live data is filled in by src/services/friends.js (Firestore listeners).
-// This file has no Firebase imports, so components like the nav bar can use it in tests.
-// =============================================================
 import { reactive, computed } from 'vue'
 import { otherMember, toMillis } from '@/utils/friends'
 import { privacyOf, visibleProfile } from '@/config/privacy'
@@ -11,9 +5,9 @@ import { privacyOf, visibleProfile } from '@/config/privacy'
 function emptyState() {
   return {
     uid: null,
-    friendships: [], // docs from friendships/ that include me
-    profiles: {}, // uid → users/{uid} data for my friends and people who sent me requests
-    notifications: [], // docs from notifications/ sent to me, newest first
+    friendships: [],
+    profiles: {},
+    notifications: [],
     ready: false,
     error: '',
   }
@@ -28,7 +22,7 @@ export function resetFriendsState() {
 function withProfile(f) {
   const uid = otherMember(f, friendsState.uid)
   const raw = friendsState.profiles[uid] || {}
-  const p = visibleProfile(raw) // hides what they switched off in Profile → Privacy
+  const p = visibleProfile(raw)
   return {
     id: f.id,
     uid,
@@ -40,7 +34,6 @@ function withProfile(f) {
   }
 }
 
-/** Accepted friends, A–Z. */
 export const friendList = computed(() =>
   friendsState.friendships
     .filter((f) => f.status === 'accepted')
@@ -48,14 +41,12 @@ export const friendList = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name)),
 )
 
-/** Requests other people sent me that I haven't answered. */
 export const incomingRequests = computed(() =>
   friendsState.friendships
     .filter((f) => f.status === 'pending' && f.requestedBy !== friendsState.uid)
     .map(withProfile),
 )
 
-/** Requests I sent that are still waiting. */
 export const outgoingRequests = computed(() =>
   friendsState.friendships
     .filter((f) => f.status === 'pending' && f.requestedBy === friendsState.uid)
@@ -64,7 +55,6 @@ export const outgoingRequests = computed(() =>
 
 export const unreadCount = computed(() => friendsState.notifications.filter((n) => !n.read).length)
 
-/** What's my relationship with this person? 'friends' | 'sent' | 'received' | 'none' */
 export function relationshipWith(uid) {
   const f = friendsState.friendships.find((x) => x.members.includes(uid))
   if (!f) return 'none'

@@ -1,4 +1,3 @@
-// Profile page helpers: names, lists (saved / plans / completed), moods, suggestions.
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   validateDisplayName,

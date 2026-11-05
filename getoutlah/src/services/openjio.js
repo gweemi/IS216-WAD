@@ -1,5 +1,3 @@
-// OPENJIO! Firestore calls. This school-project version uses the existing
-// `openjios` collection directly so the feature works without Cloud Functions.
 import {
   addDoc, collection, doc, getDoc, onSnapshot, orderBy, query, runTransaction,
   serverTimestamp, Timestamp, updateDoc, where,
@@ -18,7 +16,6 @@ function currentUser() {
   return auth
 }
 
-/** Firestore document → plain Jio object, with dates as JavaScript Dates. */
 export function fromDoc(snap) {
   const data = snap.data()
   return {
@@ -68,7 +65,6 @@ export async function createJio(form) {
   return ref.id
 }
 
-/** Hosts may edit event details, but never membership, host identity or history. */
 export async function updateJio(id, form) {
   const problem = validateJio(form)[0]
   if (problem) throw new Error(problem)
@@ -77,7 +73,6 @@ export async function updateJio(id, form) {
   if (!existing.exists()) throw new Error('This jio no longer exists.')
   const jio = fromDoc(existing)
   if (jio.hostId !== currentUser().user.uid) throw new Error('Only the host can edit this jio.')
-  // Change code is necessary: hosts can't edit a jio while it is suspended
   if (jio.status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   if (form.capacity < jio.participants.length) {
     throw new Error(`Keep at least ${jio.participants.length} spots for people already going.`)
@@ -86,7 +81,6 @@ export async function updateJio(id, form) {
   return id
 }
 
-/** Live list of active/recent Jios. The app applies visibility filtering. */
 export function watchJios(onChange, onError) {
   const since = Timestamp.fromDate(new Date(Date.now() - 12 * 3600 * 1000))
   return onSnapshot(
@@ -103,8 +97,6 @@ async function changeSpots(id, rule) {
     const snap = await transaction.get(ref)
     if (!snap.exists()) throw new Error('This jio no longer exists.')
     const jio = fromDoc(snap)
-    // The raw document deliberately has no per-viewer field. Add this small
-    // in-memory hint so the shared join helper can recognise accepted friends.
     jio.viewerFriend = friendList.value.some((friend) => friend.uid === jio.hostId)
     const { participants, waitlist } = rule(jio, uid)
     transaction.update(ref, { participants, waitlist })
@@ -121,12 +113,10 @@ export async function cancelJio(id) {
   const snap = await getDoc(ref)
   if (!snap.exists()) throw new Error('This jio no longer exists.')
   if (fromDoc(snap).hostId !== currentUser().user.uid) throw new Error('Only the host can cancel this jio.')
-  // Change code is necessary: hosts can't cancel a jio while it is suspended
   if (fromDoc(snap).status === 'suspended') throw new Error('This jio is suspended while an admin reviews a report.')
   await updateDoc(ref, { status: 'cancelled' })
 }
 
-/** An invited person may remove their own invitation before joining. */
 export async function declineJio(id) {
   const uid = currentUser().user.uid
   const ref = doc(db, 'openjios', id)
@@ -147,18 +137,16 @@ export async function getProfiles(uids) {
   return snaps.filter((snap) => snap.exists()).map((snap) => ({
     uid: snap.id,
     displayName: snap.data().displayName || 'GetOutLah! user',
-    photoURL: visibleProfile(snap.data()).photoURL, // respects Profile → Privacy
+    photoURL: visibleProfile(snap.data()).photoURL,
   }))
 }
 
-// The host and anyone going can see who else is going (people in the queue can't).
 export async function getJioAttendees(_id, { legacyParticipants = [], hostId = null } = {}) {
   const uid = currentUser().user.uid
   if (uid !== hostId && !legacyParticipants.includes(uid)) throw new Error("Only people going can see who's going.")
   return getProfiles(legacyParticipants)
 }
 
-// Only the host can see who has choped a spot, in queue order.
 export async function getJioQueue(_id, { waitlist = [], hostId = null } = {}) {
   if (currentUser().user.uid !== hostId) throw new Error('Only the host can see the queue.')
   const profiles = await getProfiles(waitlist)

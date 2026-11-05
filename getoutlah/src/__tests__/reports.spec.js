@@ -1,4 +1,3 @@
-// Checks the report rules (src/utils/reports.js) and how a suspended OPENJIO behaves.
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { REPORT_REASONS } from '@/config/reportReasons'
@@ -50,7 +49,7 @@ describe('banned and suspended users', () => {
     expect(accountRestriction({}, NOW)).toBeNull()
     expect(accountRestriction({ banned: true }, NOW)).toEqual({ type: 'banned' })
     expect(accountRestriction({ suspendedUntil: new Date('2026-11-10') }, NOW)).toEqual({ type: 'suspended', until: new Date('2026-11-10') })
-    expect(accountRestriction({ suspendedUntil: new Date('2026-11-01') }, NOW)).toBeNull() // already over
+    expect(accountRestriction({ suspendedUntil: new Date('2026-11-01') }, NOW)).toBeNull()
   })
 
   it('reads Firestore Timestamps too', () => {

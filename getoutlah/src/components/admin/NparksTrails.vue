@@ -1,5 +1,4 @@
 <script setup>
-// Presentation-only editor for developer-imported NParks route records.
 import { onMounted, reactive, ref } from 'vue'
 import { getNparksListings, saveNparksPresentation } from '@/services/api/nparksListings'
 import { INTERESTS } from '@/config/preferences'

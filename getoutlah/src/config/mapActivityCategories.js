@@ -1,6 +1,5 @@
 import { INTERESTS } from '@/config/preferences'
 
-// Map presentation deliberately derives from the onboarding taxonomy.
 export const MAP_ACTIVITY_CATEGORIES = Object.fromEntries(
   INTERESTS.map(({ id, label, emoji, color, mapIcon }) => [id, { label, emoji, color, icon: mapIcon }]),
 )

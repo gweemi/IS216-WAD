@@ -54,7 +54,7 @@ const vReveal = {
 
 const vTilt = {
   mounted(el) {
-    el.classList.add('tilt') // only moves when you hover, so it stays on for reduce-motion too
+    el.classList.add('tilt')
     el._move = (e) => {
       const r = el.getBoundingClientRect()
       const x = (e.clientX - r.left) / r.width - 0.5
@@ -99,7 +99,7 @@ const trackStyle = computed(() => ({ transform: `translateX(-${slide.value * (10
 const slideStyle = computed(() => ({ flex: `0 0 ${100 / perView.value}%` }))
 const updatePerView = () => {
   const w = window.innerWidth
-  perView.value = w < 768 ? 1 : w < 992 ? 2 : 3 // 1 card on phones, 2 on tablets, 3 on laptops
+  perView.value = w < 768 ? 1 : w < 992 ? 2 : 3
   if (slide.value > maxSlide.value) slide.value = maxSlide.value
 }
 const nextSlide = () => { slide.value = slide.value >= maxSlide.value ? 0 : slide.value + 1 }
@@ -116,7 +116,7 @@ const onSwipeEnd = (e) => {
   swipeX = null
   if (Math.abs(dx) > 50) { dx < 0 ? nextSlide() : prevSlide(); startSlides() }
 }
-watch(activeTab, () => { slide.value = 0; startSlides() }) // new tab -> back to first card
+watch(activeTab, () => { slide.value = 0; startSlides() })
 onMounted(() => { updatePerView(); window.addEventListener('resize', updatePerView); startSlides() })
 onBeforeUnmount(() => { clearInterval(slideTimer); window.removeEventListener('resize', updatePerView) })
 
@@ -237,7 +237,6 @@ const celebrateThenLogin = () => {
                 <button type="button" class="nav-btn next" aria-label="Next" @click="nextSlide(); startSlides()">›</button>
                 <div class="dots" aria-label="Choose slide">
                   <button v-for="p in slidePages" :key="p" type="button" class="dot" :class="{ active: p === slide }" :aria-label="`Slide ${p + 1}`" @click="goToSlide(p)">
-                    <!-- the active dot fills up like a timer -->
                     <span v-if="p === slide" :key="slide" class="fill" :style="{ animationDuration: SLIDE_MS + 'ms' }"></span>
                   </button>
                 </div>
@@ -290,7 +289,6 @@ const celebrateThenLogin = () => {
 </template>
 
 <style scoped>
-/* Shared Bootstrap-sized content bounds keep every landing block aligned with the carousel. */
 .page { --landing-section-padding: 1.25rem; }
 .landing-section { width: 100%; }
 .landing-content { box-sizing: border-box; width: 100%; padding-inline: var(--landing-section-padding); margin-inline: auto; }

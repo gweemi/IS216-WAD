@@ -1,11 +1,3 @@
-<!--
-  One row of jio cards that scrolls left to right (swipe or trackpad), with a heading and count.
-  Used on Activities → OPENJIO! for "My Jios" and "Other Jios".
-    <JioRow title="My Jios" :count="3" test-id="jio-row-hosting">
-      <li>…card…</li>
-    </JioRow>
-  Put one <li> per card in the default slot.
--->
 <template>
   <section class="jio-row" :data-testid="testId">
     <h3 class="jio-row__title">{{ title }} <span class="jio-row__count">{{ count }}</span></h3>
@@ -33,7 +25,6 @@ export default {
 .jio-row__title { margin: 0 0 .6rem; font-size: 1.05rem; font-weight: 900; color: var(--gol-ink); }
 .jio-row__count { display: inline-grid; place-items: center; min-width: 1.6rem; height: 1.6rem; margin-left: .3rem; padding: 0 .45rem; border-radius: 999px; background: var(--gol-purple-soft); color: var(--gol-purple); font-size: .8rem; vertical-align: middle; }
 
-/* Cards sit side by side and scroll sideways; each snaps into place */
 .jio-row__track {
   display: flex;
   align-items: stretch;
@@ -46,7 +37,6 @@ export default {
   scroll-padding-left: .1rem;
   scrollbar-width: thin;
 }
-/* 82% wide on phones so the next card peeks in: that's the hint the row scrolls */
 .jio-row__track > :slotted(li) { flex: 0 0 min(300px, 82%); display: flex; min-width: 0; scroll-snap-align: start; }
 .jio-row__track > :slotted(li) > * { flex: 1; min-width: 0; }
 .jio-row__empty { margin: -.3rem 0 0; color: var(--gol-muted); font-weight: 700; font-size: .9rem; }

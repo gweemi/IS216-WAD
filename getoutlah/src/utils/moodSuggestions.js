@@ -1,11 +1,4 @@
-// =============================================================
-// GetOutLah! — Mood-based suggestions for the next activity
-//   import { suggestNext } from '../utils/moodSuggestions.js'
-//   const plan = suggestNext({ mood: 2, lastActivity, activities, doneIds, moodHistory })
-// Returns { headline, message, tip, items: [{ ...activity, reason, energy }] }
-// =============================================================
 
-// If an activity has no energy level, guess it from its category
 const ENERGY_BY_CATEGORY = {
   workshops: 'calm',
   arts: 'calm',
@@ -20,7 +13,6 @@ export function energyOf(activity) {
   return activity.energy || fromActivityPage[activity.energyLevel] || ENERGY_BY_CATEGORY[activity.category] || 'moderate'
 }
 
-// What each mood leans towards
 const MOOD_PLANS = {
   1: {
     headline: 'Go gentle next time',
@@ -49,7 +41,6 @@ const MOOD_PLANS = {
   },
 }
 
-// Average mood per category from past reflections, e.g. { outdoors: 3.5 }
 function favouriteCategories(moodHistory) {
   const sums = {}
   for (const r of moodHistory || []) {
@@ -71,11 +62,9 @@ export function suggestNext({ mood, lastActivity = null, activities = [], doneId
   const favourites = favouriteCategories(moodHistory)
   const triedCategories = new Set((moodHistory || []).map((r) => r.category))
   const lastEnergy = lastActivity ? energyOf(lastActivity) : null
-  // Draft 2e: calm suggestions after a high-energy activity on the same day
   const needsCooldown = lastEnergy === 'high' && isToday(lastActivity.checkedInAt || lastActivity.date || new Date())
 
   const scored = activities
-    // Don't suggest something they've done, or the one they just finished
     .filter(
       (a) =>
         !doneIds.includes(a.id) &&
@@ -86,13 +75,11 @@ export function suggestNext({ mood, lastActivity = null, activities = [], doneId
       let score = 0
       const reasons = []
 
-      // 1. Match the energy level to the mood
       const rank = plan.prefer.indexOf(energy)
       if (rank !== -1) score += 3 - rank
       if (plan.avoid === energy) score -= 5
       if (rank === 0) reasons.push(energy === 'calm' ? 'Calm and easy-going' : energy === 'high' ? 'High-energy fun' : 'Nice, steady pace')
 
-      // 2. Cool down after a high-energy day
       if (needsCooldown) {
         if (energy === 'calm') {
           score += 3
@@ -101,13 +88,11 @@ export function suggestNext({ mood, lastActivity = null, activities = [], doneId
         if (energy === 'high') score -= 4
       }
 
-      // 3. Good mood: lean on categories that made them happy before
       if (plan.useFavourites && favourites.includes(a.category)) {
         score += 2
         reasons.unshift(`You usually feel good after ${a.category} activities`)
       }
 
-      // 4. Buzzing: try a category they've never done
       if (plan.tryNew && !triedCategories.has(a.category)) {
         score += 2
         reasons.unshift(`Something new: you haven't tried ${a.category} yet`)
@@ -117,7 +102,6 @@ export function suggestNext({ mood, lastActivity = null, activities = [], doneId
         reasons.push('Others are going')
       }
 
-      // 5. Low mood: free and not too long is easier
       if (mood <= 2 && !a.cost) {
         score += 1
         reasons.push('Free')
@@ -125,7 +109,6 @@ export function suggestNext({ mood, lastActivity = null, activities = [], doneId
       const durationMinutes = a.duration ?? (a.durationHrs ? a.durationHrs * 60 : null)
       if (mood <= 2 && durationMinutes && durationMinutes <= 90) score += 1
 
-      // Don't suggest the same category again when they felt drained/meh
       if (mood <= 2 && lastActivity && a.category === lastActivity.category) score -= 2
 
       return { ...a, energy, score, reason: reasons[0] || 'Could be a good fit' }

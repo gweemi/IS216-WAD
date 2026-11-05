@@ -1,4 +1,3 @@
-<!-- Notifications: friend requests, accepted requests and activity invites. -->
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -31,7 +30,6 @@ async function run(id, fn) {
   }
 }
 
-// Tapping a notification marks it read and opens what it's about.
 function open(n) {
   if (!n.read) markRead([n.id]).catch(() => {})
   if (n.type === 'activity_invite' && n.activityId) router.push({ name: 'activity', params: { id: n.activityId } })
@@ -92,7 +90,6 @@ const requestId = (n) => pairId(n.from, friendsState.uid)
             ></span>
           </button>
 
-          <!-- Buttons line up under the text (indented past the photo from small screens up) -->
           <div v-if="requestPending(n)" class="d-flex gap-2 mt-3 ps-sm-5 ms-sm-2">
             <button class="gol-btn-coral" :disabled="busy === n.id" @click="run(n.id, () => acceptFriendRequest(requestId(n)))">Accept</button>
             <button class="gol-btn-soft" :disabled="busy === n.id" @click="run(n.id, () => removeFriendship(requestId(n)))">Decline</button>

@@ -1,6 +1,5 @@
 import { nparksActivity, validateTrailDefinitions, VERIFIED_NPARKS_TRAILS } from './nparksTrails.js'
 
-// Returns merge writes only. Existing presentation fields are deliberately never included.
 export function planNparksImport(geojson, existing = new Map()) {
   const problems = validateTrailDefinitions(geojson)
   if (problems.length) throw new Error(`NParks import stopped:\n${problems.join('\n')}`)
@@ -16,7 +15,6 @@ export function planNparksImport(geojson, existing = new Map()) {
     return {
       id: definition.id,
       merge: Boolean(previous),
-      // Initial records receive sensible app presentation. Reruns change only source-owned fields.
       data: previous ? sourceData : imported,
     }
   })

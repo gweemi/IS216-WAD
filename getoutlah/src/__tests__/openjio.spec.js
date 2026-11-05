@@ -1,4 +1,3 @@
-// Checks the OPENJIO! rules: creating, joining, choping and leaving.
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -25,7 +24,6 @@ import {
 const NOW = new Date('2026-11-02T10:00:00')
 const TOMORROW = new Date('2026-11-03T15:00:00')
 
-// A jio with 3 spots: the host plus 2 others
 function makeJio(changes = {}) {
   return {
     id: 'j1',
@@ -229,7 +227,6 @@ describe('fitting in with the Activities page', () => {
 })
 
 describe('the options match firestore.rules', () => {
-  // If the categories or regions change, the database must allow the new ones too.
   const rules = readFileSync(resolve(process.cwd(), 'firestore.rules'), 'utf8')
   const listAfter = (marker) => {
     const start = rules.indexOf(marker)

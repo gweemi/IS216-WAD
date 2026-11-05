@@ -16,7 +16,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
 function pop(sticker, event) {
   popped.value = sticker.pos
-  try { burstFrom(event.currentTarget) } catch { /* decoration only */ }
+  try { burstFrom(event.currentTarget) } catch {}
   setTimeout(() => { popped.value = null }, 600)
 }
 </script>

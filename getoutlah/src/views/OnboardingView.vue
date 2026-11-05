@@ -1,5 +1,4 @@
 <script setup>
-// Shown once, right after a new user's first log-in.
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -16,10 +15,8 @@ const logoutOpen = ref(false)
 const loggingOut = ref(false)
 const logoutError = ref('')
 
-// Full name, since splitting off a "first name" breaks names like "En Min Seah".
 const name = auth.profile?.displayName || auth.user?.displayName || ''
 
-// Lets someone leave the questionnaire, e.g. if they picked the wrong Google account.
 function requestLogOut() {
   logoutError.value = ''
   logoutOpen.value = true

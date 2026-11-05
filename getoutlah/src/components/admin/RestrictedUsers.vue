@@ -1,7 +1,4 @@
 <script setup>
-// Admin: users who are banned or suspended, with a button to lift it early.
-// Banning here stops them using OPENJIO. To stop someone signing in at all, also go to
-// Firebase console → Authentication → Users → the user → Disable account.
 import { ref, onMounted } from 'vue'
 import { getRestrictedUsers, liftRestriction } from '@/services/api/reports'
 import { accountRestriction } from '@/utils/reports'
@@ -16,7 +13,7 @@ async function load() {
   catch (e) { loadError.value = `Couldn't load users: ${e.message}` }
 }
 onMounted(load)
-defineExpose({ load })   // the Reports page reloads this list after banning someone
+defineExpose({ load })
 
 async function lift(u) {
   if (confirming.value !== u.uid) { confirming.value = u.uid; return }

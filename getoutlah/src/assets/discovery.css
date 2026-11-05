@@ -1,9 +1,5 @@
-/* Discovery & Filtering styles. Imported by the four discovery components. */
 
-/* ---- components/ActivityCard.vue ---- */
-/* Vertical card: wide picture on top, details below. Same height as its neighbours in the row. */
 .gol-card.act-card { position: relative; list-style: none; padding: 0; overflow: hidden; display: flex; transition: transform 0.15s, box-shadow 0.15s; }
-/* Hover lifts the card; pressing pushes it down. :has() so pressing the save button doesn't press the whole card. */
 @media (hover: hover) {
   .gol-card.act-card:hover { transform: translateY(-3px); box-shadow: 0 7px 0 var(--gol-card-edge); }
 }
@@ -15,12 +11,12 @@
 }
 .act-emoji { font-size: 2.6rem; line-height: 1; }
 .act-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.act-tag {   /* category tab hugging the card's top-left corner; outline = the category's map colour */
+.act-tag {
   position: absolute; top: 0; left: 0; z-index: 1;
   font-size: 0.7rem; font-weight: 900; white-space: nowrap;
   background: #fff; color: var(--gol-ink); padding: 0.35rem 0.9rem 0.35rem 0.8rem;
-  border: 0 solid var(--tag-color); border-width: 0 2.5px 2.5px 0;   /* top and left sit on the card's edge */
-  border-bottom-right-radius: 1rem;   /* less than the tab height, so the right edge runs straight, then curves left */
+  border: 0 solid var(--tag-color); border-width: 0 2.5px 2.5px 0;
+  border-bottom-right-radius: 1rem;
 }
 .act-body { min-width: 0; flex: 1; padding: 0.9rem 1rem 1.1rem; }
 .act-body .gol-eyebrow { font-size: 0.7rem; }
@@ -35,7 +31,6 @@
 }
 .act-save.on { background: var(--gol-purple); color: #fff; }
 
-/* ---- components/FilterSheet.vue ---- */
 .fs-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
 .fs-title { font-size: 1.5rem; }
 .fs-label { font-size: 0.85rem; font-weight: 900; margin: 1rem 0 0.45rem; }
@@ -61,7 +56,6 @@
   font-family: var(--gol-font); font-weight: 800; color: var(--gol-ink);
 }
 
-/* ---- views/ActivitiesView.vue ---- */
 .act-page { min-height: 100vh; }
 .act-search { display: flex; gap: 0.6rem; margin: 1rem 0 0.8rem; }
 .act-input {
@@ -79,7 +73,6 @@
   .act-active-pill:hover { background: var(--gol-purple); color: #fff; }
 }
 .act-filter-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--gol-purple-dark); }
-/* Filters in use, under the search box. Press one to remove it. */
 .act-active { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
 .act-active-pill {
   display: inline-flex; align-items: center; gap: 0.35rem; border: none; border-radius: 999px; padding: 0.3rem 0.75rem;
@@ -87,27 +80,24 @@
   cursor: pointer; transition: background 0.15s, color 0.15s;
 }
 .act-active-pill i { font-size: 0.65rem; }
-/* As many 260px+ columns as fit: 1 on phones, 2 on tablets, 3-4 on laptops */
 .act-list { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .act-count { font-size: 0.8rem; font-weight: 800; color: var(--gol-purple); }
 .act-note { font-weight: 700; color: var(--gol-muted); margin: 0.6rem 0; }
 .act-note--warn { color: var(--gol-coral-text); font-size: 0.85rem; }
 
-/* ---- views/ActivityDetailView.vue ---- */
 .det-back { display: inline-flex; align-items: center; gap: .45rem; font-weight: 800; color: var(--gol-purple); line-height: 1.2; text-decoration: none; }
 .det-back .bi { line-height: 1; }
-.det-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }   /* cards always fill 100% of the page width; long content can't stretch them */
-/* Same 16:9 shape on every screen; capped so it doesn't become a long strip on laptop */
+.det-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .det-hero {
-  position: relative;   /* anchors the save button in the top-right corner */
+  position: relative;
   width: 100%; max-width: 640px; aspect-ratio: 16 / 9; margin-inline: auto; overflow: hidden;
   border-radius: 18px; display: flex; align-items: center; justify-content: center;
 }
-.det-hero img { width: 100%; height: 100%; object-fit: cover; }   /* real photos crop instead of stretching */
+.det-hero img { width: 100%; height: 100%; object-fit: cover; }
 .det-emoji { font-size: 3.5rem; }
 .det-source { display: inline-block; margin-top: 0.65rem; }
 .det-about { margin-top: 1.2rem; }
-.det-description { white-space: pre-line; overflow-wrap: anywhere; line-height: 1.55; margin: 0; }   /* keeps the description's line breaks; very long words wrap */
+.det-description { white-space: pre-line; overflow-wrap: anywhere; line-height: 1.55; margin: 0; }
 .det-more { border: none; background: none; padding: 0; margin-top: 0.4rem; font-weight: 800; color: var(--gol-purple); cursor: pointer; }
 .det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0; }
 .det-cell { min-width: 0; overflow-wrap: anywhere; background: var(--gol-bg); border-radius: 14px; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
@@ -128,32 +118,27 @@
 .det-actions .gol-btn-primary { flex: 1 1 100%; }
 .det-link { text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; }
 .det-book { justify-content: center; }
-/* Side by side when there's room; stacks on very narrow phones */
 .det-jio-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-start; }
 .det-jio-actions > * { flex: 1 1 9rem; min-width: 0; }
 .det-jio-edit { justify-content: center; }
 .det-msg { margin-top: 0.8rem; font-weight: 800; color: var(--gol-purple); }
-.det-main .gol-title { overflow-wrap: anywhere; }   /* long Eventbrite titles wrap instead of overflowing */
+.det-main .gol-title { overflow-wrap: anywhere; }
 
-/* Phones: the action buttons fill each row instead of leaving ragged gaps */
 @media (max-width: 575.98px) {
   .det-actions > * { flex: 1 1 auto; justify-content: center; text-align: center; }
 }
 
-/* ---- resets so links/lists don't look like default browser HTML ---- */
 .act-list { list-style: none; }
 .act-card, .act-card li { list-style: none; }
 .act-link, .act-link:hover { text-decoration: none; color: inherit; }
 .act-link * { text-decoration: none; }
 .act-save, .act-filter-btn, .fs-chip, .fs-clear { cursor: pointer; }
 
-/* ---- Admin page ---- */
 .adm-help { font-size: 0.85rem; color: var(--gol-muted); font-weight: 600; }
 .adm-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.8rem; }
 .adm-tab { padding: 0.45rem 0.95rem; border-radius: 999px; font-weight: 800; font-size: 0.85rem; text-decoration: none; color: var(--gol-muted); background: var(--gol-purple-soft); }
 .adm-tab.router-link-active { color: var(--gol-ink); background: var(--gol-yellow); }
 
-/* ---- views/AdminActivitiesView.vue: organiser list ---- */
 .adm-orgs { list-style: none; padding: 0; margin: 0.8rem 0; display: grid; gap: 0.4rem; }
 .adm-org { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.55rem 0.8rem; border-radius: 12px; background: var(--gol-bg); }
 .adm-org-text { display: flex; flex-direction: column; min-width: 0; }
@@ -164,7 +149,6 @@
 .adm-add { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .adm-add .form-control { flex: 1 1 200px; }
 
-/* ---- components/admin/GetOutLahPicks.vue ---- */
 .adm-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .adm-row-actions { display: flex; gap: 0.2rem; flex-shrink: 0; }
 .adm-edit { border: none; border-radius: 999px; padding: 0.35rem 0.8rem; font-weight: 800; font-size: 0.8rem; background: transparent; color: var(--gol-purple); cursor: pointer; }
@@ -180,8 +164,12 @@
 .adm-place-pick span { font-weight: 600; font-size: 0.75rem; color: var(--gol-muted); }
 .adm-coords { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 .adm-coords label { display: flex; flex-direction: column; gap: 0.25rem; }
+.adm-photo { width: 100%; max-width: 420px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; background: var(--gol-ink); }
+.adm-photo-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+.adm-photo-remove { color: var(--gol-coral-text); background: #ffe9e4; }
+.adm-photo-error { color: var(--gol-coral-text); margin: 0.3rem 0 0; }
 .adm-problems { margin: 0; padding-left: 1.1rem; color: var(--gol-coral-text); font-weight: 700; font-size: 0.85rem; }
 .adm-form-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .adm-starter { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.6rem; }
 .adm-sync-msg { margin: 0.6rem 0 0; font-weight: 800; font-size: 0.85rem; color: var(--gol-purple); }
-.adm-sync-msg.failed { color: #d93025; }   /* red: sync failed, e.g. no token */
+.adm-sync-msg.failed { color: #d93025; }

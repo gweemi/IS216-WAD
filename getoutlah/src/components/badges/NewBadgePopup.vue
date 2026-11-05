@@ -1,9 +1,3 @@
-<!--
-  "New badge unlocked!" pop-up. Mounted once in App.vue; anything that awards badges calls:
-    await showNewBadges(badges)   // shows them for 2s, then resolves
-  Each badge shows the bonus points it actually gave (badge.bonusGiven, after the weekly cap).
-  It can't be dismissed: it closes by itself after 2s. With no badges it resolves straight away.
--->
 <template>
   <BottomSheet :open="state.badges.length > 0" label="New badge">
     <div class="text-center new-badge-pop" data-testid="new-badge-popup">
@@ -28,18 +22,16 @@ const state = reactive({ badges: [] })
 let timer = null
 let finish = null
 
-/** "+20 pts", or what the weekly points cap left of the bonus. */
 export function pointsText(badge) {
   const given = badge.bonusGiven ?? badge.bonus ?? 0
   if (given >= (badge.bonus ?? 0)) return `+${given} pts`
   return given > 0 ? `+${given} pts (weekly cap reached)` : 'No points: weekly cap reached'
 }
 
-/** Show newly earned badges for 2s. Resolves once the pop-up has closed. */
 export function showNewBadges(badges = []) {
   if (!badges.length) return Promise.resolve()
   clearTimeout(timer)
-  finish?.() // a pop-up already showing hands over to this one
+  finish?.()
   state.badges = badges
   return new Promise((resolve) => {
     finish = resolve

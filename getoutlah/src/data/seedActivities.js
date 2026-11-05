@@ -1,8 +1,5 @@
 import { INTERESTS } from '@/config/preferences'
 import { ACTIVITY_SOURCES } from '@/utils/activitySource'
-// The single curated fallback dataset. Admin can upload it to Firestore with
-// activitiesStore.seedFirestore(); Activities, Map, and wellbeing all read this shape.
-// `category` is one canonical interest ID.
 export const categories = INTERESTS.map((i) => i.id)
 
 export const seedActivities = [
@@ -23,6 +20,4 @@ export const seedActivities = [
   { id: 's15', title: 'Catea', description: 'A cat cafe and tea house in Sin Ming. Entry is simply ordering a tea, then you can sip and hang out with the resident cats. Ages 7 and up, and under-14s need an adult.', category: 'wellness', cost: 10, durationHrs: 1.5, setting: 'Indoor', energyLevel: 'low', area: 'Sin Ming', region: 'central', address: '9 Sin Ming Rd, #01-04, Singapore 575630', lat: 1.3565, lng: 103.8370, groupFriendly: true, source: 'curated', url: null, imageUrl: '/images/picks/s15.png' },
   { id: 's16', title: 'Mandai Boardwalk', description: 'Go on an adventure along a free 3.3km boardwalk on the edge of Upper Seletar Reservoir. Spot herons, kingfishers and monitor lizards, and catch glimpses of the zoo\'s giraffes. Open 7am to 7pm.', category: 'outdoors', cost: 0, durationHrs: 1.5, setting: 'Outdoor', energyLevel: 'low', area: 'Mandai', region: 'north', address: '80 Mandai Lake Rd, Singapore 729826', lat: 1.4045, lng: 103.7960, groupFriendly: true, source: 'curated', url: 'https://www.mandai.com/en/mandai-boardwalk.html', imageUrl: '/images/picks/s16.png' }
 ]
-// Kept as data literals above for readability; all built-in picks use the
-// canonical source that the Firestore migration writes.
 seedActivities.forEach((activity) => { activity.source = ACTIVITY_SOURCES.PICKS })

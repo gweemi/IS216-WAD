@@ -1,11 +1,3 @@
-<!--
-  One OPENJIO: details, who's going, and the right button for this user
-  (JioActionButton does join / chope / leave / cancel).
-    <JioCard :jio="jio" :uid="uid" />
-  With `link-to-details`, clicking anywhere on the card (except its buttons)
-  opens the activity detail page, like ActivityCard. Join / chope / leave / cancel
-  and Edit are then left to the detail page, so the card doesn't show them.
--->
 <template>
   <article
     class="jio-card"
@@ -41,7 +33,6 @@
         <span class="jio-price">{{ priceText(jio) }}</span>
       </div>
 
-      <!-- Who's hosting / your role, and how many are going: right under the title, before the description -->
       <div class="d-flex flex-wrap align-items-center gap-2 mt-2" data-testid="jio-status-row">
         <span v-if="role === 'host'" class="gol-pill tag-host">You're hosting</span>
         <span v-else-if="role === 'going'" class="gol-pill gol-pill--good">
@@ -59,14 +50,12 @@
         </span>
       </div>
 
-      <!-- One line on the card, ending in … if longer; the full text is on the activity details page -->
       <p v-if="jio.description" class="jio-desc mt-2 mb-0" data-testid="jio-desc">{{ jio.description }}</p>
 
       <p v-if="role === 'queued'" class="queue-note mt-2 mb-0">
         If someone drops out, the spot goes to you automatically.
       </p>
 
-      <!-- Edit + Cancel only exist while the jio is open or full (canEdit) -->
       <div v-if="canManage && !linkToDetails && canEdit" class="jio-host-actions mt-3">
         <button type="button" class="gol-btn-primary" data-testid="edit-jio" @click="$router.push({ name: 'openjio-edit', params: { id: jio.id } })">
           <i class="bi bi-pencil-square" aria-hidden="true"></i> Edit OPENJIO
@@ -86,8 +75,6 @@
           {{ declining ? 'Declining…' : 'Decline' }}
         </button>
       </div>
-      <!-- Change code is necessary: report button (hides itself for the host and for cancelled, ended or suspended jios) -->
-      <!-- Always pinned to the card's bottom-right corner, however tall the card is -->
       <ReportJioButton :jio="jio" class="jio-report" />
     </div>
   </article>
@@ -95,7 +82,6 @@
 
 <script>
 import JioActionButton from '@/components/openjio/JioActionButton.vue'
-// Change code is necessary: report button
 import ReportJioButton from '@/components/reports/ReportJioButton.vue'
 import { categoryColor, categoryEmoji } from '@/utils/activityStyle'
 import { runJioAction } from '@/services/openjio'
@@ -111,7 +97,6 @@ import {
 
 export default {
   name: 'JioCard',
-  // Change code is necessary: added ReportJioButton
   components: { JioActionButton, ReportJioButton },
   props: {
     jio: { type: Object, required: true },
@@ -135,7 +120,6 @@ export default {
       return { public: 'Public', friends_only: 'Friends only', invite_only: 'Invite only', friends: 'Legacy invite only' }[this.jio.visibility] ?? 'Private'
     },
     greyed() {
-      // Change code is necessary: suspended jios are greyed out too
       return (this.status === 'full' && this.role === 'none') || this.status === 'suspended'
     },
     canEdit() {
@@ -145,7 +129,7 @@ export default {
       return this.role === 'host'
     },
     canDecline() {
-      return ['invite_only', 'friends'].includes(this.jio.visibility) && this.invited && this.role === 'none' && this.status !== 'cancelled' && this.status !== 'ended' && this.status !== 'suspended' // Change code is necessary: added suspended
+      return ['invite_only', 'friends'].includes(this.jio.visibility) && this.invited && this.role === 'none' && this.status !== 'cancelled' && this.status !== 'ended' && this.status !== 'suspended'
     },
   },
   data() {
@@ -160,7 +144,6 @@ export default {
     categoryEmoji,
     openDetails(event) {
       if (!this.linkToDetails) return
-      // Let the card's own buttons and links do their job, and don't navigate while selecting text.
       if (event.target.closest('a, button, input, select, textarea, label')) return
       if (window.getSelection?.().toString()) return
       this.$router.push(this.detailsRoute)
@@ -188,7 +171,6 @@ export default {
   flex-direction: column;
 }
 .jio-art { flex-shrink: 0; }
-/* Body fills the rest of the card so the report button can sit at the very bottom */
 .jio-body { flex: 1; display: flex; flex-direction: column; }
 .jio-report { margin-top: auto; padding-top: 0.5rem; align-self: flex-end; }
 .jio-card.is-clickable { cursor: pointer; }
@@ -223,7 +205,6 @@ export default {
   font-weight: 900;
 }
 .jio-status { left: 0.6rem; }
-/* On narrow cards the two tags share the width instead of overlapping */
 .jio-status, .jio-visibility { max-width: calc(50% - 0.9rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .jio-visibility { right: 0.6rem; background: #fff; }
 .jio-visibility--public { color: #1d5f8a; }
@@ -232,7 +213,6 @@ export default {
 .jio-status--full { background: #5d4d72; color: #fff; }
 .jio-status--ended { background: var(--gol-locked); color: var(--gol-ink); }
 .jio-status--cancelled { background: var(--gol-coral); color: #fff; }
-/* Change code is necessary: suspended badge */
 .jio-status--suspended { background: #dc4d4d; color: #fff; }
 
 .min-w-0 { min-width: 0; }

@@ -1,8 +1,3 @@
-<!--
-  Round profile picture, or the person's initials when there's no picture
-  (or the picture fails to load).
-  <ProfileAvatar :src="photo" :name="displayName" :size="88" />
--->
 <script setup>
 import { ref, watch } from 'vue'
 import { initialsFor } from '@/utils/profile'
