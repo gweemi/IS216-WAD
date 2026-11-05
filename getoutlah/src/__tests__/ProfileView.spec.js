@@ -25,6 +25,11 @@ vi.mock('@/stores/auth', async () => {
   return { useAuthStore: () => authStore.value }
 })
 vi.mock('@/services/privacy', () => ({ savePrivacy: async () => {} }))
+const deleteCalls = vi.hoisted(() => ({ count: 0 }))
+vi.mock('@/services/deleteAccount', () => ({
+  deleteMyAccount: async () => { deleteCalls.count++; return { skipped: [] } },
+  friendlyDeleteError: (e) => e.message,
+}))
 vi.mock('@/services/preferences', () => ({ savePreferences: async () => {} }))
 vi.mock('@/stores/openjio', () => ({ useOpenJioStore: () => ({ start: () => {}, visible: [] }) }))
 vi.mock('@/services/auth', () => ({
@@ -156,6 +161,19 @@ describe('ProfileView', () => {
     await w.get('[data-testid="logout-confirm"]').trigger('click')
     await flushPromises()
     expect(calls.logOut).toBe(1)
+    expect(calls.routes).toContainEqual({ name: 'login' })
+  })
+
+  it('deletes the account only after confirming, then goes to the login page', async () => {
+    const w = mountPage()
+    await w.get('[data-testid="delete-account"]').trigger('click')
+    expect(w.get('[data-testid="delete-account-dialog"]').text()).toContain('Delete your account?')
+    expect(deleteCalls.count).toBe(0)
+
+    await w.get('[data-testid="delete-account-input"]').setValue('DELETE')
+    await w.get('[data-testid="delete-account-confirm"]').trigger('click')
+    await flushPromises()
+    expect(deleteCalls.count).toBe(1)
     expect(calls.routes).toContainEqual({ name: 'login' })
   })
 })
