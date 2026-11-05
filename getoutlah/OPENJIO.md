@@ -17,7 +17,6 @@ directly—there is no Cloud Functions deployment required for the feature.
 |---|---|
 | **Activities page** (main list) | Public jios, mixed in with events: `jios.publicUpcoming` |
 | **Activities page → OPENJIO! filter** | Choose the **OPENJIO!** Browse activities pill to view discoverable Jios, with All / Public / Friends only / Invite only filters. Link straight to it with `/activities?view=openJio`; Jios show in two rows that scroll left to right (`JioRow.vue`): **My Jios** (starting with the dashed **Start a jio** card, which opens the create form) and **Other Jios**. |
-| **Friends page** | `<FreeTogetherJios />` lists times you're free with friends, each with an **OpenJio** button. A friend's details also have an OpenJio button per shared time |
 | **Activity details** | `<JioActionButton>`: Join / Chope / Leave on a public jio |
 | `/activities/openjio` | Redirects to `/activities?view=openJio` (the old management page was removed). |
 
@@ -66,7 +65,6 @@ below the number of people already going.
 | `src/utils/openjio.js` | The rules (validate, join, chope, leave, who can see). No Firebase, easy to test |
 | `src/services/openjio.js` | Firestore calls. Join/chope/leave run in a transaction so a jio can't be overbooked |
 | `src/stores/openjio.js` | Pinia store with the live lists |
-| `src/components/openjio/FreeTogetherJios.vue` | "Free with friends" card on the Friends page with OpenJio buttons |
 | `src/components/openjio/JioCard.vue` | One jio card |
 | `src/components/openjio/JioActionButton.vue` | Join / Chope / Leave / Cancel button that does the work itself. Use it anywhere |
 | `src/components/openjio/CreateJioSheet.vue` | "Start a jio" form with the friend picker (accepts `prefill`) |
@@ -128,19 +126,7 @@ firebase deploy --only firestore:rules
 Existing public Jios keep working immediately because the app again reads the
 original `openjios` collection.
 
-## Friends page (Eugenia)
-
-Already added to `FriendsView.vue`:
-
-- `<FreeTogetherJios />` under "When are you free?": groups shared free times (`commonFreeTimes(friendList)`)
-  and each has an **OpenJio** button.
-- In a friend's details, each "Free at the same time as you" time has an **OpenJio** button.
-
-Both open the form with the time filled in, set to invite-only, and those friends selected:
-
-```vue
-<StartJioButton label="OpenJio" :prefill="prefillFromWindow(window, [friend.uid])" />
-```
+## Friends
 
 The invite list uses the Friends feature's accepted friends (`friendList` from `stores/friends`),
 so whoever you've added on the Friends page can be invited.
@@ -160,5 +146,5 @@ so whoever you've added on the Friends page can be invited.
 
 ## Tests
 
-- `npm run test:unit -- --run`: unit tests for OpenJio rules, store behaviour, Jio cards, the create form, and free-time suggestions.
+- `npm run test:unit -- --run`: unit tests for OpenJio rules, store behaviour, Jio cards, and the create form.
 - `npm run test:e2e`: end-to-end OpenJio flow tests (requires log-in).

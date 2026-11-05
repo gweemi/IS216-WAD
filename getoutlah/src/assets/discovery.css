@@ -95,7 +95,7 @@
 
 /* ---- views/ActivityDetailView.vue ---- */
 .det-back { font-weight: 800; color: var(--gol-purple); text-decoration: none; }
-.det-layout { display: grid; gap: 1rem; }   /* space between the picture card and the details card */
+.det-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }   /* cards always fill 100% of the page width; long content can't stretch them */
 /* Same 16:9 shape on every screen; capped so it doesn't become a long strip on laptop */
 .det-hero {
   position: relative;   /* anchors the save button in the top-right corner */
@@ -106,7 +106,7 @@
 .det-emoji { font-size: 3.5rem; }
 .det-source { display: inline-block; margin-top: 0.65rem; }
 .det-about { margin-top: 1.2rem; }
-.det-description { white-space: pre-line; line-height: 1.55; margin: 0; }   /* keeps the description's line breaks */
+.det-description { white-space: pre-line; overflow-wrap: anywhere; line-height: 1.55; margin: 0; }   /* keeps the description's line breaks; very long words wrap */
 .det-more { border: none; background: none; padding: 0; margin-top: 0.4rem; font-weight: 800; color: var(--gol-purple); cursor: pointer; }
 .det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 1rem 0; }
 .det-cell { min-width: 0; overflow-wrap: anywhere; background: var(--gol-bg); border-radius: 14px; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }

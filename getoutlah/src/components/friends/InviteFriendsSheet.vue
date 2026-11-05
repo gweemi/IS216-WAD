@@ -6,7 +6,6 @@
 import { ref, watch } from 'vue'
 import { friendList } from '@/stores/friends'
 import { inviteFriends } from '@/services/friends'
-import { formatWindow } from '@/utils/friends'
 import BottomSheet from '@/components/common/BottomSheet.vue'
 import FriendAvatar from '@/components/friends/FriendAvatar.vue'
 
@@ -71,9 +70,6 @@ async function send() {
         <FriendAvatar :name="f.name" :photo="f.photoURL" :size="40" />
         <span class="flex-grow-1 d-flex flex-column" style="min-width: 0">
           <span class="fw-bolder text-truncate">{{ f.name }}</span>
-          <span v-if="f.freeTogether.length" class="small fw-bold" style="color: var(--gol-teal)">
-            Free together {{ formatWindow(f.freeTogether[0]) }}
-          </span>
         </span>
         <input v-model="picked" class="form-check-input fs-5 m-0" type="checkbox" :value="f.uid" :aria-label="'Invite ' + f.name" />
       </label>

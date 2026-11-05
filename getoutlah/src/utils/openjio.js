@@ -273,39 +273,3 @@ export function prefillFromActivity(activity) {
     startAt: activity.startsAt ? new Date(activity.startsAt) : undefined,
   }
 }
-
-/**
- * Turns a free time window shared with friends ({ start, end } in ms) into a
- * prefill for the create form: a friends-only jio at that time, with those friends ticked.
- * If the window has already started, the jio starts at the next quarter hour.
- *   <StartJioButton :prefill="prefillFromWindow(w, [friend.uid])" />
- */
-export function prefillFromWindow(window, friendUids = [], now = Date.now()) {
-  const QUARTER = 15 * 60000
-  const nextQuarter = Math.ceil((now + 60000) / QUARTER) * QUARTER
-  const start = Math.max(window.start, nextQuarter)
-  const mins = Math.round((window.end - start) / 60000)
-  return {
-    startAt: new Date(start),
-    durationMins: Math.min(720, Math.max(15, mins)),
-    visibility: 'invite_only',
-    invited: [...new Set(friendUids)].slice(0, LIMITS.maxInvites),
-  }
-}
-
-/**
- * Groups the times you're free with friends, so one jio can invite everyone free then.
- * friends: [{ uid, name, freeTogether: [{ start, end }] }] (friendList from stores/friends).
- * Returns [{ start, end, friends: [{ uid, name, photoURL }] }], soonest first.
- */
-export function commonFreeTimes(friends = []) {
-  const byWindow = new Map()
-  for (const f of friends) {
-    for (const w of f.freeTogether ?? []) {
-      const key = `${w.start}-${w.end}`
-      if (!byWindow.has(key)) byWindow.set(key, { start: w.start, end: w.end, friends: [] })
-      byWindow.get(key).friends.push({ uid: f.uid, name: f.name, photoURL: f.photoURL ?? null })
-    }
-  }
-  return [...byWindow.values()].sort((a, b) => a.start - b.start)
-}

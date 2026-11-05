@@ -5,7 +5,7 @@
 // This file has no Firebase imports, so components like the nav bar can use it in tests.
 // =============================================================
 import { reactive, computed } from 'vue'
-import { otherMember, overlaps, toMillis } from '@/utils/friends'
+import { otherMember, toMillis } from '@/utils/friends'
 import { privacyOf, visibleProfile } from '@/config/privacy'
 
 function emptyState() {
@@ -14,7 +14,6 @@ function emptyState() {
     friendships: [], // docs from friendships/ that include me
     profiles: {}, // uid → users/{uid} data for my friends and people who sent me requests
     notifications: [], // docs from notifications/ sent to me, newest first
-    myFreeWindows: [], // [{ start, end }] in ms, from my own profile
     ready: false,
     error: '',
   }
@@ -36,18 +35,16 @@ function withProfile(f) {
     name: p.displayName || f.names?.[uid] || 'Someone',
     photoURL: privacyOf(raw).showPhoto ? p.photoURL || f.photos?.[uid] || null : null,
     universityName: p.universityName || null,
-    freeWindows: p.freeWindows || [],
     checkedIn: p.checkedInActivityIds || [],
     since: toMillis(f.acceptedAt || f.createdAt),
   }
 }
 
-/** Accepted friends, A–Z, each with when you're both free. */
+/** Accepted friends, A–Z. */
 export const friendList = computed(() =>
   friendsState.friendships
     .filter((f) => f.status === 'accepted')
     .map(withProfile)
-    .map((f) => ({ ...f, freeTogether: overlaps(friendsState.myFreeWindows, f.freeWindows) }))
     .sort((a, b) => a.name.localeCompare(b.name)),
 )
 

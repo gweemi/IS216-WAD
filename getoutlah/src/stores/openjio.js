@@ -27,7 +27,7 @@ export const useOpenJioStore = defineStore('openJio', {
     uid() {
       return useAuthStore().user?.uid ?? null
     },
-    /** Accepted friends from the Friends feature: [{ uid, name, photoURL, freeTogether }]. */
+    /** Accepted friends from the Friends feature: [{ uid, name, photoURL }]. */
     friends() {
       return friendList.value
     },

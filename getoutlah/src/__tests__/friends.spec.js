@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { pairId, otherMember, overlaps, upcomingWindows, timeAgo, initials } from '@/utils/friends'
+import { pairId, otherMember, timeAgo, initials } from '@/utils/friends'
 import {
   friendsState, resetFriendsState, friendList, incomingRequests, outgoingRequests, unreadCount, relationshipWith,
 } from '@/stores/friends'
@@ -13,19 +13,6 @@ describe('friends helpers', () => {
     expect(pairId('bob', 'amy')).toBe('amy_bob')
     expect(pairId('amy', 'bob')).toBe('amy_bob')
     expect(otherMember({ members: ['amy', 'bob'] }, 'amy')).toBe('bob')
-  })
-
-  it('finds times when both people are free', () => {
-    const mine = [{ start: NOW + 2 * H, end: NOW + 6 * H }]
-    const theirs = [{ start: NOW + 4 * H, end: NOW + 8 * H }, { start: NOW + 10 * H, end: NOW + 12 * H }]
-    expect(overlaps(mine, theirs, { now: NOW })).toEqual([{ start: NOW + 4 * H, end: NOW + 6 * H }])
-  })
-
-  it('ignores overlaps shorter than an hour and windows in the past', () => {
-    const mine = [{ start: NOW + H, end: NOW + 2 * H }, { start: NOW - 5 * H, end: NOW - H }]
-    const theirs = [{ start: NOW + 1.5 * H, end: NOW + 3 * H }, { start: NOW - 4 * H, end: NOW - 2 * H }]
-    expect(overlaps(mine, theirs, { now: NOW })).toEqual([])
-    expect(upcomingWindows(mine, NOW)).toHaveLength(1)
   })
 
   it('formats small things', () => {
