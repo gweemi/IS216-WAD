@@ -17,12 +17,11 @@
       </div>
 
       <section>
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
           <h2 class="gol-section-title mb-0">Badges</h2>
-          <div class="d-flex align-items-center gap-3">
-            
-            <!-- for the redeem voucher page (on phones it moves below the badges, see the copy under the grid) -->
-            <RouterLink :to="{ name: 'vouchers' }" class="btn-voucher d-none d-md-inline-flex" data-testid="redeem-voucher-top">
+          <div class="d-flex flex-column align-items-end gap-3">
+            <!-- for the redeem voucher page, sits right above the earned count -->
+            <RouterLink :to="{ name: 'vouchers' }" class="btn-voucher" data-testid="redeem-voucher">
               <i class="bi bi-gift-fill"></i> Redeem Voucher
               <span class="voucher-spark" aria-hidden="true"></span>
             </RouterLink>
@@ -36,14 +35,6 @@
             <BadgeTile :badge="b" @select="selected = b" />
           </div>
         </TransitionGroup>
-
-        <!-- Phones: Redeem Voucher sits below the badges -->
-        <div class="d-md-none mt-4 text-center">
-          <RouterLink :to="{ name: 'vouchers' }" class="btn-voucher" data-testid="redeem-voucher-bottom">
-            <i class="bi bi-gift-fill"></i> Redeem Voucher
-            <span class="voucher-spark" aria-hidden="true"></span>
-          </RouterLink>
-        </div>
       </section>
     </div>
 
@@ -128,6 +119,7 @@ export default {
 <style scoped>
 .page-inner { max-width: 1100px; }
 .earned-count {
+  white-space: nowrap;
   font-size: 0.8rem;
   font-weight: 800;
   color: var(--gol-purple);

@@ -16,9 +16,9 @@
     <template v-else>
       <ul class="attendee-list list-unstyled mb-0" data-testid="jio-attendees">
         <li v-for="person in attendees" :key="person.uid" class="attendee">
-          <FriendAvatar :name="person.displayName" :photo="person.photoURL" :size="38" />
-          <span class="flex-grow-1 fw-bold">{{ person.displayName }}</span>
-          <span v-if="person.uid === jio.hostId" class="gol-pill tag-host">Host</span>
+          <FriendAvatar :name="person.displayName" :photo="person.photoURL" :size="30" />
+          <span class="flex-grow-1 attendee__name">{{ person.displayName }}</span>
+          <span v-if="person.uid === jio.hostId" class="tag tag-host">Host</span>
         </li>
       </ul>
 
@@ -28,9 +28,9 @@
         <p class="muted small mb-2">They get a spot in this order if someone leaves.</p>
         <ul class="attendee-list list-unstyled mb-0">
           <li v-for="person in queue" :key="person.uid" class="attendee">
-            <FriendAvatar :name="person.displayName" :photo="person.photoURL" :size="38" />
-            <span class="flex-grow-1 fw-bold">{{ person.displayName }}</span>
-            <span class="gol-pill tag-queued">#{{ person.position }} in line</span>
+            <FriendAvatar :name="person.displayName" :photo="person.photoURL" :size="30" />
+            <span class="flex-grow-1 attendee__name">{{ person.displayName }}</span>
+            <span class="tag tag-queued">#{{ person.position }} in line</span>
           </li>
         </ul>
       </div>
@@ -92,15 +92,16 @@ export default {
 </script>
 
 <style scoped>
-.jio-attendees { margin-top: 1rem; padding: .9rem; border: 2px solid var(--gol-card-edge); border-radius: 18px; background: #fbf9ff; }
-.jio-attendees__title { display: flex; align-items: center; gap: .35rem; font-size: 0.95rem; font-weight: 900; margin: 0 0 0.6rem; }
-.jio-attendees__title i { color: var(--gol-purple); }
-.jio-attendees__count { margin-left: .2rem; padding: .1rem .5rem; border-radius: 999px; background: var(--gol-purple-soft); color: var(--gol-purple); font-size: .8rem; }
-.muted { color: var(--gol-muted); font-weight: 700; }
-.attendee-list { display: grid; gap: .5rem; }
-.attendee { display: flex; align-items: center; gap: .65rem; min-width: 0; padding: .5rem .7rem; border: 2px solid var(--gol-card-edge); border-radius: 14px; background: #fff; }
-.attendee > span.flex-grow-1 { min-width: 0; overflow-wrap: anywhere; }
-.tag-host { background: var(--gol-purple-soft); color: var(--gol-purple); }
-.tag-queued { background: #ffe1de; color: #b4382f; white-space: nowrap; }
-.queue-title { font-size: .9rem; font-weight: 900; margin: 0 0 .2rem; }
+/* Kept plain: a thin divider above, then a simple list of names */
+.jio-attendees { margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--gol-card-edge); }
+.jio-attendees__title { display: flex; align-items: center; gap: .35rem; font-size: 0.95rem; font-weight: 800; margin: 0 0 0.5rem; }
+.jio-attendees__title i { color: var(--gol-muted); }
+.jio-attendees__count { margin-left: auto; color: var(--gol-muted); font-size: .85rem; font-weight: 700; }
+.muted { color: var(--gol-muted); font-weight: 600; }
+.attendee-list { display: grid; gap: .45rem; }
+.attendee { display: flex; align-items: center; gap: .6rem; min-width: 0; }
+.attendee__name { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.tag { font-size: .78rem; font-weight: 700; color: var(--gol-muted); white-space: nowrap; }
+.tag-host { color: var(--gol-purple); }
+.queue-title { font-size: .9rem; font-weight: 800; margin: 0 0 .2rem; }
 </style>
