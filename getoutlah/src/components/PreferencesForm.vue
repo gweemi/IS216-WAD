@@ -66,15 +66,16 @@ function back() {
 <template>
   <div class="prefs-form">
     <!-- Progress -->
-    <div class="d-flex justify-content-between align-items-center mb-2 small text-secondary">
+    <div class="prefs-progress-label">
       <span data-testid="prefs-step">Step {{ step + 1 }} of {{ steps.length }}</span>
+      <span>{{ Math.round(((step + 1) / steps.length) * 100) }}% complete</span>
     </div>
     <div class="progress-track mb-4" aria-hidden="true">
       <div class="progress-fill" :style="{ width: `${((step + 1) / steps.length) * 100}%` }"></div>
     </div>
 
-    <h2 class="h3 font-display fw-bold mb-1" data-testid="prefs-title">{{ steps[step].title }}</h2>
-    <p class="text-secondary mb-4">{{ steps[step].subtitle }}</p>
+    <h2 class="prefs-title" data-testid="prefs-title">{{ steps[step].title }}</h2>
+    <p class="prefs-subtitle">{{ steps[step].subtitle }}</p>
 
     <!-- Step 1: interests (pick many) -->
     <div v-if="step === 0" class="option-grid" role="group" aria-label="Interests">
@@ -83,7 +84,8 @@ function back() {
         :key="opt.id"
         type="button"
         class="option-tile"
-        :class="{ selected: answers.interests.includes(opt.id) }"
+        :class="{ selected: answers.interests.includes(opt.id), 'option-tile--interest': step === 0 }"
+        :style="step === 0 ? { '--option-accent': opt.color } : undefined"
         :aria-pressed="answers.interests.includes(opt.id)"
         :data-testid="`interest-${opt.id}`"
         @click="toggleInterest(opt.id)"
@@ -113,7 +115,7 @@ function back() {
 
     <!-- Step 3: energy level + solo/group (pick one each) -->
     <div v-else>
-      <h3 class="h6 fw-semibold mb-2">Energy level</h3>
+      <h3 class="prefs-group-title">Energy level</h3>
       <div class="option-grid three mb-4" role="radiogroup" aria-label="Energy level">
         <button
           v-for="opt in ENERGY_LEVELS"
@@ -132,7 +134,7 @@ function back() {
         </button>
       </div>
 
-      <h3 class="h6 fw-semibold mb-2">Usually go</h3>
+      <h3 class="prefs-group-title">Usually go</h3>
       <div class="option-grid three" role="radiogroup" aria-label="Solo or with friends">
         <button
           v-for="opt in GROUP_PREFERENCES"
@@ -154,7 +156,7 @@ function back() {
 
     <div
       v-if="error"
-      class="alert alert-danger py-2 small mt-4 mb-0"
+        class="prefs-error"
       role="alert"
       data-testid="prefs-error"
     >
@@ -162,10 +164,10 @@ function back() {
     </div>
 
     <!-- Navigation -->
-    <div class="d-flex justify-content-between align-items-center mt-4">
+    <div class="prefs-actions">
       <button
         type="button"
-        class="btn btn-link link-secondary px-0"
+        class="prefs-back"
         :style="{ visibility: step === 0 ? 'hidden' : 'visible' }"
         data-testid="prefs-back"
         @click="back"
@@ -174,7 +176,7 @@ function back() {
       </button>
       <button
         type="button"
-        class="btn btn-primary px-4 py-2"
+        class="prefs-next gol-btn-primary"
         :disabled="!stepComplete || saving"
         data-testid="prefs-next"
         @click="next"
@@ -188,88 +190,124 @@ function back() {
 
 <style scoped>
 .progress-track {
-  height: 6px;
-  background: var(--go-line);
+  height: 8px;
+  background: var(--gol-purple-soft);
   border-radius: 999px;
   overflow: hidden;
 }
 .progress-fill {
   height: 100%;
-  background: var(--go-green);
+  background: linear-gradient(90deg, var(--gol-purple), var(--gol-coral));
   border-radius: 999px;
-  transition: width 0.25s ease;
+  transition: width 0.3s ease;
 }
+.prefs-progress-label { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .55rem; color: var(--gol-muted); font-size: .78rem; font-weight: 800; }
+.prefs-title { margin: 1.55rem 0 .3rem; color: var(--gol-ink); font: 900 clamp(1.55rem, 4vw, 2rem)/1.1 var(--gol-font); }
+.prefs-subtitle { margin: 0 0 1.5rem; color: var(--gol-muted); font-size: .95rem; font-weight: 700; }
+.prefs-group-title { margin: 0 0 .65rem; color: var(--gol-ink); font: 900 1rem/1.2 var(--gol-font); }
 
 .option-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
+  gap: .8rem;
 }
 .option-tile {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.15rem;
+  position: relative;
+  min-height: 132px;
+  gap: .18rem;
   text-align: left;
   background: #fff;
-  border: 1.5px solid var(--go-line);
-  border-radius: 12px;
-  padding: 0.85rem 0.9rem;
-  color: var(--go-ink);
+  border: 2px solid var(--gol-card-edge);
+  border-radius: 18px;
+  padding: .9rem;
+  color: var(--gol-ink);
+  box-shadow: 0 3px 0 var(--gol-card-edge);
   transition:
-    border-color 0.15s,
-    background-color 0.15s;
+    border-color .15s,
+    background-color .15s,
+    box-shadow .15s,
+    transform .15s;
 }
 .option-tile:hover {
-  border-color: var(--go-green);
+  border-color: var(--gol-purple);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 var(--gol-card-edge);
 }
 .option-tile.selected {
-  border-color: var(--go-green);
-  background: #eef6ea;
-  box-shadow: inset 0 0 0 1px var(--go-green);
+  border-color: var(--gol-purple);
+  background: var(--gol-purple-soft);
+  box-shadow: inset 0 0 0 1px var(--gol-purple), 0 3px 0 var(--gol-purple-dark);
+}
+.option-tile--interest::after {
+  position: absolute;
+  top: .65rem;
+  right: .65rem;
+  width: .65rem;
+  height: .65rem;
+  content: '';
+  border-radius: 999px;
+  background: var(--option-accent);
+  box-shadow: 0 0 0 3px #fff;
+}
+.option-tile--interest.selected::after {
+  background: var(--gol-lime);
+  box-shadow: 0 0 0 3px var(--gol-purple-soft);
 }
 .option-emoji {
-  font-size: 1.4rem;
+  font-size: 1.55rem;
   line-height: 1;
   margin-bottom: 0.3rem;
 }
 .option-label {
-  font-weight: 600;
+  font-weight: 900;
   font-size: 0.95rem;
 }
 .option-hint {
   font-size: 0.8rem;
-  color: var(--go-muted);
+  color: var(--gol-muted);
+  font-weight: 700;
 }
 
 .option-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: .7rem;
 }
 .option-row {
   text-align: left;
   background: #fff;
-  border: 1.5px solid var(--go-line);
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
-  font-weight: 600;
-  color: var(--go-ink);
+  border: 2px solid var(--gol-card-edge);
+  border-radius: 16px;
+  padding: .9rem 1rem;
+  font-weight: 900;
+  color: var(--gol-ink);
+  box-shadow: 0 3px 0 var(--gol-card-edge);
+  transition: border-color .15s, background-color .15s, box-shadow .15s, transform .15s;
 }
 .option-row:hover {
-  border-color: var(--go-green);
+  border-color: var(--gol-purple);
+  transform: translateY(-1px);
 }
 .option-row.selected {
-  border-color: var(--go-green);
-  background: #eef6ea;
-  box-shadow: inset 0 0 0 1px var(--go-green);
+  border-color: var(--gol-purple);
+  background: var(--gol-purple-soft);
+  box-shadow: inset 0 0 0 1px var(--gol-purple), 0 3px 0 var(--gol-purple-dark);
 }
 
 .option-tile:focus-visible,
 .option-row:focus-visible {
-  outline: 3px solid rgba(31, 107, 71, 0.35);
+  outline: 3px solid rgba(107, 66, 227, .38);
   outline-offset: 2px;
 }
+.prefs-error { margin: 1.5rem 0 0; padding: .75rem .9rem; color: var(--gol-coral-text); background: #fff0ed; border: 2px solid var(--gol-coral); border-radius: 16px; font-size: .86rem; font-weight: 800; }
+.prefs-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.75rem; }
+.prefs-back { border: 0; border-radius: 999px; padding: .65rem .9rem; color: var(--gol-purple); background: var(--gol-purple-soft); font: 900 .9rem var(--gol-font); }
+.prefs-back:hover { color: var(--gol-purple-dark); filter: brightness(.98); }
+.prefs-back:focus-visible { outline: 3px solid rgba(107, 66, 227, .38); outline-offset: 2px; }
+.prefs-next { width: auto; min-width: 9.5rem; padding: .75rem 1.3rem; }
 
 @media (max-width: 575px) {
   .option-grid {
@@ -279,6 +317,7 @@ function back() {
     grid-template-columns: 1fr;
   }
   .option-grid.three .option-tile {
+    min-height: auto;
     flex-direction: row;
     align-items: center;
     gap: 0.6rem;
@@ -289,5 +328,10 @@ function back() {
   .option-grid.three .option-hint {
     margin-left: auto;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill, .option-tile, .option-row { transition: none; }
+  .option-tile:hover, .option-row:hover { transform: none; }
 }
 </style>

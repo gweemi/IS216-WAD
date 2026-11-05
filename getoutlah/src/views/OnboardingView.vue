@@ -62,19 +62,20 @@ async function onSubmit(answers) {
 </script>
 
 <template>
-  <main class="onboarding-page">
+  <main class="onboarding-page gol-page">
     <div class="onboarding-column">
-      <header class="welcome text-center">
-        <p class="font-display fw-bold mb-1" style="color: var(--go-green)">GETOUTLAH!</p>
-        <h1 class="h4 fw-semibold mb-0" data-testid="onboarding-welcome">
+      <header class="welcome">
+        <p class="gol-eyebrow">Your next adventure starts here</p>
+        <p class="onboarding-brand">GETOUTLAH!</p>
+        <h1 class="onboarding-title" data-testid="onboarding-welcome">
           Welcome{{ name ? `, ${name}` : '' }}! Let's set you up.
         </h1>
-        <p class="text-secondary small mb-0">3 quick questions, under a minute.</p>
-        <p class="small text-secondary mt-2 mb-0">
+        <p class="onboarding-subtitle">3 quick questions, under a minute.</p>
+        <p class="onboarding-account">
           Signed in as {{ auth.email }}.
           <button
             type="button"
-            class="btn btn-link btn-sm p-0 align-baseline link-logout"
+            class="link-logout"
             data-testid="onboarding-logout"
             @click="requestLogOut"
           >
@@ -83,7 +84,7 @@ async function onSubmit(answers) {
         </p>
       </header>
 
-      <section class="go-card onboarding-card">
+      <section class="gol-card onboarding-card">
         <PreferencesForm
           :saving="saving"
           :error="error"
@@ -107,30 +108,67 @@ async function onSubmit(answers) {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  padding: 3rem 1rem;
+  padding: 3.5rem 1rem;
 }
 .onboarding-column {
   width: 100%;
   max-width: 680px;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
+}
+.welcome {
+  padding: 0 .35rem;
+  text-align: center;
+}
+.onboarding-brand {
+  margin: 0 0 .25rem;
+  color: var(--gol-purple);
+  font: 900 clamp(1.7rem, 5vw, 2.35rem)/1 var(--gol-font);
+  letter-spacing: -.06em;
+  text-shadow: 2px 2px 0 var(--gol-lime);
+}
+.onboarding-title {
+  margin: 0;
+  color: var(--gol-ink);
+  font: 900 clamp(1.25rem, 3vw, 1.55rem)/1.2 var(--gol-font);
+}
+.onboarding-subtitle {
+  margin: .45rem 0 0;
+  color: var(--gol-muted);
+  font-size: .92rem;
+  font-weight: 700;
+}
+.onboarding-account {
+  margin: .7rem 0 0;
+  color: var(--gol-muted);
+  font-size: .78rem;
+  font-weight: 700;
 }
 .onboarding-card {
-  padding: 2rem 1.5rem 1.5rem;
+  padding: 1.5rem;
+  border: 2px solid rgba(107, 66, 227, .08);
 }
 .link-logout {
-  color: var(--go-green);
+  border: 0;
+  padding: 0;
+  color: var(--gol-purple);
+  background: transparent;
+  font: inherit;
+  font-weight: 900;
   font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
+.link-logout:hover { color: var(--gol-purple-dark); }
+.link-logout:focus-visible { outline: 3px solid rgba(107, 66, 227, .38); outline-offset: 2px; border-radius: 3px; }
 @media (min-width: 576px) {
-  .onboarding-card {
-    padding: 2.25rem 2.5rem 1.75rem;
-  }
+  .onboarding-page { padding: 4rem 1.5rem; }
+  .onboarding-card { padding: 2.1rem 2.3rem 1.9rem; }
 }
 @media (max-width: 575px) {
   .onboarding-page {
-    padding: 1.5rem 1rem;
+    padding: 1.75rem 1rem;
   }
 }
 </style>
