@@ -105,7 +105,7 @@ describe('wellbeing check-in points', async () => {
 
   beforeEach(() => g.resetGamification(false))
 
-  it('gives points once every 14 days and counts towards the level', () => {
+  it('gives points once every 14 days and adds them to your points', () => {
     const first = g.awardWellbeingCheckIn()
     expect(first.pointsGiven).toBe(g.POINTS_PER_WELLBEING_CHECKIN)
     expect(g.totalPoints()).toBe(g.POINTS_PER_WELLBEING_CHECKIN)

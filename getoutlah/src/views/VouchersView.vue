@@ -93,7 +93,7 @@ function confirmRedeem() {
         <div class="dialog" role="dialog" aria-label="Redeem voucher">
           <span class="coin small"><span class="emo">{{ confirming.icon }}</span></span>
           <h3>Redeem {{ confirming.name }}?</h3>
-          <p>This uses <strong>{{ confirming.cost }} pts</strong>. You'll have {{ points - confirming.cost }} pts left. Your level and badges stay the same.</p>
+          <p>This uses <strong>{{ confirming.cost }} pts</strong>. You'll have {{ points - confirming.cost }} pts left. Your badges stay the same.</p>
           <p v-if="error" class="err">{{ error }}</p>
           <div class="d-flex gap-2 justify-content-center">
             <button type="button" class="btn-soft" @click="confirming = null">Cancel</button>

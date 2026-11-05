@@ -72,14 +72,14 @@ const doCheckIn = async () => {
     recordCheckIn(a.id).catch(() => {})
     message.value = r.message
     earnedBadges.value = r.newBadges ?? []
-    showCheckInPopups(r.levelledUp ? r.level : null)
+    showCheckInPopups()
   } catch (error) { message.value = error.message }
 }
 
 // After checking in: new badges pop up first (2s, see NewBadgePopup), then the "checked in" pop-up
 const popup = ref(null) // 'checked-in' | null
-async function showCheckInPopups(levelUp = null) {
-  await showNewBadges(earnedBadges.value, { levelUp })
+async function showCheckInPopups() {
+  await showNewBadges(earnedBadges.value)
   popup.value = 'checked-in'
 }
 function closePopup() {

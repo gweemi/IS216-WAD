@@ -88,8 +88,7 @@ export default {
         if (done && action === 'join') {
           // Any badge earned by joining pops up first (2s), then "You have been jioed"
           this.busy = false
-          const { badges, levelUp } = recordJioForBadges(this.current.id, { hosted: false })
-          await showNewBadges(badges, { levelUp })
+          await showNewBadges(recordJioForBadges(this.current.id, { hosted: false }))
           this.joined = true
         } else if (done) this.show(done)
       } catch (err) {

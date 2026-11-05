@@ -1,9 +1,9 @@
 // Checks that joining or posting an OPENJIO earns its badge straight away, the badge pop-up's timing
-// and text (points after the weekly cap, level up), and badges for being moved up from the queue.
+// and text (points after the weekly cap), and badges for being moved up from the queue.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, reactive } from 'vue'
-const celebrate = vi.hoisted(() => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), celebrateLevelUp: vi.fn(), burstFrom: vi.fn() }))
+const celebrate = vi.hoisted(() => ({ celebrateBadge: vi.fn(), celebrateCheckIn: vi.fn(), burstFrom: vi.fn() }))
 vi.mock('@/utils/celebrate.js', () => celebrate)
 
 // Fake logged-in user, live jios and "saved data arrived from Firestore" flag for useJioBadgeSync
@@ -19,7 +19,7 @@ vi.mock('@/components/badges/NewBadgePopup.vue', async (orig) => {
   return { ...real, showNewBadges: (...args) => { popup.calls.push(args); return real.showNewBadges(...args) } }
 })
 
-const { game, recordJioForBadges, resetGamification, canActivityProgressBadge, POINTS_PER_LEVEL } = await import('@/stores/gamification(badges).js')
+const { game, recordJioForBadges, resetGamification, canActivityProgressBadge } = await import('@/stores/gamification(badges).js')
 const { default: NewBadgePopup, showNewBadges, pointsText, NEW_BADGE_POPUP_MS } = await import('@/components/badges/NewBadgePopup.vue')
 const { useJioBadgeSync } = await import('@/composables/useJioBadgeSync')
 
@@ -32,21 +32,21 @@ describe('OPENJIO badges', () => {
   })
 
   it('earns Crew energy as soon as you join a jio', () => {
-    const { badges, levelUp } = recordJioForBadges('j1', { hosted: false })
+    const badges = recordJioForBadges('j1', { hosted: false })
     expect(badges.map((b) => b.id)).toEqual(['crew-energy'])
-    expect(levelUp).toBeNull()
+    expect(celebrate.celebrateBadge).toHaveBeenCalledTimes(1)
     expect(game.earnedBadges['crew-energy']).toBeTruthy()
     expect(game.ledger.at(-1).reason).toBe('Badge: Crew energy')
   })
 
   it('earns Big host energy as soon as you post a jio', () => {
-    expect(recordJioForBadges('j2', { hosted: true }).badges.map((b) => b.id)).toEqual(['big-host-energy'])
+    expect(recordJioForBadges('j2', { hosted: true }).map((b) => b.id)).toEqual(['big-host-energy'])
   })
 
   it('only counts each jio once and does not award the badge twice', () => {
     recordJioForBadges('j1')
-    expect(recordJioForBadges('j1').badges).toEqual([])
-    expect(recordJioForBadges('j3').badges).toEqual([])
+    expect(recordJioForBadges('j1')).toEqual([])
+    expect(recordJioForBadges('j3')).toEqual([])
     expect(game.joinedJioIds).toEqual(['jio-j1', 'jio-j3'])
   })
 
@@ -55,19 +55,6 @@ describe('OPENJIO badges', () => {
     expect(canActivityProgressBadge('crew-energy', jio)).toBe(true)
     game.joinedJioIds.push('jio-j9')
     expect(canActivityProgressBadge('crew-energy', jio)).toBe(false)
-  })
-
-  it('reports a level up from the badge bonus, and plays the level-up confetti after the badge confetti', () => {
-    vi.useFakeTimers()
-    game.ledger.push({ date: '2020-01-01', amount: POINTS_PER_LEVEL - 10, reason: 'Earlier' })
-    const { badges, levelUp } = recordJioForBadges('j1')
-    expect(badges[0].bonusGiven).toBe(20)
-    expect(levelUp).toBe(2)
-    expect(celebrate.celebrateBadge).toHaveBeenCalledTimes(1)
-    expect(celebrate.celebrateLevelUp).not.toHaveBeenCalled()
-    vi.advanceTimersByTime(2000)
-    expect(celebrate.celebrateLevelUp).toHaveBeenCalledTimes(1)
-    vi.useRealTimers()
   })
 })
 
@@ -93,13 +80,13 @@ describe('showNewBadges pop-up', () => {
     expect(pointsText({ bonus: 20, bonusGiven: 0 })).toBe('No points: weekly cap reached')
   })
 
-  it('shows the points and a level-up line', async () => {
+  it('shows the points each badge gave, and nothing about levels', async () => {
     vi.useFakeTimers()
     const w = mount(NewBadgePopup, { global: { stubs: { BottomSheet: { template: '<div><slot /></div>' }, BadgeTile: true } } })
-    showNewBadges([{ id: 'crew-energy', name: 'Crew energy', bonus: 20, bonusGiven: 20 }], { levelUp: 3 })
+    showNewBadges([{ id: 'crew-energy', name: 'Crew energy', bonus: 20, bonusGiven: 20 }])
     await nextTick()
     expect(w.get('[data-testid="new-badge-points"]').text()).toBe('+20 pts')
-    expect(w.get('[data-testid="new-badge-level"]').text()).toContain("Level up! You're now Level 3")
+    expect(w.text()).not.toContain('Level')
     await vi.advanceTimersByTimeAsync(NEW_BADGE_POPUP_MS)
     vi.useRealTimers()
   })

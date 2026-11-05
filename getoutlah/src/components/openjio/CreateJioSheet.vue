@@ -467,10 +467,7 @@ export default {
           : await createJio(this.pendingJio)
         this.confirmationOpen = false
         // Posting a jio counts towards Big host energy straight away; a new badge pops up for 2s
-        if (!this.isEditing) {
-          const { badges, levelUp } = recordJioForBadges(id, { hosted: true })
-          showNewBadges(badges, { levelUp })
-        }
+        if (!this.isEditing) showNewBadges(recordJioForBadges(id, { hosted: true }))
         this.$emit(this.isEditing ? 'updated' : 'created', id)
       } catch (err) {
         this.error = friendlyJioError(err)
