@@ -28,41 +28,6 @@ export const VERIFIED_NPARKS_TRAILS = Object.freeze([
 
 export const isNparksRoute = (activity) => activity?.provider === NPARKS_PROVIDER && activity?.contentType === NPARKS_CONTENT_TYPE
 
-export function nparksActivity(definition) {
-  return {
-    title: definition.title,
-    description: definition.description,
-    category: definition.category,
-    energyLevel: definition.energyLevel,
-    groupFriendly: definition.groupFriendly,
-    durationHrs: definition.durationHrs,
-    cost: 0,
-    setting: 'Outdoor',
-    area: definition.area,
-    lat: definition.lat,
-    lng: definition.lng,
-    region: regionOf(definition.lat, definition.lng),
-    source: 'externalListings',
-    provider: NPARKS_PROVIDER,
-    contentType: NPARKS_CONTENT_TYPE,
-    needsReview: false,
-    nparks: {
-      datasetId: NPARKS_DATASET_ID,
-      sourceTrailName: definition.sourceTrailName,
-      featureObjectIds: definition.featureObjectIds,
-      directionsLabel: definition.directionsLabel,
-    },
-  }
-}
-
-function regionOf(lat, lng) {
-  if (lat > 1.4) return 'north'
-  if (lng > 103.92) return 'east'
-  if (lng < 103.75) return 'west'
-  if (lat > 1.35 && lng > 103.86) return 'north-east'
-  return 'central'
-}
-
 export function routeFeatureCollection(activity, geojson) {
   if (!isNparksRoute(activity) || activity?.nparks?.datasetId !== NPARKS_DATASET_ID || !Array.isArray(geojson?.features)) {
     return { type: 'FeatureCollection', features: [] }

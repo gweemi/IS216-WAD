@@ -7,7 +7,7 @@ import { categoryLabel, sourceLabel } from '@/utils/activityStyle'
 import { SOURCE_OPTIONS } from '@/utils/activitySource'
 import { BUDGETS, HOURS, ENERGY } from '@/utils/activeFilters'
 import { REGIONS } from '@/config/regions'
-const props = defineProps({
+defineProps({
   open: { type: Boolean, default: true },
   showCategories: { type: Boolean, default: true },
   showRegions: { type: Boolean, default: false },

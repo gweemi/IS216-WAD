@@ -14,7 +14,6 @@ import { useGeolocation } from '@/composables/useGeolocation'
 import { useMapIntroState } from '@/composables/useMapIntroState'
 import { useAuthStore } from '@/stores/auth'
 import { INTERESTS } from '@/config/preferences'
-import { REGIONS } from '@/config/regions'
 import { clearActivityClusterLayer, createActivityClusterLayer, populateActivityClusterLayer, refreshActivityClusterEligibility, setActivityMarkerSelected, setActivityMarkerHuntEligible } from '@/utils/activityMapMarkers'
 import { focusMapOnActivity } from '@/utils/mapActivityFocus'
 import { directionsUrl } from '@/services/maps'
@@ -67,12 +66,6 @@ const activities = computed(() => !nearMeEnabled.value || !locationCoords.value
 const recommendedBadgeOpportunities = computed(() => badgeOpportunities(allDiscoverableActivities.value))
 const visibleHuntOpportunities = computed(() => badgeOpportunities(activities.value))
 const activeHuntOpportunity = computed(() => visibleHuntOpportunities.value.find((badge) => badge.id === trackedBadgeId.value) ?? null)
-const huntLocationText = computed(() => {
-  if (!trackedBadge.value) return ''
-  if (!nearMeEnabled.value) return 'Showing all eligible activities · Turn on Near Me to focus nearby'
-  const count = activeHuntOpportunity.value?.eligibleActivities.length ?? 0
-  return count ? `${count} nearby within ${nearbyRadiusKm.value} km` : `No nearby matches within ${nearbyRadiusKm.value} km`
-})
 const selectedBadgeOpportunity = computed(() => selectedActivity.value && trackedBadgeId.value && canActivityProgressBadge(trackedBadgeId.value, selectedActivity.value) ? trackedBadge.value : null)
 const categories = computed(() => [{ id: 'all', label: 'All', emoji: '✦', color: '#7541EC' }, ...INTERESTS])
 const selectedCategories = computed(() => categories.value.filter((category) =>
@@ -486,7 +479,7 @@ async function loadSelectedTrail({ retry = false } = {}) {
     selectedRoute.value = route
     trailLoadState.value = 'ready'
     showSelectedTrail()
-  } catch (error) {
+  } catch {
     if (request !== trailLoadRequest || selectedActivity.value?.id !== activity.id) return
     trailLoadState.value = 'error'
   }

@@ -80,10 +80,6 @@ function removePending(activityId) {
   if (d !== -1) reflections.dismissed.splice(d, 1)
 }
 
-export function dismissPrompt(activityId) {
-  if (!reflections.dismissed.includes(activityId)) reflections.dismissed.push(activityId)
-}
-
 export function setPromptsOn(on) {
   reflections.promptsOn = Boolean(on)
 }

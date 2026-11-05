@@ -83,8 +83,8 @@ export default {
       if (this.popping) return 
       this.pop()
       try {
-        burstFrom(this.$refs.ring) 
-      } catch (e) {}
+        burstFrom(this.$refs.ring)
+      } catch {}
       this.timers.push(setTimeout(() => this.$emit('select', this.badge), OPEN_DELAY_MS))
     },
   },

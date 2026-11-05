@@ -2,7 +2,7 @@
 import BottomSheet from '@/components/common/BottomSheet.vue'
 import { badgePresentation } from '@/stores/gamification(badges).js'
 
-const props = defineProps({ open: Boolean, opportunities: { type: Array, default: () => [] }, selectedId: String })
+defineProps({ open: Boolean, opportunities: { type: Array, default: () => [] }, selectedId: String })
 const emit = defineEmits(['close', 'select', 'viewAll'])
 const choose = (id) => emit('select', id)
 const badgeStyle = (badge) => ({ background: badgePresentation(badge).color })
