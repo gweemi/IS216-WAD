@@ -59,7 +59,8 @@
 .bi-lightbulb::before { content: "lightbulb"; }
 .bi-lightning-charge-fill::before { content: "lightning"; }
 .bi-lock-fill::before { content: "lock-key"; }
-.bi-map::before { content: "map-trifold"; }
+/* Use the direct glyph: Safari/iOS can fail to resolve this multi-character ligature. */
+.bi-map::before { content: "\e31a"; }
 .bi-mortarboard-fill::before { content: "graduation-cap"; }
 .bi-pause-fill::before { content: "pause"; }
 .bi-pencil::before, .bi-pencil-fill::before { content: "pencil"; }
