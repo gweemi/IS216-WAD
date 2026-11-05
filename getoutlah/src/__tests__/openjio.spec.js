@@ -198,6 +198,11 @@ describe('who can see and join a jio', () => {
 })
 
 describe('fitting in with the Activities page', () => {
+  it('keeps the full description for the activity details page', () => {
+    expect(toActivity(makeJio({ description: 'Court booked, bring water!' }), 'x').description).toBe('Court booked, bring water!')
+    expect(toActivity(makeJio({ description: undefined }), 'x').description).toBe('')
+  })
+
   it('turns a jio into an activity like the curated ones', () => {
     const a = toActivity(makeJio({ participants: ['host', 'a'] }), 'host')
     expect(a).toMatchObject({

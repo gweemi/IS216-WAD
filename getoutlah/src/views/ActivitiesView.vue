@@ -243,8 +243,7 @@ onMounted(loadActivities)
 .act-list > li { display: flex; min-width: 0; }
 .act-list > li > * { flex: 1; min-width: 0; }
 .act-list :deep(.act-title),
-.act-list :deep(.jio-title),
-.act-list :deep(.jio-desc) {
+.act-list :deep(.jio-title) {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
 }
 

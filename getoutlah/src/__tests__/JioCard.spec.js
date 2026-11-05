@@ -95,17 +95,10 @@ describe('JioCard', () => {
     expect(card({}, 'me').find('[data-testid="edit-jio"]').exists()).toBe(false)
   })
 
-  it('lets the host and people going open the attendee list, but not others', () => {
-    expect(card({}, 'host').find('[data-testid="view-jio-attendees"]').exists()).toBe(true)
-    expect(card({ participants: ['host', 'me'] }, 'me').find('[data-testid="view-jio-attendees"]').exists()).toBe(true)
-    expect(card({ participants: ['host', 'x', 'y'], waitlist: ['me'], capacity: 3 }, 'me').find('[data-testid="view-jio-attendees"]').exists()).toBe(false)
-    expect(card({}, 'me').find('[data-testid="view-jio-attendees"]').exists()).toBe(false)
-  })
-
-  it('shows Who\'s going on a clickable card for someone going', () => {
-    const { w } = linkedCard({ participants: ['host', 'me'] })
-    expect(w.find('[data-testid="view-jio-attendees"]').exists()).toBe(true)
-    expect(button(w).exists()).toBe(false)
+  it("no longer has a Who's going button: the list is on the activity details page", () => {
+    expect(card({}, 'host').find('[data-testid="view-jio-attendees"]').exists()).toBe(false)
+    expect(card({ participants: ['host', 'me'] }, 'me').find('[data-testid="view-jio-attendees"]').exists()).toBe(false)
+    expect(linkedCard({ participants: ['host', 'me'] }).w.find('[data-testid="view-jio-attendees"]').exists()).toBe(false)
   })
 
   it('shows who invited you to an invite-only jio', () => {
@@ -156,9 +149,8 @@ describe('JioCard', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
-  it("keeps the host's Who's going button, but leaves Edit and Cancel to the detail page", () => {
+  it('leaves Edit and Cancel to the detail page for the host', () => {
     const { w } = linkedCard({ hostId: 'me', participants: ['me'] })
-    expect(w.find('[data-testid="view-jio-attendees"]').exists()).toBe(true)
     expect(w.find('[data-testid="edit-jio"]').exists()).toBe(false)
     expect(button(w).exists()).toBe(false)
   })
@@ -167,5 +159,24 @@ describe('JioCard', () => {
     const w = card({})
     expect(w.find('[data-testid="jio-card"]').classes()).not.toContain('is-clickable')
     expect(w.find('[data-testid="jio-details-link"]').exists()).toBe(false)
+  })
+
+  it('shows the description on the card (trimmed to one line by CSS), with no hover text', () => {
+    const long = 'Court is booked from 3pm, bring your own racket and water, we will split the shuttlecock cost after'
+    const w = card({ description: long })
+    const desc = w.get('[data-testid="jio-desc"]')
+    expect(desc.text()).toBe(long) // all of it is there for screen readers; CSS trims it to one line with …
+    expect(desc.attributes('title')).toBeUndefined()
+  })
+
+  it('shows hosting / going before the description', () => {
+    const html = card({ description: 'Bring water' }).html()
+    expect(html.indexOf('data-testid="jio-status-row"')).toBeLessThan(html.indexOf('data-testid="jio-desc"'))
+  })
+
+  it('shows the location on its own line, under the date and time', () => {
+    const w = card({ location: 'Clementi' })
+    expect(w.get('[data-testid="jio-where"]').text()).toBe('Clementi')
+    expect(w.get('[data-testid="jio-when"]').text()).not.toContain('Clementi')
   })
 })
