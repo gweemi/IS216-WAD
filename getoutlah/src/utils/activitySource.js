@@ -21,16 +21,8 @@ export const ACTIVITY_COLLECTIONS = Object.freeze({
   [ACTIVITY_SOURCES.EXTERNAL]: 'externalListings',
 })
 
-export const LEGACY_SOURCE_MAP = Object.freeze({
-  curated: ACTIVITY_SOURCES.PICKS,
-  eventbrite: ACTIVITY_SOURCES.EXTERNAL,
-  openjio: ACTIVITY_SOURCES.OPEN_JIO,
-})
-
-export const canonicalSource = (source) => LEGACY_SOURCE_MAP[source] ?? source
-export const canonicalActivity = (activity) => ({ ...activity, source: canonicalSource(activity.source) })
 export const isActivitySource = (source) => SOURCE_OPTIONS.includes(source)
-export const sourceLabel = (source) => SOURCE_LABELS[canonicalSource(source)] ?? 'GetOutLah Picks'
+export const sourceLabel = (source) => SOURCE_LABELS[source] ?? 'GetOutLah Picks'
 
 export const collectionForActivitySource = (source) => ACTIVITY_COLLECTIONS[source] ?? null
 

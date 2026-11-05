@@ -4,7 +4,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { filters, recommended, loadingActivities, sourceErrors, activityRefreshRequired, openJioLoadError, loadActivities } from '@/stores/activities'
 import { activeFilterPills } from '@/utils/activeFilters'
-import { ACTIVITY_SOURCES, SOURCE_LABELS, canonicalSource, isActivitySource } from '@/utils/activitySource'
+import { ACTIVITY_SOURCES, SOURCE_LABELS, isActivitySource } from '@/utils/activitySource'
 import ActivityCard from '@/components/ActivityCard.vue'
 import FilterSheet from '@/components/FilterSheet.vue'
 import JioCard from '@/components/openjio/JioCard.vue'
@@ -19,7 +19,7 @@ const OPENJIO_VIEWS = ['all', 'public', 'friends_only', 'invited']
 const jios = useOpenJioStore()
 const activePills = computed(() => activeFilterPills(filters.value).filter((pill) => !pill.id.startsWith('source-')))
 const selectedSource = computed(() => {
-  const source = canonicalSource(route.query.view)
+  const source = route.query.view
   return isActivitySource(source) ? source : null
 })
 const openJioVisibility = computed(() => OPENJIO_VIEWS.includes(route.query.visibility) ? route.query.visibility : 'all')

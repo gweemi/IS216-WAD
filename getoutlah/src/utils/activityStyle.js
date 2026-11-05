@@ -1,5 +1,5 @@
 import { getInterest } from '@/config/preferences'
-import { canonicalSource, sourceLabel as sharedSourceLabel } from '@/utils/activitySource'
+import { sourceLabel as sharedSourceLabel } from '@/utils/activitySource'
 
 export const categoryColor = (id) => getInterest(id)?.color ?? '#ece6fb'
 export const categoryEmoji = (id) => getInterest(id)?.emoji ?? '✨'
@@ -20,7 +20,7 @@ export function bookingLink(a) {
   let url
   try { url = new URL(a?.url) } catch { return null }
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
-  const label = canonicalSource(a.source) === 'externalListings' && /eventbrite/i.test(url.hostname)
+  const label = a.source === 'externalListings' && /eventbrite/i.test(url.hostname)
     ? (a.cost === 0 ? 'Register on Eventbrite' : 'Get tickets on Eventbrite')
     : 'Book or find out more'
   return { href: url.href, label }
