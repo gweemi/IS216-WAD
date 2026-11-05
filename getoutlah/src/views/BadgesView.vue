@@ -24,11 +24,11 @@
               <i class="bi bi-gift-fill"></i> Redeem Voucher
               <span class="voucher-spark" aria-hidden="true"></span>
             </RouterLink>
-            <span class="earned-count">{{ earnedCount }} of {{ badges.length }} earned</span>
+            <span class="earned-count" data-testid="earned-count">{{ earnedCount }} of {{ badges.length }} earned</span>
           </div>
         </div>
 
-        <TransitionGroup tag="div" name="badge-list" appear class="row row-cols-3 row-cols-md-4 row-cols-xl-6 g-3">
+        <TransitionGroup tag="div" name="badge-list" appear data-testid="badge-grid" class="row row-cols-3 row-cols-md-4 row-cols-xl-6 g-3">
           <div v-for="(b, i) in badges" :key="b.id" class="col" :style="{ '--i': i }">
             <BadgeTile :badge="b" @select="selected = b" />
           </div>

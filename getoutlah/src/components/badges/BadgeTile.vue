@@ -2,6 +2,8 @@
 <template>
   <button
     class="badge-tile"
+    data-testid="badge-tile"
+    :data-earned="badge.earned"
     :class="{ locked: !badge.earned, popping: popping, 'big-entrance': celebrate && badge.earned }"
     @click="onClick"
   >
