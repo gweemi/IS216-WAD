@@ -24,12 +24,16 @@ vi.mock('vue-router', () => ({
 const { default: OnboardingView } = await import('@/views/OnboardingView.vue')
 
 describe('OnboardingView', () => {
-  it('greets the user and shows which account they are using', () => {
+  it('greets the user, uses the logo image, and shows which account they are using', () => {
     const wrapper = mount(OnboardingView)
     expect(wrapper.find('[data-testid="onboarding-welcome"]').text()).toContain(
       'Welcome, En Min Seah!',
     )
-    expect(wrapper.text()).toContain('enmin.seah.2025@smu.edu.sg')
+    expect(wrapper.find('[data-testid="onboarding-welcome"] br').exists()).toBe(true)
+    expect(wrapper.find('.onboarding-logo').attributes('src')).toBe('/logo.png')
+    expect(wrapper.text()).toContain('Signing in as enmin.seah.2025@smu.edu.sg.')
+    expect(wrapper.text()).not.toContain('3 quick questions, under a minute.')
+    expect(wrapper.text()).not.toContain('Your next adventure starts here')
   })
 
   it('confirms before logging out and going back to the log-in page', async () => {

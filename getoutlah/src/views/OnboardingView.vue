@@ -65,14 +65,13 @@ async function onSubmit(answers) {
   <main class="onboarding-page gol-page">
     <div class="onboarding-column">
       <header class="welcome">
-        <p class="gol-eyebrow">Your next adventure starts here</p>
-        <p class="onboarding-brand">GETOUTLAH!</p>
+        <img class="onboarding-logo" src="/logo.png" alt="GETOUTLAH!" />
         <h1 class="onboarding-title" data-testid="onboarding-welcome">
-          Welcome{{ name ? `, ${name}` : '' }}! Let's set you up.
+          Welcome{{ name ? `, ${name}` : '' }}!<br />
+          Let's set you up.
         </h1>
-        <p class="onboarding-subtitle">3 quick questions, under a minute.</p>
         <p class="onboarding-account">
-          Signed in as {{ auth.email }}.
+          Signing in as {{ auth.email }}.
           <button
             type="button"
             class="link-logout"
@@ -121,23 +120,11 @@ async function onSubmit(answers) {
   padding: 0 .35rem;
   text-align: center;
 }
-.onboarding-brand {
-  margin: 0 0 .25rem;
-  color: var(--gol-purple);
-  font: 900 clamp(1.7rem, 5vw, 2.35rem)/1 var(--gol-font);
-  letter-spacing: -.06em;
-  text-shadow: 2px 2px 0 var(--gol-lime);
-}
+.onboarding-logo { display: block; width: min(10rem, 45vw); height: auto; margin: 0 auto .75rem; }
 .onboarding-title {
   margin: 0;
   color: var(--gol-ink);
   font: 900 clamp(1.25rem, 3vw, 1.55rem)/1.2 var(--gol-font);
-}
-.onboarding-subtitle {
-  margin: .45rem 0 0;
-  color: var(--gol-muted);
-  font-size: .92rem;
-  font-weight: 700;
 }
 .onboarding-account {
   margin: .7rem 0 0;

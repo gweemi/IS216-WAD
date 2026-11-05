@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PreferencesForm from '@/components/PreferencesForm.vue'
+import { INTERESTS } from '@/config/preferences'
 
 const byId = (wrapper, id) => wrapper.find(`[data-testid="${id}"]`)
 
@@ -44,6 +45,16 @@ describe('PreferencesForm', () => {
     await byId(wrapper, 'interest-arts').trigger('click')
     expect(byId(wrapper, 'interest-arts').attributes('aria-pressed')).toBe('false')
     expect(byId(wrapper, 'prefs-next').attributes('disabled')).toBeDefined()
+  })
+
+  it('renders each interest in an accent-colour circular icon', () => {
+    const wrapper = mount(PreferencesForm)
+
+    for (const interest of INTERESTS) {
+      const tile = byId(wrapper, `interest-${interest.id}`)
+      expect(tile.find('.option-emoji--interest').text()).toBe(interest.emoji)
+      expect(tile.classes()).toContain('option-tile--interest')
+    }
   })
 
   it('keeps answers when going back', async () => {
