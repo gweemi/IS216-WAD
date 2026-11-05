@@ -32,6 +32,8 @@ import ProfileListSheet from '@/components/profile/ProfileListSheet.vue'
 import WellbeingCard from '@/components/wellbeing/WellbeingCard.vue'
 import ReflectionsCard from '@/components/wellbeing/ReflectionsCard.vue'
 import LogoutConfirmDialog from '@/components/common/LogoutConfirmDialog.vue'
+import DeleteAccountDialog from '@/components/profile/DeleteAccountDialog.vue'
+import { deleteMyAccount, friendlyDeleteError } from '@/services/deleteAccount'
 import PreferencesCard from '@/components/profile/PreferencesCard.vue'
 import PrivacyCard from '@/components/profile/PrivacyCard.vue'
 
@@ -182,6 +184,27 @@ async function confirmLogOut() {
   logoutOpen.value = false
   await router.replace({ name: 'login' })
 }
+
+// ---------- Delete account ----------
+const deleteOpen = ref(false)
+const deleting = ref(false)
+const deleteError = ref('')
+
+async function confirmDeleteAccount() {
+  if (deleting.value) return
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    const { skipped } = await deleteMyAccount()
+    if (skipped.length) console.warn('Account deleted, but some items need an admin:', skipped)
+    deleteOpen.value = false
+    await router.replace({ name: 'login' })
+  } catch (err) {
+    deleteError.value = friendlyDeleteError(err) // empty if they just closed the Google pop-up
+  } finally {
+    deleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -295,6 +318,12 @@ async function confirmLogOut() {
               <i class="ph ph-sign-out" aria-hidden="true"></i><span>Log out</span>
             </button>
           </div>
+          <div class="text-end">
+            <button type="button" class="delete-account" data-testid="delete-account" @click="deleteError = ''; deleteOpen = true">
+              <i class="bi bi-trash3" aria-hidden="true"></i> Delete account
+            </button>
+            <p class="delete-account-note mb-0">Delete account is available to all users for testing purposes.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -315,6 +344,13 @@ async function confirmLogOut() {
       :error="logoutError"
       @cancel="logoutOpen = false"
       @confirm="confirmLogOut"
+    />
+    <DeleteAccountDialog
+      :open="deleteOpen"
+      :busy="deleting"
+      :error="deleteError"
+      @cancel="deleteOpen = false"
+      @confirm="confirmDeleteAccount"
     />
     <p v-if="message" class="toast-msg" role="status">{{ message }}</p>
   </main>
@@ -496,6 +532,9 @@ async function confirmLogOut() {
   background: #ffe9e4;
 }
 .logout .ph { font-size: 1.1rem; flex-shrink: 0; }
+.delete-account { border: none; background: none; padding: .25rem 0; color: #b4382f; font-weight: 800; font-size: .85rem; }
+.delete-account:hover { text-decoration: underline; }
+.delete-account-note { color: var(--gol-muted); font-size: .75rem; font-weight: 600; }
 .toast-msg {
   position: fixed;
   left: 50%;

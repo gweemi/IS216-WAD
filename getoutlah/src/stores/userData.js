@@ -97,6 +97,17 @@ export function markRemoteLoaded(name, forUid) {
  */
 export const isRemoteLoaded = (name) => remoteLoaded[name] === true
 
+/** Delete this browser's saved copies for an account (used when the account is deleted). */
+export function forgetCachedUser(forUid) {
+  for (const name of Object.keys(stores)) {
+    try {
+      localStorage.removeItem(cacheKey(name, forUid))
+    } catch {
+      /* storage may be blocked */
+    }
+  }
+}
+
 /** What this store holds right now (plain object), e.g. to upload it. */
 export const snapshotOf = (name) => (stores[name] ? JSON.parse(JSON.stringify(stores[name].state)) : null)
 

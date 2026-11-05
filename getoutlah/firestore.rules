@@ -158,7 +158,8 @@ service cloud.firestore {
         && (!('banned' in request.resource.data) || request.resource.data.banned == true)
         && (!('suspendedUntil' in request.resource.data) || request.resource.data.suspendedUntil is timestamp);
 
-      allow delete: if false;
+      // Delete account (Profile → Delete account): only your own profile
+      allow delete: if signedIn() && request.auth.uid == uid;
     }
 
     // ---------- Private per-account data (src/services/userDataSync.js) ----------
@@ -391,9 +392,10 @@ service cloud.firestore {
       allow delete: if signedIn() && request.auth.uid in resource.data.members;
     }
 
-    // notifications/{id}: only the person it's for can read it.
+    // notifications/{id}: only the person it's for (and the person who sent it) can read it.
     match /notifications/{id} {
-      allow read: if signedIn() && resource.data.to == request.auth.uid;
+      // The receiver reads them; the sender may too, so Delete account can find and remove what they sent.
+      allow read: if signedIn() && (resource.data.to == request.auth.uid || resource.data.from == request.auth.uid);
 
       // You can only send as yourself, to someone else.
       // Requests need a pending request from you; everything else needs you to be friends.
@@ -422,7 +424,8 @@ service cloud.firestore {
       allow update: if signedIn()
         && resource.data.to == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-      allow delete: if signedIn() && resource.data.to == request.auth.uid;
+      // The receiver can delete it, and so can the sender (when deleting their account).
+      allow delete: if signedIn() && (resource.data.to == request.auth.uid || resource.data.from == request.auth.uid);
     }
 
     // Everything else is closed until we add rules for it.
