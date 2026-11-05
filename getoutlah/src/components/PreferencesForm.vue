@@ -90,7 +90,7 @@ function back() {
         :data-testid="`interest-${opt.id}`"
         @click="toggleInterest(opt.id)"
       >
-        <span class="option-emoji" aria-hidden="true">{{ opt.emoji }}</span>
+        <span class="option-emoji option-emoji--interest" aria-hidden="true">{{ opt.emoji }}</span>
         <span class="option-label">{{ opt.label }}</span>
         <span class="option-hint">{{ opt.hint }}</span>
       </button>
@@ -241,25 +241,22 @@ function back() {
   background: var(--gol-purple-soft);
   box-shadow: inset 0 0 0 1px var(--gol-purple), 0 3px 0 var(--gol-purple-dark);
 }
-.option-tile--interest::after {
-  position: absolute;
-  top: .65rem;
-  right: .65rem;
-  width: .65rem;
-  height: .65rem;
-  content: '';
-  border-radius: 999px;
-  background: var(--option-accent);
-  box-shadow: 0 0 0 3px #fff;
-}
-.option-tile--interest.selected::after {
-  background: var(--gol-lime);
-  box-shadow: 0 0 0 3px var(--gol-purple-soft);
-}
 .option-emoji {
   font-size: 1.55rem;
   line-height: 1;
   margin-bottom: 0.3rem;
+}
+.option-emoji--interest {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: .55rem;
+  place-items: center;
+  font-size: 1.8rem;
+  background: var(--option-accent);
+  border: 2px solid var(--gol-ink);
+  border-radius: 50%;
+  box-shadow: 0 2px 0 var(--gol-ink);
 }
 .option-label {
   font-weight: 900;
