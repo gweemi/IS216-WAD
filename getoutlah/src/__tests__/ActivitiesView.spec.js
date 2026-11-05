@@ -59,6 +59,7 @@ beforeEach(() => {
 describe('ActivitiesView source discovery', () => {
   it('shows all source explanations and hides the duplicate filter-sheet Source selector', async () => {
     const { wrapper } = await mountAt()
+    expect(wrapper.get('.source-info').classes()).toContain('gol-card')
     expect(wrapper.text()).toContain('GetOutLah Picks')
     expect(wrapper.text()).toContain('External Listings')
     expect(wrapper.text()).toContain('OPENJIO!')

@@ -16,13 +16,14 @@ import { prefillFromActivity, myRole, statusOf } from '@/utils/openjio'
 import ReportJioButton from '@/components/reports/ReportJioButton.vue'
 import JioAttendees from '@/components/openjio/JioAttendees.vue'
 import SuccessPopup from '@/components/common/SuccessPopup.vue'
+import BottomSheet from '@/components/common/BottomSheet.vue'
 import { showNewBadges } from '@/components/badges/NewBadgePopup.vue'
 import { useOpenJioStore } from '@/stores/openjio'
 
 const route = useRoute()
 const back = computed(() => (route.query.from === 'map' ? { to: '/map', label: 'Back to map' } : { to: '/activities', label: 'Back to activities' }))
 const { request } = useGeolocation()
-const message = ref(''), friendsDid = ref([]), showInvite = ref(false), earnedBadges = ref([])
+const message = ref(''), checkInDistanceMessage = ref(''), friendsDid = ref([]), showInvite = ref(false), earnedBadges = ref([])
 const BADGE_ENERGY = { low: 'calm', medium: 'moderate', high: 'high' } 
 
 onMounted(loadActivities)
@@ -61,6 +62,7 @@ watchEffect(async () => { if (activity.value) friendsDid.value = await friendsWh
 
 const doCheckIn = async () => {
   message.value = ''
+  checkInDistanceMessage.value = ''
   earnedBadges.value = []
   try {
     const a = activity.value
@@ -68,9 +70,14 @@ const doCheckIn = async () => {
     id: a.id, title: a.title, category: a.category, region: a.region, lat: a.lat, lng: a.lng,
     energy: BADGE_ENERGY[a.energyLevel] ?? null, isOpenJio: a.type === 'openJio', hostedByMe: !!a.hostedByMe,
     }, await request())
-    if (!r.ok) throw new Error(r.message)
+    if (!r.ok) {
+      if (r.distance != null) {
+        checkInDistanceMessage.value = r.message
+        return
+      }
+      throw new Error(r.message)
+    }
     recordCheckIn(a.id).catch(() => {})
-    message.value = r.message
     earnedBadges.value = r.newBadges ?? []
     showCheckInPopups()
   } catch (error) { message.value = error.message }
@@ -84,6 +91,10 @@ async function showCheckInPopups() {
 }
 function closePopup() {
   popup.value = null
+}
+
+function closeDistancePopup() {
+  checkInDistanceMessage.value = ''
 }
 </script>
 
@@ -100,10 +111,10 @@ function closePopup() {
               class="det-hero-img" :class="{ 'is-loaded': loadedImage === heroImage }"
               @load="loadedImage = heroImage" @error="brokenImage = heroImage" />
             <span v-else class="det-emoji">{{ categoryEmoji(activity.category) }}</span>
-            <!-- Same round save button as the top-right of ActivityCard -->
-            <button class="act-save" :class="{ on: saved }" :aria-label="saved ? 'Unsave' : 'Save'" :aria-pressed="saved"
+            <button class="act-save det-save" :class="{ on: saved }" :aria-label="saved ? 'Remove saved activity' : 'Save activity for later'" :aria-pressed="saved"
               data-testid="save-activity" @click="toggleSaved(activity.id)">
               <i class="bi" :class="saved ? 'bi-bookmark-fill' : 'bi-bookmark'"></i>
+              <span>{{ saved ? 'Saved' : 'Save for later' }}</span>
             </button>
           </div>
           <div class="gol-eyebrow mt-3">{{ categoryLabel(activity.category) }}</div>
@@ -181,7 +192,6 @@ function closePopup() {
           <!-- OPENJIO: who's going, as its own sub-card under Invite friends (host and people going only) -->
           <JioAttendees v-if="canSeeAttendees" :jio="jio" />
           <p v-if="message" class="det-msg">{{ message }}</p>
-          <p v-if="earnedBadges.length" class="det-msg"><i class="bi bi-trophy-fill"></i> New badge{{ earnedBadges.length > 1 ? 's' : '' }}: {{ earnedBadges.map((badge) => badge.name).join(', ') }} · <router-link :to="{ name: 'badges' }">View Badge</router-link></p>
         </div>
       </div>
       <p v-else class="mt-4 fw-bold">Activity not found (or still loading).</p>
@@ -191,6 +201,15 @@ function closePopup() {
           <i class="bi bi-journal-text"></i> Do Reflection
         </router-link>
       </SuccessPopup>
+
+      <BottomSheet :open="Boolean(checkInDistanceMessage)" label="Too far to check in" @close="closeDistancePopup">
+        <div class="distance-popup" data-testid="check-in-distance-popup">
+          <i class="bi bi-geo-alt-fill distance-popup__icon" aria-hidden="true"></i>
+          <h2>Too far to check in</h2>
+          <p>{{ checkInDistanceMessage }}</p>
+          <button type="button" class="gol-btn-primary" data-testid="check-in-distance-close" @click="closeDistancePopup">Got it</button>
+        </div>
+      </BottomSheet>
 
       <InviteFriendsSheet
         :open="showInvite"
@@ -215,6 +234,14 @@ function closePopup() {
 /* The picture starts invisible and fades in once it has downloaded */
 .det-hero-img { opacity: 0; transition: opacity 0.3s ease-out; }
 .det-hero-img.is-loaded { opacity: 1; }
+
+.det-save { display: inline-flex; align-items: center; gap: .4rem; width: auto; padding: .4rem .75rem; border: 2px solid var(--gol-purple); border-radius: 999px; font: 900 .8rem var(--gol-font); }
+.det-save.on { border-color: #fff; }
+
+.distance-popup { padding: .75rem .25rem .4rem; text-align: center; }
+.distance-popup__icon { display: block; margin-bottom: .65rem; color: var(--gol-coral); font-size: 2.7rem; }
+.distance-popup h2 { margin: 0 0 .5rem; font: 900 1.35rem/1.2 var(--gol-font); }
+.distance-popup p { margin: 0 0 1.25rem; color: var(--gol-muted); font-weight: 700; }
 
 /* Already checked in: grey and not clickable */
 .gol-btn-primary.det-checked-in,

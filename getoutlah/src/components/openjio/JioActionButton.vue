@@ -20,7 +20,7 @@
     </button>
     <p v-if="message" class="jio-msg mt-2 mb-0" role="status" data-testid="jio-message">{{ message }}</p>
     <!-- After joining: same tick pop-up as checking in -->
-    <SuccessPopup :open="joined" title="You have been jioed" @close="joined = false" />
+    <SuccessPopup :open="joined" title="You have been jioed!" @close="joined = false" />
   </div>
   <!-- Change code is necessary: tell people why a reported jio has no buttons -->
   <p v-else-if="current && suspended" class="jio-suspended mb-0" role="status" data-testid="jio-suspended">

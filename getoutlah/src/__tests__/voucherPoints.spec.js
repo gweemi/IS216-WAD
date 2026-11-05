@@ -14,8 +14,8 @@ describe('redeeming a voucher', () => {
 
   it('takes the voucher cost off the points you can spend', () => {
     expect(availablePoints()).toBe(400)
-    expect(redeemVoucher('cafe-5').ok).toBe(true)   // 150 pts
-    expect(availablePoints()).toBe(250)
+    expect(redeemVoucher('cafe-5').ok).toBe(true)   // 75 pts
+    expect(availablePoints()).toBe(325)
     expect(totalPoints()).toBe(400) // everything ever earned is still in the history
   })
 

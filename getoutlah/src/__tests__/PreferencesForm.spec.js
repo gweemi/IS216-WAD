@@ -47,6 +47,17 @@ describe('PreferencesForm', () => {
     expect(byId(wrapper, 'prefs-next').attributes('disabled')).toBeDefined()
   })
 
+  it('shows Balanced as the third energy-level option', async () => {
+    const wrapper = mount(PreferencesForm)
+    await byId(wrapper, 'interest-games').trigger('click')
+    await byId(wrapper, 'prefs-next').trigger('click')
+    await byId(wrapper, 'budget-under20').trigger('click')
+    await byId(wrapper, 'prefs-next').trigger('click')
+
+    expect(wrapper.find('[aria-label="Energy level"]').findAll('button').map((button) => button.attributes('data-testid')))
+      .toEqual(['energy-low', 'energy-high', 'energy-medium'])
+  })
+
   it('renders each interest in an accent-colour circular icon', () => {
     const wrapper = mount(PreferencesForm)
 

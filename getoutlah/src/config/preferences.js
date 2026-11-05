@@ -32,8 +32,8 @@ export const BUDGETS = [
 
 export const ENERGY_LEVELS = [
   { id: 'low', label: 'Chill', emoji: '😌', hint: 'Easy-going, low effort' },
-  { id: 'medium', label: 'Balanced', emoji: '🙂', hint: 'A bit of both' },
   { id: 'high', label: 'Active', emoji: '⚡', hint: 'Get moving, break a sweat' },
+  { id: 'medium', label: 'Balanced', emoji: '🙂', hint: 'A bit of both' },
 ]
 
 export const GROUP_PREFERENCES = [

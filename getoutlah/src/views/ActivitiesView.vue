@@ -104,7 +104,7 @@ onMounted(loadActivities)
       <h1 class="gol-title">Where we going?</h1>
       <p class="act-intro">From curated finds to student-hosted plans, there’s something for everyone.</p>
 
-      <section class="source-info" aria-labelledby="ways-to-explore">
+      <section class="source-info gol-card" aria-labelledby="ways-to-explore">
         <h2 id="ways-to-explore" class="act-label">Ways to explore</h2>
         <ul class="source-cards">
           <li v-for="card in sourceCards" :key="card.source" class="source-card" :class="`source-colour--${card.source}`">
@@ -208,8 +208,8 @@ onMounted(loadActivities)
 .source-colour--externalListings { --source-colour: #1f6f7d; --source-soft: #dff6fa; }
 .source-colour--openJio { --source-colour: #b4382f; --source-soft: #ffe6e0; }
 
-/* "Ways to explore": plain info rows, no border or shadow, so they don't look like buttons */
-.source-info { padding-bottom: 1.1rem; margin-bottom: 1.1rem; border-bottom: 1px solid rgba(34, 26, 59, .1); }
+/* "Ways to explore": grouped in the shared card treatment, while the info rows stay non-interactive. */
+.source-info { margin: .4rem 0 1.6rem; }
 .source-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
 .source-card { display: flex; align-items: center; gap: .9rem; }
 .source-icon { display: grid; flex: 0 0 3.2rem; width: 3.2rem; height: 3.2rem; place-items: center; border-radius: 14px; font-size: 1.55rem; }

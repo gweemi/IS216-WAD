@@ -228,7 +228,7 @@ export default {
 .jio-visibility { right: 0.6rem; background: #fff; }
 .jio-visibility--public { color: #1d5f8a; }
 .jio-visibility--friends { color: var(--gol-purple); }
-.jio-status--open { background: var(--gol-lime); color: var(--gol-ink); }
+.jio-status--open { background: var(--gol-ink); color: #fff; }
 .jio-status--full { background: #5d4d72; color: #fff; }
 .jio-status--ended { background: var(--gol-locked); color: var(--gol-ink); }
 .jio-status--cancelled { background: var(--gol-coral); color: #fff; }

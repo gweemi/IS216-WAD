@@ -80,7 +80,7 @@ describe('JioCard', () => {
     // First join earns Crew energy: its pop-up comes first, then "You have been jioed" instead of a line of text
     expect(badgePopup.showNewBadges.mock.calls[0][0].map((b) => b.id)).toEqual(['crew-energy'])
     expect(w.find('[data-testid="jio-message"]').exists()).toBe(false)
-    expect(document.body.textContent).toContain('You have been jioed')
+    expect(document.body.textContent).toContain('You have been jioed!')
     w.unmount()
   })
 

@@ -63,7 +63,6 @@
             </div>
             <div class="small detail-text">Bonus: +{{ selected.bonus }} points (counts towards your weekly cap)</div>
           </div>
-          <p class="small detail-text mb-3">No deadline. Go at your own pace.</p>
           <button v-if="!selected.earned && selected.qualifies" class="gol-btn-primary me-2" @click="trackOnMap(selected)"><i class="bi bi-map"></i> Track on Map</button>
         </div>
       </template>

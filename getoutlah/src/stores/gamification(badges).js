@@ -434,7 +434,7 @@ export function resetGamification(withDemo = false) {
 
 // Partner vouchers (sample list; change names/costs with your team)
 export const VOUCHERS = [
-  { id: 'cafe-5', name: '$5 Café Voucher', cost: 150, icon: '☕' },
+  { id: 'cafe-5', name: '$5 Café Voucher', cost: 75, icon: '☕' },
   { id: 'retail-10', name: '10% Retail Discount', cost: 250, icon: '🛍️' },
   { id: 'event-10', name: '$10 Event Voucher', cost: 300, icon: '🎟️' },
   { id: 'bike-10', name: '$10 Bike Rental', cost: 400, icon: '🚲' },
