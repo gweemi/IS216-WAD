@@ -47,6 +47,14 @@ export function validateJio(form, now = new Date()) {
 
   if (!REGIONS.includes(form?.region)) problems.push('Pick a region.')
 
+  // Coordinates are optional, but if given they must both be in Singapore (same bounds as the admin form)
+  const lat = form?.lat, lng = form?.lng
+  if (lat != null || lng != null) {
+    const inSingapore = typeof lat === 'number' && typeof lng === 'number'
+      && lat >= 1.1 && lat <= 1.5 && lng >= 103.5 && lng <= 104.1
+    if (!inSingapore) problems.push('Pick a location in Singapore.')
+  }
+
   const startAt = form?.startAt instanceof Date ? form.startAt : null
   if (!startAt || isNaN(startAt)) problems.push('Pick a date and time.')
   else if (startAt <= now) problems.push('The start time has already passed.')
@@ -256,6 +264,8 @@ export function prefillFromActivity(activity) {
     category: activity.category,
     location: activity.area ?? activity.location ?? '',
     region: REGIONS.includes(activity.region) ? activity.region : undefined,
+    lat: typeof activity.lat === 'number' ? activity.lat : undefined,
+    lng: typeof activity.lng === 'number' ? activity.lng : undefined,
     cost: typeof activity.cost === 'number' ? activity.cost : undefined,
     durationMins: activity.durationHrs ? Math.round(activity.durationHrs * 60) : undefined,
     startAt: activity.startsAt ? new Date(activity.startsAt) : undefined,

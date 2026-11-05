@@ -9,6 +9,11 @@ vi.mock('@/services/openjio', () => ({
   updateJio: vi.fn(async (id) => id),
   friendlyJioError: (e) => e.message,
 }))
+vi.mock('@/services/api/onemap', () => ({
+  searchPlaces: vi.fn(async () => [
+    { name: 'Tampines Hub', address: '1 Tampines Walk Singapore 528523', lat: 1.3532, lng: 103.9405 },
+  ]),
+}))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ user: { uid: 'me' }, profile: {} }) }))
 
 // Two accepted friends in the Friends feature's store
@@ -135,5 +140,44 @@ describe('CreateJioSheet', () => {
     await w.find('form').trigger('submit')
     expect(w.find('[data-testid="create-jio-error"]').text()).toContain('cannot be lower than the 3 people')
     expect(w.find('[data-testid="jio-confirmation"]').exists()).toBe(false)
+  })
+
+  it('has the same location fields as the admin form: search, area name, latitude, longitude', async () => {
+    const w = open()
+    await w.find('[data-testid="jio-place"]').setValue('528523')
+    await w.find('[data-testid="jio-find-place"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="jio-places"] button').trigger('click')
+
+    expect(value(w, 'jio-place')).toBe('1 Tampines Walk Singapore 528523')
+    expect(value(w, 'jio-location')).toBe('Tampines Hub') // area name filled in because it was empty
+    expect(value(w, 'jio-lat')).toBe('1.3532')
+    expect(value(w, 'jio-lng')).toBe('103.9405')
+    expect(value(w, 'jio-region')).toBe('east')
+  })
+
+  it('keeps an area name the user already typed when picking a place', async () => {
+    const w = open()
+    await w.find('[data-testid="jio-location"]').setValue('Level 3 courts')
+    await w.find('[data-testid="jio-place"]').setValue('Tampines Hub')
+    await w.find('[data-testid="jio-find-place"]').trigger('click')
+    await flushPromises()
+    await w.find('[data-testid="jio-places"] button').trigger('click')
+    expect(value(w, 'jio-location')).toBe('Level 3 courts')
+    expect(value(w, 'jio-lat')).toBe('1.3532')
+  })
+
+  it('rejects typed coordinates outside Singapore', async () => {
+    const w = open({ title: 'Picnic', category: 'outdoors', location: 'Somewhere' })
+    await w.find('[data-testid="jio-lat"]').setValue('40.7')
+    await w.find('[data-testid="jio-lng"]').setValue('-74')
+    await w.find('form').trigger('submit')
+    expect(w.find('[data-testid="create-jio-error"]').text()).toContain('Pick a location in Singapore')
+  })
+
+  it('keeps the exact spot when starting a jio from an activity', () => {
+    const w = open(prefillFromActivity({ title: 'Hike', category: 'outdoors', area: 'MacRitchie', lat: 1.34, lng: 103.83 }))
+    expect(value(w, 'jio-lat')).toBe('1.34')
+    expect(value(w, 'jio-lng')).toBe('103.83')
   })
 })
