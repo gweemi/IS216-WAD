@@ -1,12 +1,12 @@
 <script setup>
 import '@/assets/discovery.css'
-import { ref, computed, watch, watchEffect, onMounted } from 'vue'
+import { ref, computed, watch, watchEffect, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { activityById, datesOf, weatherAt, toggleSaved, isSaved, loadActivities } from '@/stores/activities'
 import { friendsWhoDid } from '@/stores/ports'
 import { recordCheckIn } from '@/services/friends'
 import InviteFriendsSheet from '@/components/friends/InviteFriendsSheet.vue'
-import { checkInToActivity } from '@/stores/gamification(badges).js'
+import { checkInToActivity, game } from '@/stores/gamification(badges).js'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { directionsUrl } from '@/services/maps'
 import { categoryColor, categoryEmoji, categoryLabel, tileTextColor, priceText, sourceLabel, whenText, bookingLink, durationText } from '@/utils/activityStyle'
@@ -15,6 +15,8 @@ import StartJioButton from '@/components/openjio/StartJioButton.vue'
 import { prefillFromActivity, myRole, statusOf } from '@/utils/openjio'
 import ReportJioButton from '@/components/reports/ReportJioButton.vue'
 import JioAttendees from '@/components/openjio/JioAttendees.vue'
+import BottomSheet from '@/components/common/BottomSheet.vue'
+import BadgeTile from '@/components/badges/BadgeTile.vue'
 import { useOpenJioStore } from '@/stores/openjio'
 
 const route = useRoute()
@@ -44,6 +46,8 @@ const shownDescription = computed(() => {
   const first100 = text.match(new RegExp(`^(\\s*\\S+){${SHORT_WORDS}}`))[0]  
   return first100 + '…'
 })
+// Already checked in here: the Check in button turns grey
+const checkedIn = computed(() => !!activity.value && game.completed.some((a) => a.id === activity.value.id))
 const saved = computed(() => (activity.value ? isSaved(activity.value.id) : false))
 const jios = useOpenJioStore()
 const jio = computed(() => (activity.value?.type === 'openJio' ? jios.all.find((j) => j.id === activity.value.jioId) ?? null : null))
@@ -68,8 +72,27 @@ const doCheckIn = async () => {
     recordCheckIn(a.id).catch(() => {})
     message.value = r.message
     earnedBadges.value = r.newBadges ?? []
+    showCheckInPopups()
   } catch (error) { message.value = error.message }
 }
+
+// After checking in: new badges pop up first (2s), then the "checked in" pop-up
+const BADGE_POPUP_MS = 2000
+const popup = ref(null) // 'badges' | 'checked-in' | null
+let popupTimer = null
+function showCheckInPopups() {
+  clearTimeout(popupTimer)
+  if (earnedBadges.value.length) {
+    popup.value = 'badges'
+    popupTimer = setTimeout(() => { popup.value = 'checked-in' }, BADGE_POPUP_MS)
+  } else {
+    popup.value = 'checked-in'
+  }
+}
+function closePopup() {
+  popup.value = null
+}
+onBeforeUnmount(() => clearTimeout(popupTimer))
 </script>
 
 <template>
@@ -149,7 +172,11 @@ const doCheckIn = async () => {
             <a v-if="booking" :href="booking.href" target="_blank" rel="noopener" class="gol-btn-primary det-link det-book">
               <i class="bi bi-ticket-perforated"></i> {{ booking.label }} <i class="bi bi-box-arrow-up-right"></i>
             </a>
-            <button v-if="activity.lat != null && !jioSuspended" class="gol-btn-primary" @click="doCheckIn">Check in</button>
+            <button v-if="activity.lat != null && activity.type !== 'openJio'" class="gol-btn-primary" :class="{ 'det-checked-in': checkedIn }"
+              :disabled="checkedIn" data-testid="check-in" @click="doCheckIn">
+              <template v-if="checkedIn"><i class="bi bi-check-circle-fill"></i> Checked in</template>
+              <template v-else>Check in</template>
+            </button>
             <button v-if="!jioSuspended" class="gol-btn-soft" data-testid="invite-friends" @click="showInvite = true">
               <i class="bi bi-person-plus"></i> Invite friends
             </button>
@@ -166,6 +193,34 @@ const doCheckIn = async () => {
         </div>
       </div>
       <p v-else class="mt-4 fw-bold">Activity not found (or still loading).</p>
+      <!-- New badges from this check-in: shows first, can't be dismissed, moves on by itself after 2s -->
+      <BottomSheet :open="popup === 'badges'" label="New badge">
+        <div class="text-center checkin-pop" data-testid="new-badge-popup">
+          <p class="gol-eyebrow">New badge{{ earnedBadges.length > 1 ? 's' : '' }} unlocked!</p>
+          <div class="d-flex justify-content-center flex-wrap gap-3">
+            <div v-for="b in earnedBadges" :key="b.id" class="checkin-pop__badge">
+              <BadgeTile :badge="{ ...b, earned: true }" :celebrate="true" />
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <!-- Always shown after a successful check-in: only the X closes it -->
+      <BottomSheet :open="popup === 'checked-in'" label="Checked in">
+        <div class="d-flex justify-content-end">
+          <button type="button" class="gol-close" aria-label="Close" data-testid="close-checked-in" @click="closePopup">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="text-center checkin-pop" data-testid="checked-in-popup">
+          <i class="bi bi-check-circle-fill checkin-pop__tick" aria-hidden="true"></i>
+          <h2 class="checkin-pop__title">You have successfully checked in!</h2>
+          <router-link :to="{ name: 'profile', hash: '#reflections' }" class="gol-btn-primary det-link justify-content-center" data-testid="do-reflection">
+            <i class="bi bi-journal-text"></i> Do Reflection
+          </router-link>
+        </div>
+      </BottomSheet>
+
       <InviteFriendsSheet
         :open="showInvite"
         :activity="activity"
@@ -189,6 +244,18 @@ const doCheckIn = async () => {
 /* The picture starts invisible and fades in once it has downloaded */
 .det-hero-img { opacity: 0; transition: opacity 0.3s ease-out; }
 .det-hero-img.is-loaded { opacity: 1; }
+
+/* Pop-ups after checking in */
+.checkin-pop { padding: .5rem 0 .25rem; }
+.checkin-pop__badge { width: 120px; pointer-events: none; }
+.checkin-pop__badge :deep(.progress-wrap) { display: none; }
+.checkin-pop__badge :deep(.name) { font-weight: 900; }
+.checkin-pop__tick { display: block; font-size: 3.5rem; color: #2fa96b; line-height: 1; margin-bottom: .6rem; }
+.checkin-pop__title { font-size: 1.3rem; font-weight: 900; margin: 0 0 1.1rem; }
+
+/* Already checked in: grey and not clickable */
+.gol-btn-primary.det-checked-in,
+.gol-btn-primary.det-checked-in:disabled { background: #d9d6e0; color: #6b6878; border-color: #b9b5c4; box-shadow: 0 4px 0 #b9b5c4; opacity: 1; cursor: default; }
 
 /* People who turn on "Reduce motion" on their phone get no animation */
 @media (prefers-reduced-motion: reduce) {

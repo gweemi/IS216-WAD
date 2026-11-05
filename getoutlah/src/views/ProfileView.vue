@@ -49,6 +49,8 @@ const loggingOut = ref(false)
 const logoutError = ref('')
 
 onMounted(async () => {
+  // "Do Reflection" after a check-in opens /profile#reflections: jump to that card
+  if (window.location.hash === '#reflections') document.getElementById('reflections')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   if (!auth.profile && auth.user) auth.setProfile(await ensureUserProfile(auth.user))
   loadActivities().catch(() => {})
   jios.start()
@@ -286,7 +288,7 @@ async function confirmLogOut() {
           </section>
 
           <!-- Private notes after activities (Ashley's reflections) -->
-          <ReflectionsCard />
+          <ReflectionsCard id="reflections" />
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-1">
             <span class="signed-in">Logged in as {{ auth.email }}</span>
             <button class="gol-btn-soft logout" data-testid="logout" @click="requestLogOut">

@@ -1276,7 +1276,7 @@ onBeforeUnmount(() => {
 .map-activity-card__content h2 { margin: 0; padding-right: 1.2rem; font-size: clamp(1.15rem, 3vw, 1.7rem); font-weight: 900; line-height: 1.15; }
 .map-activity-card__meta,.map-activity-card__weather,.map-activity-card__description { margin: .42rem 0 0; color: var(--gol-muted); font-weight: 700; line-height: 1.35; }
 .map-activity-card__weather { color: var(--gol-ink); }
-.map-activity-card__description { font-size: .88rem; }
+.map-activity-card__description { font-size: .88rem; overflow-wrap: anywhere; }
 .map-activity-card__actions { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-top: .8rem; }
 .map-activity-card__directions,.map-activity-card__view { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .45rem; border-radius: 16px; font: 800 .9rem var(--gol-font); text-decoration: none; }
 .map-activity-card__trail-error { margin: .55rem 0 0; color: var(--gol-coral-text); font-size: .8rem; font-weight: 700; }

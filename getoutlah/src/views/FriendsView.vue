@@ -1,5 +1,5 @@
 <!--
-  Friends tab: add friends by email, answer requests, see when you're both free.
+  Friends tab: add friends by email and answer requests.
   Layout: one column on phones, two columns from large screens (Bootstrap grid).
   Notifications (bell, top right) live at /notifications.
 -->
@@ -10,13 +10,8 @@ import { friendsState, friendList, incomingRequests, outgoingRequests, unreadCou
 import {
   findUserByEmail, suggestedPeople, sendFriendRequest, acceptFriendRequest, removeFriendship,
 } from '@/services/friends'
-import { formatWindow } from '@/utils/friends'
 import FriendAvatar from '@/components/friends/FriendAvatar.vue'
-import FreeTimeCard from '@/components/friends/FreeTimeCard.vue'
 import BottomSheet from '@/components/common/BottomSheet.vue'
-import FreeTogetherJios from '@/components/openjio/FreeTogetherJios.vue' // OpenJio! (Li Min)
-import StartJioButton from '@/components/openjio/StartJioButton.vue'
-import { prefillFromWindow } from '@/utils/openjio'
 
 const auth = useAuthStore()
 
@@ -169,10 +164,7 @@ async function unfriend() {
                 <FriendAvatar :name="f.name" :photo="f.photoURL" />
                 <div class="flex-grow-1" style="min-width: 0">
                   <div class="fw-bolder text-truncate">{{ f.name }}</div>
-                  <div v-if="f.freeTogether.length" class="small fw-bold" style="color: var(--gol-teal)">
-                    <i class="bi bi-calendar-check"></i> Free together {{ formatWindow(f.freeTogether[0]) }}
-                  </div>
-                  <div v-else class="small text-muted fw-semibold">{{ f.universityName || 'GetOutLah! friend' }}</div>
+                  <div class="small text-muted fw-semibold">{{ f.universityName || 'GetOutLah! friend' }}</div>
                 </div>
                 <i class="bi bi-chevron-right text-muted" aria-hidden="true"></i>
               </button>
@@ -216,11 +208,6 @@ async function unfriend() {
             >{{ addMsg.text }}</p>
           </section>
 
-          <FreeTimeCard />
-
-          <!-- Shared free times, each with an OpenJio button (OpenJio! feature) -->
-          <FreeTogetherJios />
-
           <!-- People from the same university -->
           <section v-if="visibleSuggestions.length" class="gol-card">
             <h2 class="gol-section-title mb-2">From {{ auth.profile?.universityName }}</h2>
@@ -248,19 +235,6 @@ async function unfriend() {
           <FriendAvatar :name="selected.name" :photo="selected.photoURL" :size="84" />
           <h2 class="gol-title mt-2">{{ selected.name }}</h2>
           <p v-if="selected.universityName" class="small text-muted fw-semibold mb-0">{{ selected.universityName }}</p>
-        </div>
-
-        <div class="gol-card mb-3">
-          <h3 class="gol-section-title fs-6 mb-2">Free at the same time as you</h3>
-          <ul v-if="selected.freeTogether.length" class="list-unstyled mb-0 d-flex flex-column gap-1 fw-bold">
-            <li v-for="w in selected.freeTogether" :key="w.start" class="d-flex align-items-center justify-content-between gap-2">
-              <span><i class="bi bi-calendar-check" style="color: var(--gol-teal)"></i> {{ formatWindow(w) }}</span>
-              <StartJioButton label="OpenJio" variant="soft" :prefill="prefillFromWindow(w, [selected.uid])" />
-            </li>
-          </ul>
-          <p v-else class="small text-muted fw-semibold mb-0">
-            No overlap yet. Add when you're free on the Friends page and you'll see times that match.
-          </p>
         </div>
 
         <RouterLink :to="{ name: 'activities' }" class="gol-btn-primary text-center text-decoration-none mb-2" @click="selected = null">

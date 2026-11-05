@@ -7,14 +7,12 @@ import { DEFAULT_PRIVACY, PRIVACY_OPTIONS, privacyOf, visibleProfile } from '@/c
 import { friendsState, resetFriendsState, friendList } from '@/stores/friends'
 import { friendsWhoDid } from '@/stores/ports'
 
-const NOW = Date.now()
 const amy = {
   displayName: 'Amy',
   email: 'amy@smu.edu.sg',
   photoURL: 'https://example.com/amy.jpg',
   universityName: 'SMU',
   preferences: { interests: ['arts'] },
-  freeWindows: [{ start: NOW + 3600000, end: NOW + 4 * 3600000 }],
   checkedInActivityIds: ['act-1'],
 }
 
@@ -22,7 +20,6 @@ describe('visibleProfile', () => {
   it('shows everything by default, but never the email or private lists', () => {
     const v = visibleProfile(amy)
     expect(v).toMatchObject({ displayName: 'Amy', photoURL: amy.photoURL, universityName: 'SMU', discoverable: true })
-    expect(v.freeWindows).toHaveLength(1)
     expect(v).not.toHaveProperty('email')
     expect(v).not.toHaveProperty('preferences')
   })
@@ -51,7 +48,6 @@ describe('Friends page respects privacy', () => {
   it('shows a friend’s photo, uni and check-ins when allowed', async () => {
     friendsState.profiles = { amy }
     expect(friendList.value[0]).toMatchObject({ photoURL: amy.photoURL, universityName: 'SMU' })
-    expect(friendList.value[0].freeWindows).toHaveLength(1)
     expect(await friendsWhoDid('act-1')).toEqual([{ uid: 'amy', name: 'Amy' }])
   })
 

@@ -7,7 +7,6 @@
 //   notifications/{id}       { to, from, fromName, fromPhoto, type, activityId?, activityTitle?,
 //                              read, createdAt }
 //                              type: 'friend_request' | 'friend_accepted' | 'activity_invite'
-//   users/{uid}.freeWindows           [{ start, end }] ms — "when I'm free", shared with friends
 //   users/{uid}.checkedInActivityIds  [activityId] — powers "Friends who have done this"
 //
 // startFriends(uid) is called from main.js whenever the logged-in user changes.
@@ -19,10 +18,10 @@ import {
 import { db } from '@/firebase'
 import { useAuthStore } from '@/stores/auth'
 import { friendsState, resetFriendsState, relationshipWith } from '@/stores/friends'
-import { pairId, otherMember, upcomingWindows, toMillis } from '@/utils/friends'
+import { pairId, otherMember, toMillis } from '@/utils/friends'
 import { privacyOf, visibleProfile } from '@/config/privacy'
 
-let unsubs = [] // my friendships, my notifications, my profile
+let unsubs = [] // my friendships, my notifications
 const profileUnsubs = {} // uid → unsubscribe, one per friend / requester
 
 function stopAll() {
@@ -72,16 +71,9 @@ export function startFriends(uid) {
       onError,
     ),
   )
-
-  unsubs.push(
-    onSnapshot(doc(db, 'users', uid), (snap) => {
-      const mine = upcomingWindows(snap.data()?.freeWindows ?? [])
-      friendsState.myFreeWindows = mine
-    }),
-  )
 }
 
-// Keep one live listener per person I'm connected to, so their free time stays fresh.
+// Keep one live listener per person I'm connected to, so their profile stays fresh.
 function syncProfileListeners() {
   const wanted = new Set(friendsState.friendships.map((f) => otherMember(f, friendsState.uid)))
   for (const uid of wanted) {
@@ -204,13 +196,6 @@ export function markAllRead() {
 
 export function deleteNotification(id) {
   return deleteDoc(doc(db, 'notifications', id))
-}
-
-// ---------- free time ----------
-/** Save my free-time windows (past ones are dropped). */
-export function saveFreeWindows(windows) {
-  const clean = upcomingWindows(windows).map(({ start, end }) => ({ start, end }))
-  return updateDoc(doc(db, 'users', me().uid), { freeWindows: clean })
 }
 
 // ---------- check-ins ----------
