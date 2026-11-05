@@ -2,12 +2,16 @@
   One OPENJIO: details, who's going, and the right button for this user
   (JioActionButton does join / chope / leave / cancel).
     <JioCard :jio="jio" :uid="uid" />
+  With `link-to-details`, clicking anywhere on the card (except its buttons)
+  opens the activity detail page, like ActivityCard. Join / chope / leave / cancel
+  and Edit are then left to the detail page, so the card doesn't show them.
 -->
 <template>
   <article
     class="jio-card"
-    :class="{ 'is-greyed': greyed, 'is-cancelled': status === 'cancelled' }"
+    :class="{ 'is-greyed': greyed, 'is-cancelled': status === 'cancelled', 'is-clickable': linkToDetails }"
     data-testid="jio-card"
+    @click="openDetails"
   >
     <div class="jio-art" :style="{ background: categoryColor(jio.category) }">
       <span class="jio-emoji" aria-hidden="true">{{ categoryEmoji(jio.category) }}</span>
@@ -27,7 +31,10 @@
     <div class="p-3">
       <div class="d-flex justify-content-between align-items-start gap-2">
         <div class="min-w-0">
-          <h3 class="jio-title">{{ jio.title }}</h3>
+          <h3 class="jio-title">
+            <RouterLink v-if="linkToDetails" :to="detailsRoute" class="jio-title-link" data-testid="jio-details-link">{{ jio.title }}</RouterLink>
+            <template v-else>{{ jio.title }}</template>
+          </h3>
           <p class="jio-meta mb-0">{{ whenText(jio) }} · {{ jio.location }}</p>
         </div>
         <span class="jio-price">{{ priceText(jio) }}</span>
@@ -56,20 +63,15 @@
         If someone drops out, the spot goes to you automatically.
       </p>
 
-      <div v-if="canManage" class="jio-host-actions mt-3">
-        <button type="button" class="gol-btn-soft" data-testid="view-jio-attendees" @click="showAttendees = true">
-          <i class="bi bi-people" aria-hidden="true"></i> Who's going
-        </button>
-        <button v-if="canEdit" type="button" class="gol-btn-primary" data-testid="edit-jio" @click="$router.push({ name: 'openjio-edit', params: { id: jio.id } })">
+      <!-- Edit + Cancel only exist while the jio is open or full (canEdit) -->
+      <div v-if="canManage && !linkToDetails && canEdit" class="jio-host-actions mt-3">
+        <button type="button" class="gol-btn-primary" data-testid="edit-jio" @click="$router.push({ name: 'openjio-edit', params: { id: jio.id } })">
           <i class="bi bi-pencil-square" aria-hidden="true"></i> Edit OPENJIO
         </button>
         <JioActionButton :jio="jio" :uid="uid" />
       </div>
-      <div v-else class="jio-actions mt-3">
-        <JioActionButton :jio="jio" :uid="uid" />
-        <RouterLink v-if="showDetails" :to="{ name: 'activity', params: { id: `jio-${jio.id}` } }" class="gol-btn-soft jio-details">
-          View details
-        </RouterLink>
+      <div v-else-if="!canManage && (!linkToDetails || canDecline)" class="jio-actions mt-3">
+        <JioActionButton v-if="!linkToDetails" :jio="jio" :uid="uid" />
         <button
           v-if="canDecline"
           type="button"
@@ -81,6 +83,11 @@
           {{ declining ? 'Declining…' : 'Decline' }}
         </button>
       </div>
+      <!-- Host and people going can see who else is coming: one full-width row for both -->
+      <button v-if="canSeeAttendees" type="button" class="gol-btn-soft jio-attendees w-100" :class="hasActionRow ? 'mt-2' : 'mt-3'"
+        data-testid="view-jio-attendees" @click="showAttendees = true">
+        <i class="bi bi-people" aria-hidden="true"></i> Who's going
+      </button>
       <!-- Change code is necessary: report button (hides itself for the host and for cancelled, ended or suspended jios) -->
       <ReportJioButton :jio="jio" class="mt-2" />
     </div>
@@ -112,9 +119,12 @@ export default {
   props: {
     jio: { type: Object, required: true },
     uid: { type: String, required: true },
-    showDetails: { type: Boolean, default: false },
+    linkToDetails: { type: Boolean, default: false },
   },
   computed: {
+    detailsRoute() {
+      return { name: 'activity', params: { id: `jio-${this.jio.id}` } }
+    },
     status() {
       return statusOf(this.jio)
     },
@@ -137,6 +147,13 @@ export default {
     canManage() {
       return this.role === 'host'
     },
+    canSeeAttendees() {
+      return this.role === 'host' || this.role === 'going'
+    },
+    // Whether a row of action buttons is shown above "Who's going" (mirrors the v-if / v-else-if above).
+    hasActionRow() {
+      return this.canManage ? !this.linkToDetails && this.canEdit : (!this.linkToDetails || this.canDecline)
+    },
     canDecline() {
       return ['invite_only', 'friends'].includes(this.jio.visibility) && this.invited && this.role === 'none' && this.status !== 'cancelled' && this.status !== 'ended' && this.status !== 'suspended' // Change code is necessary: added suspended
     },
@@ -151,6 +168,13 @@ export default {
     whenText,
     categoryColor,
     categoryEmoji,
+    openDetails(event) {
+      if (!this.linkToDetails) return
+      // Let the card's own buttons and links do their job, and don't navigate while selecting text.
+      if (event.target.closest('a, button, input, select, textarea, label')) return
+      if (window.getSelection?.().toString()) return
+      this.$router.push(this.detailsRoute)
+    },
     async decline() {
       this.declining = true
       try {
@@ -171,6 +195,7 @@ export default {
   overflow: hidden;
   height: 100%;
 }
+.jio-card.is-clickable { cursor: pointer; }
 .jio-card.is-greyed { background: #ece8f0; }
 .jio-card.is-greyed .jio-art { filter: grayscale(0.8); opacity: 0.8; }
 .jio-card.is-cancelled { opacity: 0.6; }
@@ -202,6 +227,8 @@ export default {
   font-weight: 900;
 }
 .jio-status { left: 0.6rem; }
+/* On narrow cards the two tags share the width instead of overlapping */
+.jio-status, .jio-visibility { max-width: calc(50% - 0.9rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .jio-visibility { right: 0.6rem; background: #fff; }
 .jio-visibility--public { color: #1d5f8a; }
 .jio-visibility--friends { color: var(--gol-purple); }
@@ -213,12 +240,15 @@ export default {
 .jio-status--suspended { background: #dc4d4d; color: #fff; }
 
 .min-w-0 { min-width: 0; }
-.jio-title { font-weight: 900; font-size: 1.15rem; margin: 0; }
+.jio-title { font-weight: 900; font-size: 1.15rem; margin: 0; overflow-wrap: anywhere; }
+.jio-title-link { color: inherit; text-decoration: none; }
+.jio-title-link:hover, .jio-title-link:focus-visible { text-decoration: underline; }
 .jio-meta,
 .jio-host,
 .jio-going { color: var(--gol-muted); font-weight: 700; font-size: 0.85rem; }
 .jio-desc { color: #685b76; font-weight: 600; font-size: 0.9rem; }
 .jio-price {
+  flex-shrink: 0;
   background: #fff0c2;
   color: #6a5010;
   border-radius: 999px;
@@ -231,10 +261,10 @@ export default {
 .tag-invited { background: var(--gol-cyan); color: var(--gol-ink); }
 .queue-note { color: #b4382f; font-weight: 700; font-size: 0.8rem; }
 .jio-host-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .5rem; }
-.jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button), .jio-actions > button, .jio-details { min-height: 2.35rem; padding: .45rem .7rem !important; font-size: .8rem !important; line-height: 1.1; }
-.jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button) { display: inline-flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap; }.jio-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; align-items: stretch; }
+.jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button), .jio-actions > button, .jio-attendees { min-height: 2.35rem; padding: .45rem .7rem !important; font-size: .8rem !important; line-height: 1.1; }
+.jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button) { display: inline-flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap; }
+.jio-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; align-items: stretch; }
 .jio-actions > :first-child { min-width: 0; }
 .jio-actions :deep(.jio-action-button) { width: 100%; }
-.jio-details { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; white-space: nowrap; }
 .jio-actions > button { white-space: nowrap; }
 </style>

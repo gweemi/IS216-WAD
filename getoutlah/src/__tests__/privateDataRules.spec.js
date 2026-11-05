@@ -47,4 +47,18 @@ emulatorDescribe('private wellbeing + reflections rules', () => {
       updatedAt: serverTimestamp(),
     }))
   })
+
+  it('accepts points and badges in the app’s shape, and only for the owner', async () => {
+    const data = {
+      completed: [{ id: 's3', title: 'Walk', category: 'outdoors', region: 'central', date: '2026-11-05' }],
+      ledger: [{ date: '2026-11-05', amount: 60, reason: 'Walk' }],
+      earnedBadges: { 'first-one-out': '2026-11-05' },
+      studyBreak: { active: false, since: null },
+      pausedWeeks: [], redemptions: [],
+      updatedAt: serverTimestamp(),
+    }
+    await assertSucceeds(setDoc(doc(amy(), 'users', 'amy', 'private', 'gamification'), data))
+    await assertFails(getDoc(doc(ben(), 'users', 'amy', 'private', 'gamification')))
+    await assertFails(setDoc(doc(amy(), 'users', 'amy', 'private', 'gamification'), { ...data, extra: true }))
+  })
 })

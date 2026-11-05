@@ -1,7 +1,8 @@
-// Wellbeing and reflections belong to ONE account, and follow it to other devices.
+// Wellbeing, reflections and points / badges belong to ONE account, and follow it to other devices.
 import { describe, it, expect, beforeEach } from 'vitest'
 import { wellbeing, saveCheckIn } from '@/stores/wellbeing'
 import { reflections, setPromptsOn } from '@/stores/reflections'
+import { game } from '@/stores/gamification(badges).js'
 import { switchUser, applyRemote, setRemoteWriter } from '@/stores/userData'
 
 const uploads = []
@@ -57,6 +58,61 @@ describe('per-account wellbeing and reflections', () => {
     switchUser(null)
     expect(wellbeing.history).toHaveLength(0)
     expect(reflections.entries).toHaveLength(0)
+  })
+})
+
+describe('per-account points and badges', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    uploads.length = 0
+    setRemoteWriter((name, data) => uploads.push({ name, data }))
+    switchUser(null)
+  })
+
+  const outdoorDone = { id: 's3', title: 'Southern Ridges Walk', category: 'outdoors', region: 'central', date: '2026-11-05' }
+
+  it('starts a new account with no points or badges', () => {
+    switchUser('amy')
+    expect(game.completed).toHaveLength(0)
+    expect(game.ledger).toHaveLength(0)
+    expect(game.earnedBadges).toEqual({})
+  })
+
+  it('keeps two accounts on the same browser apart', () => {
+    switchUser('amy')
+    game.completed.push(outdoorDone)
+    game.earnedBadges['first-one-out'] = '2026-11-05'
+
+    switchUser('ben')
+    expect(game.completed).toHaveLength(0)
+    expect(game.earnedBadges).toEqual({})
+
+    switchUser('amy')
+    expect(game.completed.map((a) => a.id)).toEqual(['s3'])
+    expect(game.earnedBadges).toEqual({ 'first-one-out': '2026-11-05' })
+  })
+
+  it('sends badge progress to be saved to the account (Firestore)', () => {
+    switchUser('amy')
+    game.ledger.push({ date: '2026-11-05', amount: 60, reason: 'Southern Ridges Walk' })
+    expect(uploads.map((u) => u.name)).toEqual(['gamification'])
+    expect(uploads[0].data.ledger[0].amount).toBe(60)
+  })
+
+  it('shows badges earned on another device', () => {
+    switchUser('amy')
+    applyRemote('gamification', { completed: [outdoorDone], earnedBadges: { 'first-one-out': '2026-11-05' } }, 'amy')
+    expect(game.completed.map((a) => a.id)).toEqual(['s3'])
+    expect(game.earnedBadges).toEqual({ 'first-one-out': '2026-11-05' })
+    expect(game.ledger).toEqual([]) // missing fields fall back to empty
+    expect(uploads).toHaveLength(0)
+  })
+
+  it('clears points and badges on log out', () => {
+    switchUser('amy')
+    game.completed.push(outdoorDone)
+    switchUser(null)
+    expect(game.completed).toHaveLength(0)
   })
 })
 

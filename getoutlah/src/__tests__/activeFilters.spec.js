@@ -4,12 +4,11 @@ import { activeFilterPills } from '@/utils/activeFilters'
 const defaults = () => ({
   query: '', categories: [], sources: [],
   maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false,
-  prioritiseFreeTime: false,
 })
 
 describe('activeFilterPills', () => {
-  it('shows nothing for the default filters, the search box or the free-time switch', () => {
-    expect(activeFilterPills({ ...defaults(), query: 'yoga', prioritiseFreeTime: true })).toEqual([])
+  it('shows nothing for the default filters or the search box', () => {
+    expect(activeFilterPills({ ...defaults(), query: 'yoga' })).toEqual([])
   })
 
   it('labels every filter in use like the filter sheet does', () => {

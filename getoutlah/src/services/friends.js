@@ -19,7 +19,6 @@ import {
 import { db } from '@/firebase'
 import { useAuthStore } from '@/stores/auth'
 import { friendsState, resetFriendsState, relationshipWith } from '@/stores/friends'
-import { freeWindows } from '@/stores/ports'
 import { pairId, otherMember, upcomingWindows, toMillis } from '@/utils/friends'
 import { privacyOf, visibleProfile } from '@/config/privacy'
 
@@ -40,7 +39,6 @@ export function startFriends(uid) {
   if (uid === friendsState.uid) return
   stopAll()
   resetFriendsState()
-  freeWindows.value = []
   if (!uid) return
   friendsState.uid = uid
 
@@ -79,7 +77,6 @@ export function startFriends(uid) {
     onSnapshot(doc(db, 'users', uid), (snap) => {
       const mine = upcomingWindows(snap.data()?.freeWindows ?? [])
       friendsState.myFreeWindows = mine
-      freeWindows.value = mine // the Activities "fits my free time" filter reads this
     }),
   )
 }

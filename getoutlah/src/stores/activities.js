@@ -4,10 +4,8 @@ import { collection, getDocs, writeBatch, doc, updateDoc, arrayUnion, arrayRemov
 import { db, isFirebaseConfigured } from '@/firebase'
 import { useAuthStore } from '@/stores/auth'
 import { game } from '@/stores/gamification(badges).js'
-import { freeWindows } from './ports'
 import { seedActivities } from '@/data/seedActivities'
 import { getForecasts, nearestForecast, isRainy } from '@/services/api/weather'
-import { fitsWindow } from '@/utils/freeTime'
 import { useOpenJioStore } from '@/stores/openjio'
 import { toActivity } from '@/utils/openjio'
 import { fitsHours } from '@/utils/activityStyle'
@@ -16,7 +14,6 @@ import { ACTIVITY_COLLECTIONS, ACTIVITY_SOURCES, activityFromCollection } from '
 const defaultFilters = () => ({
   query: '', categories: [], regions: [], sources: [], // empty = all; otherwise canonical activity source values
   maxCost: null, maxHours: null, setting: 'Any', energy: 'Any', onlySlots: false,
-  prioritiseFreeTime: false,
 })
 
 export const filters = ref(defaultFilters())
@@ -141,7 +138,7 @@ export const weatherAt = (a) => {
   return n ? { area: n.area, forecast: n.forecast, rainy: isRainy(n.forecast) } : null
 }
 
-// Personalised order: preferences + weather + balance after a high-energy activity + free time + distance.
+// Personalised order: preferences + weather + balance after a high-energy activity.
 export const recommended = computed(() => {
   const p = useAuthStore().preferences || {}
   const last = game.completed.at(-1)
@@ -154,11 +151,6 @@ export const recommended = computed(() => {
     if (p.maxBudget != null && a.cost != null && a.cost > p.maxBudget) s -= 5
     if (a.setting === 'Outdoor' && weatherAt(a)?.rainy) s -= 3
     if (justDidHighEnergy) s += a.energyLevel === 'low' ? 2 : a.energyLevel === 'high' ? -2 : 0
-    if (filters.value.prioritiseFreeTime && freeWindows.value.length) {
-      const fits = a.startsAt ? fitsWindow(freeWindows.value, a.startsAt, a.durationHrs || 1)
-        : freeWindows.value.some((w) => w.end - w.start >= (a.durationHrs || 1) * 3600000)
-      s += fits ? 3 : -1
-    }
     return s
   }
   return oneCardPerEvent([...filtered.value].map((a) => ({ a, s: score(a) })).sort((x, y) => y.s - x.s).map((x) => x.a))

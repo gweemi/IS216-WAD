@@ -164,7 +164,7 @@ vi.mock('@/stores/activities', async () => {
   const { computed, ref } = await import('vue')
   const filters = ref({
     query: '', categories: [], regions: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any',
-    onlySlots: false, prioritiseFreeTime: false,
+    onlySlots: false,
   })
   const allActivities = ref(activityMocks.items)
   const filtered = computed(() => allActivities.value.filter((activity) =>
@@ -197,7 +197,7 @@ const { default: MapView } = await import('@/views/MapView.vue')
 const { allActivities, filters } = await import('@/stores/activities')
 const { geolocationMocks } = await import('@/composables/useGeolocation')
 const { useBadgeHunt } = await import('@/composables/useBadgeHunt')
-const { startDemoSession } = await import('@/stores/gamification(badges).js')
+const { resetGamification } = await import('@/stores/gamification(badges).js')
 const badgeHunt = useBadgeHunt()
 const mountedWrappers = []
 const mountMap = () => {
@@ -219,13 +219,13 @@ describe('MapView', () => {
       removeEventListener: vi.fn(),
     })))
     badgeHunt.clearTrackedBadge()
-    startDemoSession()
+    resetGamification(true)
     leafletMocks.mapInstance.getZoom.mockReturnValue(12)
     leafletMocks.markerInstances.length = 0
     Object.keys(leafletMocks.handlers).forEach((event) => delete leafletMocks.handlers[event])
     filters.value = {
       query: '', categories: [], regions: [], sources: [], maxCost: null, maxHours: null, setting: 'Any', energy: 'Any',
-      onlySlots: false, prioritiseFreeTime: false,
+      onlySlots: false,
     }
     allActivities.value = activityMocks.items
     nparksMocks.getNparksRoute.mockReset()

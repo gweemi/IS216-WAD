@@ -46,7 +46,7 @@ const visibilityCopy = computed(() => ({
   friends_only: 'Discover jios your friends have opened to their entire friend circle, including you. No personal invitation needed.',
   invited: 'See jios you’ve been personally invited to. Join, Chope a Spot, or decline the invitation.',
 }[openJioVisibility.value]))
-const hasAdditionalFilters = computed(() => activePills.value.length > 0 || !!filters.value.query.trim() || filters.value.prioritiseFreeTime)
+const hasAdditionalFilters = computed(() => activePills.value.length > 0 || !!filters.value.query.trim())
 const emptyMessage = computed(() => {
   if (selectedSource.value !== ACTIVITY_SOURCES.OPEN_JIO) return 'Nothing matches those filters. Try clearing a few.'
   return {
@@ -84,7 +84,6 @@ function clearAdditionalFilters() {
   filters.value.setting = 'Any'
   filters.value.energy = 'Any'
   filters.value.onlySlots = false
-  filters.value.prioritiseFreeTime = false
 }
 
 watch(() => route.query.view, () => applyRouteSource(selectedSource.value), { immediate: true })
@@ -101,7 +100,7 @@ onMounted(loadActivities)
       <section class="source-info" aria-labelledby="ways-to-explore">
         <h2 id="ways-to-explore" class="act-label">Ways to explore</h2>
         <ul class="source-cards">
-          <li v-for="card in sourceCards" :key="card.source" class="source-card" :class="`source-card--${card.source}`">
+          <li v-for="card in sourceCards" :key="card.source" class="source-card" :class="`source-colour--${card.source}`">
             <span class="source-icon" aria-hidden="true"><i :class="['ph', card.icon]"></i></span>
             <div><h3>{{ card.title }}</h3><p>{{ card.text }}</p></div>
           </li>
@@ -111,7 +110,7 @@ onMounted(loadActivities)
       <h2 class="act-label act-label--browse">Browse activities</h2>
       <div class="source-pills" role="tablist" aria-label="Activity source">
         <button v-for="pill in sourcePills" :key="pill.label" type="button" role="tab"
-          :aria-selected="selectedSource === pill.value" :class="{ on: selectedSource === pill.value }"
+          :aria-selected="selectedSource === pill.value" :class="[pill.value && `source-colour--${pill.value}`, { on: selectedSource === pill.value }]"
           :data-testid="`source-${pill.value ?? 'all'}`" @click="selectSource(pill.value)">
           {{ pill.label }}
         </button>
@@ -124,7 +123,7 @@ onMounted(loadActivities)
         </div>
         <button class="act-filter-btn" aria-label="Filters" @click="filtersOpen = true"><i class="ph ph-sliders-horizontal" aria-hidden="true"></i></button>
       </div>
-      <div v-if="selectedSource === ACTIVITY_SOURCES.OPEN_JIO" class="openjio-visibility-filter source-pills source-pills--small" role="tablist" aria-label="OPENJIO visibility">
+      <div v-if="selectedSource === ACTIVITY_SOURCES.OPEN_JIO" class="openjio-visibility-filter source-pills source-pills--small source-colour--openJio" role="tablist" aria-label="OPENJIO visibility">
         <span class="openjio-visibility-label">Visibility:</span>
         <button v-for="option in [{ id: 'all', label: 'All Jios' }, { id: 'public', label: 'Public' }, { id: 'friends_only', label: 'Friends Only' }, { id: 'invited', label: 'Invited' }]"
           :key="option.id" type="button" role="tab" :aria-selected="openJioVisibility === option.id"
@@ -142,11 +141,6 @@ onMounted(loadActivities)
         </button>
       </div>
 
-      <div class="form-check form-switch act-switch">
-        <input id="free-time" class="form-check-input gol-switch" type="checkbox" role="switch" v-model="filters.prioritiseFreeTime" />
-        <label class="form-check-label" for="free-time">Prioritise activities that fit my free time</label>
-      </div>
-
       <p v-if="loadingActivities" class="act-note">Loading activities…</p>
       <p v-if="activityRefreshRequired" class="act-note act-note--warn" role="status">
         Activity data has been updated. <button type="button" class="act-refresh" @click="reloadPage">Refresh the page</button> to continue.
@@ -154,7 +148,7 @@ onMounted(loadActivities)
       <p v-for="(msg, source) in sourceErrors" :key="source" class="act-note act-note--warn">Could not load {{ source }}: {{ msg }}</p>
       <p v-if="selectedSource === ACTIVITY_SOURCES.OPEN_JIO && openJioLoadError" class="act-note act-note--warn">Could not load OPENJIOs: {{ openJioLoadError }}</p>
 
-      <div class="d-flex justify-content-between align-items-baseline mt-3 mb-2">
+      <div class="act-results-head mt-3 mb-2">
         <h2 class="gol-section-title">{{ resultsHeading }}</h2>
         <div class="act-results-actions">
           <RouterLink v-if="selectedSource === ACTIVITY_SOURCES.OPEN_JIO" to="/activities/openjio" class="act-manage-jios">
@@ -167,7 +161,7 @@ onMounted(loadActivities)
       <TransitionGroup name="activity-card" tag="ul" class="act-list p-0 m-0">
         <li v-for="(a, index) in shownActivities" :key="`${selectedSource ?? 'all'}-${openJioVisibility}-${a.id}`" class="list-unstyled"
           :style="{ '--card-stagger': `${Math.min(index, 8) * 35}ms` }">
-          <JioCard v-if="a.source === ACTIVITY_SOURCES.OPEN_JIO && jioById.get(a.jioId)" :jio="jioById.get(a.jioId)" :uid="jios.uid" show-details />
+          <JioCard v-if="a.source === ACTIVITY_SOURCES.OPEN_JIO && jioById.get(a.jioId)" :jio="jioById.get(a.jioId)" :uid="jios.uid" link-to-details />
           <ActivityCard v-else :activity="a" />
         </li>
       </TransitionGroup>
@@ -189,22 +183,27 @@ onMounted(loadActivities)
 /* Section labels: "Ways to explore", "Browse activities" */
 .act-label { margin: 0 0 .7rem; font: 900 1.02rem var(--gol-font); color: var(--gol-ink); }
 
+/* One colour per source, shared by the "Ways to explore" icons and the "Browse activities" pills.
+   "All Activities" has no source, so it keeps the default purple. */
+.source-info, .source-pills { --source-colour: var(--gol-purple); --source-soft: var(--gol-purple-soft); }
+.source-colour--getoutlahPicks { --source-colour: var(--gol-purple); --source-soft: var(--gol-purple-soft); }
+.source-colour--externalListings { --source-colour: #1f6f7d; --source-soft: #dff6fa; }
+.source-colour--openJio { --source-colour: #b4382f; --source-soft: #ffe6e0; }
+
 /* "Ways to explore": plain info rows, no border or shadow, so they don't look like buttons */
 .source-info { padding-bottom: 1.1rem; margin-bottom: 1.1rem; border-bottom: 1px solid rgba(34, 26, 59, .1); }
 .source-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
 .source-card { display: flex; align-items: center; gap: .9rem; }
 .source-icon { display: grid; flex: 0 0 3.2rem; width: 3.2rem; height: 3.2rem; place-items: center; border-radius: 14px; font-size: 1.55rem; }
-.source-card--getoutlahPicks .source-icon { background: var(--gol-purple-soft); color: var(--gol-purple); }
-.source-card--externalListings .source-icon { background: #dff6fa; color: #1f6f7d; }
-.source-card--openJio .source-icon { background: #ffe6e0; color: #b4382f; }
+.source-icon { background: var(--source-soft); color: var(--source-colour); }
 .source-card h3 { margin: 0; font: 900 1.05rem var(--gol-font); color: var(--gol-ink); }
 .source-card p { margin: .15rem 0 0; color: var(--gol-muted); font-size: .86rem; font-weight: 650; line-height: 1.3; }
 
-/* "Browse activities" pills and the OPENJIO visibility pills: outline, purple when selected */
+/* "Browse activities" pills and the OPENJIO visibility pills: outline, filled with the source's colour when selected */
 .source-pills { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .55rem; margin: 0 0 1.2rem; }
 .source-pills button { border: 1.5px solid rgba(34, 26, 59, .35); border-radius: 999px; padding: .5rem 1.1rem; background: transparent; color: var(--gol-ink); font: 800 .9rem var(--gol-font); transition: background .16s ease, border-color .16s ease, color .16s ease; }
-.source-pills button:hover, .source-pills button:focus-visible { border-color: var(--gol-purple); color: var(--gol-purple); }
-.source-pills button.on { border-color: var(--gol-purple); background: var(--gol-purple); color: #fff; }
+.source-pills button:hover, .source-pills button:focus-visible { border-color: var(--source-colour); color: var(--source-colour); }
+.source-pills button.on { border-color: var(--source-colour); background: var(--source-colour); color: #fff; }
 .source-pills--small { align-items: center; margin: .7rem 0 .9rem; }
 .source-pills--small button { padding: .35rem .85rem; font-size: .8rem; }
 .openjio-visibility-label { color: var(--gol-muted); font-size: .83rem; font-weight: 900; }
@@ -221,6 +220,18 @@ onMounted(loadActivities)
 .act-empty p { margin: 0; }
 .act-empty-clear { border: 2px solid var(--gol-purple); border-radius: 999px; padding: .3rem .7rem; background: transparent; color: var(--gol-purple); font: 800 .8rem var(--gol-font); }
 
+/* Every card is the same height: all rows match the tallest card, and each card fills its cell.
+   Long titles and OPENJIO descriptions are cut to 2 lines (the detail page shows them in full)
+   so one long card doesn't stretch every row. */
+.act-list { grid-auto-rows: 1fr; }
+.act-list > li { display: flex; min-width: 0; }
+.act-list > li > * { flex: 1; min-width: 0; }
+.act-list :deep(.act-title),
+.act-list :deep(.jio-title),
+.act-list :deep(.jio-desc) {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+
 /* Cards enter in a quick stagger whenever a new source or filter result is shown. */
 .activity-card-enter-active { transition: opacity .32s cubic-bezier(.22, 1.35, .36, 1), transform .32s cubic-bezier(.22, 1.35, .36, 1); transition-delay: var(--card-stagger, 0ms); }
 .activity-card-leave-active { position: absolute; transition: opacity .16s ease, transform .16s ease; }
@@ -231,5 +242,18 @@ onMounted(loadActivities)
 @media (prefers-reduced-motion: reduce) {
   .activity-card-enter-active, .activity-card-leave-active, .activity-card-move { transition: none; }
 }
+/* Results heading + "Manage OPENJIOs" + count: wraps onto two lines on phones instead of squashing */
+.act-results-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .4rem .75rem; }
+.act-results-head .gol-section-title { margin: 0; min-width: 0; }
+
 @media (max-width: 767px) { .source-cards { grid-template-columns: 1fr; gap: .8rem; } }
+
+/* Phones: smaller pills so the four source tabs fit in two tidy rows */
+@media (max-width: 575.98px) {
+  .source-pills { gap: .45rem; }
+  .source-pills button { padding: .45rem .85rem; font-size: .84rem; }
+  .source-pills--small button { padding: .3rem .7rem; font-size: .78rem; }
+  .openjio-visibility-label { flex-basis: 100%; }   /* "Visibility:" on its own line above its pills */
+  .source-icon { flex-basis: 2.8rem; width: 2.8rem; height: 2.8rem; font-size: 1.35rem; }
+}
 </style>

@@ -2,6 +2,7 @@
 // Keeps private per-account data in Firestore so it follows the user across devices:
 //   users/{uid}/private/wellbeing    { history: [{ date, score }], updatedAt }
 //   users/{uid}/private/reflections  { pending, entries, promptsOn, dismissed, updatedAt }
+//   users/{uid}/private/gamification { completed, ledger, earnedBadges, studyBreak, pausedWeeks, redemptions, updatedAt }
 // firestore.rules: only the owner can read or write these. (See src/stores/userData.js.)
 //
 // startUserDataSync(uid) is called from main.js whenever the logged-in user changes.
@@ -14,6 +15,7 @@ import {
 // Make sure the stores have registered before we sync them
 import '@/stores/wellbeing'
 import '@/stores/reflections'
+import '@/stores/gamification(badges).js'
 
 const SAVE_DELAY_MS = 400
 let unsubs = []
