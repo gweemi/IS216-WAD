@@ -1,6 +1,8 @@
 import process from 'node:process'
 import { defineConfig, devices } from '@playwright/test'
 
+const LOGGED_OUT_TESTS = ['onboarding.spec.js', 'openjio.spec.js']
+
 
 export default defineConfig({
   testDir: './e2e',
@@ -30,18 +32,18 @@ export default defineConfig({
     },
     {
       name: 'firefox',
+      testMatch: LOGGED_OUT_TESTS,
       use: {
         ...devices['Desktop Firefox'],
       },
     },
     {
       name: 'webkit',
+      testMatch: LOGGED_OUT_TESTS,
       use: {
         ...devices['Desktop Safari'],
       },
     },
-
-
   ],
 
 

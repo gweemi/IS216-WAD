@@ -1,23 +1,17 @@
 import { test, expect } from '@playwright/test'
-import { seedJourney, SMU_SCIS_1, CAMPUS_ACTIVITY } from './support/emulator.js'
+import { seedJourney, makeRunId, SMU_SCIS_1, CAMPUS_ACTIVITY } from './support/emulator.js'
+import { logInAs } from './support/app.js'
 
 test.use({ geolocation: SMU_SCIS_1, permissions: ['geolocation'] })
 
 test('a student checks in, hosts and joins OPENJIOs, redeems a voucher and logs out', async ({ page }, testInfo) => {
   test.setTimeout(120_000)
-  const runId = `${testInfo.project.name}-${testInfo.repeatEachIndex}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+  const runId = makeRunId(testInfo)
   const { me, friend, friendJio } = await seedJourney(runId)
   const myJioTitle = `Lake walk ${runId}`.slice(0, 40)
 
   await test.step('log in with Google', async () => {
-    await page.goto('/login')
-    await page.waitForLoadState('networkidle')
-    const popupPromise = page.waitForEvent('popup')
-    await page.getByTestId('google-signin').click()
-    const popup = await popupPromise
-    await popup.waitForLoadState('networkidle')
-    await popup.getByText(me.email).click()
-    await expect(page).toHaveURL(/\/map/, { timeout: 15_000 })
+    await logInAs(page, me)
   })
 
   await test.step('share location from SMU SCIS 1 on the map', async () => {
