@@ -36,6 +36,6 @@ export default {
 
 <style scoped>
 .success-pop { padding: .5rem 0 .25rem; }
-.success-pop__tick { display: block; font-size: 3.5rem; color: #2fa96b; line-height: 1; margin-bottom: .6rem; }
+.success-pop__tick { display: flex; justify-content: center; width: 100%; font-size: 3.5rem; color: #2fa96b; line-height: 1; margin-bottom: .6rem; }
 .success-pop__title { font-size: 1.3rem; font-weight: 900; margin: 0 0 1.1rem; }
 </style>

@@ -94,7 +94,8 @@
 .act-note--warn { color: var(--gol-coral-text); font-size: 0.85rem; }
 
 /* ---- views/ActivityDetailView.vue ---- */
-.det-back { font-weight: 800; color: var(--gol-purple); text-decoration: none; }
+.det-back { display: inline-flex; align-items: center; gap: .45rem; font-weight: 800; color: var(--gol-purple); line-height: 1.2; text-decoration: none; }
+.det-back .bi { line-height: 1; }
 .det-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }   /* cards always fill 100% of the page width; long content can't stretch them */
 /* Same 16:9 shape on every screen; capped so it doesn't become a long strip on laptop */
 .det-hero {

@@ -197,7 +197,7 @@ const { default: MapView } = await import('@/views/MapView.vue')
 const { allActivities, filters } = await import('@/stores/activities')
 const { geolocationMocks } = await import('@/composables/useGeolocation')
 const { useBadgeHunt } = await import('@/composables/useBadgeHunt')
-const { resetGamification } = await import('@/stores/gamification(badges).js')
+const { game, resetGamification } = await import('@/stores/gamification(badges).js')
 const badgeHunt = useBadgeHunt()
 const mountedWrappers = []
 const mountMap = () => {
@@ -397,6 +397,19 @@ describe('MapView', () => {
     await nextTick()
 
     expect(badgeHunt.trackedBadgeId.value).toBe('event-chaser')
+  })
+
+  it('removes an earned badge from Next badge tracking', async () => {
+    badgeHunt.selectTrackedBadge('event-chaser')
+    const wrapper = mountMap()
+    await nextTick()
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Event chaser')
+
+    game.earnedBadges['event-chaser'] = '2026-11-05'
+    await nextTick()
+
+    expect(badgeHunt.trackedBadgeId.value).toBeNull()
+    expect(wrapper.get('[data-testid="next-badge-card"]').text()).toContain('Choose your next badge!')
   })
 
   it('filters markers with multiple category selections and restores All after the last deselection', async () => {

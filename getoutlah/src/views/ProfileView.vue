@@ -485,6 +485,11 @@ async function confirmDeleteAccount() {
 .tile-title { font-weight: 900; font-size: 0.95rem; }
 .tile-count { font-weight: 700; font-size: 0.75rem; color: var(--gol-muted); }
 
+/* On phones the summary tiles have enough width for a clearer, centred layout. */
+@media (max-width: 575.98px) {
+  .tile { align-items: center; text-align: center; }
+}
+
 .admin-btn {
   display: inline-flex;
   align-items: center;
