@@ -1,13 +1,14 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import BottomSheet from '@/components/common/BottomSheet.vue'
+import SheetHeader from '@/components/common/SheetHeader.vue'
 import ProfileAvatar from './ProfileAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { updateDisplayName, updateProfilePhoto, shrinkImage } from '@/services/profile'
 import { validateDisplayName, NAME_MAX } from '@/utils/profile'
 
 const props = defineProps({ open: { type: Boolean, default: false } })
-const emit = defineEmits(['close', 'saved'])
+const emit = defineEmits(['close'])
 
 const auth = useAuthStore()
 const name = ref('')
@@ -101,7 +102,6 @@ async function save() {
   try {
     if (photoChanged.value) await updateProfilePhoto(photo.value)
     if (name.value.trim() !== auth.profile?.displayName) await updateDisplayName(name.value)
-    emit('saved')
     emit('close')
   } catch (err) {
     error.value = err.code === 'permission-denied' ? 'Couldn’t save. Please log out and in again.' : err.message
@@ -113,13 +113,7 @@ async function save() {
 
 <template>
   <BottomSheet :open="open" label="Edit profile" @close="emit('close')">
-    <div class="d-flex justify-content-between align-items-start mb-3">
-      <div>
-        <p class="gol-eyebrow">Make it yours</p>
-        <h2 class="gol-title">Edit profile</h2>
-      </div>
-      <button class="gol-close" aria-label="Close" @click="emit('close')"><i class="bi bi-x-lg"></i></button>
-    </div>
+    <SheetHeader class="mb-3" eyebrow="Make it yours" title="Edit profile" @close="emit('close')" />
 
     <div v-if="cameraOn" class="camera mb-3">
       <video ref="video" playsinline muted aria-label="Camera preview"></video>

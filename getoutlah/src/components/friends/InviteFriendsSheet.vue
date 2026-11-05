@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { friendList } from '@/stores/friends'
 import { inviteFriends } from '@/services/friends'
 import BottomSheet from '@/components/common/BottomSheet.vue'
+import SheetHeader from '@/components/common/SheetHeader.vue'
 import FriendAvatar from '@/components/friends/FriendAvatar.vue'
 
 const props = defineProps({
@@ -39,13 +40,7 @@ async function send() {
 
 <template>
   <BottomSheet :open="open" label="Invite friends" @close="emit('close')">
-    <div class="d-flex justify-content-between align-items-start mb-2">
-      <div>
-        <p class="gol-eyebrow">Bring the crew</p>
-        <h2 class="gol-title fs-3">Invite friends</h2>
-      </div>
-      <button class="gol-close" aria-label="Close" @click="emit('close')"><i class="bi bi-x-lg"></i></button>
-    </div>
+    <SheetHeader class="mb-2" eyebrow="Bring the crew" title="Invite friends" title-class="fs-3" @close="emit('close')" />
 
     <p v-if="!friendList.length" class="text-muted fw-semibold">
       You haven't added any friends yet.

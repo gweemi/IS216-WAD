@@ -1,6 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import BottomSheet from '@/components/common/BottomSheet.vue'
+import SheetHeader from '@/components/common/SheetHeader.vue'
 import { categoryColor, categoryEmoji } from '@/utils/activityStyle'
 
 defineProps({
@@ -25,13 +26,7 @@ function go(to) {
 
 <template>
   <BottomSheet :open="open" :label="title" @close="emit('close')">
-    <div class="d-flex justify-content-between align-items-start mb-3">
-      <div>
-        <p v-if="eyebrow" class="gol-eyebrow">{{ eyebrow }}</p>
-        <h2 class="gol-title">{{ title }}</h2>
-      </div>
-      <button class="gol-close" aria-label="Close" @click="emit('close')"><i class="bi bi-x-lg"></i></button>
-    </div>
+    <SheetHeader class="mb-3" :eyebrow="eyebrow" :title="title" @close="emit('close')" />
 
     <TransitionGroup v-if="items.length" tag="ul" name="row" class="list-unstyled d-grid gap-2 mb-0">
       <li v-for="item in items" :key="item.key" class="row-card">

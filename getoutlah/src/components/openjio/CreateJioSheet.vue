@@ -1,14 +1,6 @@
 <template>
   <BottomSheet :open="open" :label="isEditing ? 'Edit an OPENJIO' : 'Start an OPENJIO'" @close="$emit('close')">
-    <div class="d-flex justify-content-between align-items-start mb-3">
-      <div>
-        <p class="gol-eyebrow">Gather the crew</p>
-        <h2 class="gol-title">{{ isEditing ? 'Edit your OPENJIO' : 'Start an OPENJIO!' }}</h2>
-      </div>
-      <button type="button" class="gol-close" aria-label="Close" @click="$emit('close')">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
+    <SheetHeader class="mb-3" eyebrow="Gather the crew" :title="isEditing ? 'Edit your OPENJIO' : 'Start an OPENJIO!'" @close="$emit('close')" />
 
     <form novalidate data-testid="create-jio-form" @submit.prevent="onSubmit">
       <label class="field">
@@ -228,6 +220,7 @@
 
 <script>
 import BottomSheet from '@/components/common/BottomSheet.vue'
+import SheetHeader from '@/components/common/SheetHeader.vue'
 import { INTERESTS } from '@/config/preferences'
 import { VISIBILITY, REGIONS, LIMITS, validateJio } from '@/utils/openjio'
 import { createJio, updateJio, friendlyJioError } from '@/services/openjio'
@@ -267,7 +260,7 @@ function blankForm() {
 
 export default {
   name: 'CreateJioSheet',
-  components: { BottomSheet },
+  components: { BottomSheet, SheetHeader },
   props: {
     open: { type: Boolean, default: false },
     prefill: { type: Object, default: null },

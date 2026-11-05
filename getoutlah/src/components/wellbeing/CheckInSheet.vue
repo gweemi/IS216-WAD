@@ -127,7 +127,7 @@ export default {
   props: {
     open: { type: Boolean, default: false },
   },
-  emits: ['close', 'saved'],
+  emits: ['close'],
   data() {
     return {
       step: 'intro',
@@ -194,7 +194,6 @@ export default {
           this.result = saveCheckIn(this.answers)
           this.reward = awardWellbeingCheckIn()
           this.step = 'result'
-          this.$emit('saved', this.result)
         }
       }, 180)
     },

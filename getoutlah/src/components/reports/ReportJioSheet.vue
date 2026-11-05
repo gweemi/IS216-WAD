@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import BottomSheet from '@/components/common/BottomSheet.vue'
+import SheetHeader from '@/components/common/SheetHeader.vue'
 import { REPORT_GROUPS, REPORT_REASONS } from '@/config/reportReasons'
 import { DETAILS_MAX, validateReport } from '@/utils/reports'
 import { reportJio } from '@/services/api/reports'
@@ -42,13 +43,7 @@ async function send() {
 
 <template>
   <BottomSheet :open="open" label="Report this OPENJIO" @close="emit('close')">
-    <div class="d-flex justify-content-between align-items-start mb-2">
-      <div>
-        <p class="gol-eyebrow">Keep GetOutLah! safe</p>
-        <h2 class="gol-title fs-3">Report this OPENJIO</h2>
-      </div>
-      <button class="gol-close" aria-label="Close" @click="emit('close')"><i class="bi bi-x-lg"></i></button>
-    </div>
+    <SheetHeader class="mb-2" eyebrow="Keep GetOutLah! safe" title="Report this OPENJIO" title-class="fs-3" @close="emit('close')" />
     <p class="report-help">
       “{{ jio ? jio.title : '' }}” will be suspended straight away while an admin looks at your report.
       The host won't see who reported it.

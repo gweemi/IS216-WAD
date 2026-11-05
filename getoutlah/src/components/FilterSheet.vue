@@ -1,6 +1,7 @@
 <script setup>
 import '@/assets/discovery.css'
 import BottomSheet from '@/components/common/BottomSheet.vue'
+import SheetHeader from '@/components/common/SheetHeader.vue'
 import { filters, recommended, resetFilters } from '@/stores/activities'
 import { categories } from '@/data/seedActivities'
 import { categoryLabel, sourceLabel } from '@/utils/activityStyle'
@@ -46,13 +47,7 @@ function clearFilters() {
 
 <template>
   <BottomSheet :open="open" label="Filters" @close="emit('close')">
-    <div class="fs-head">
-      <div>
-        <div class="gol-eyebrow">Fits your break</div>
-        <h2 class="gol-title fs-title">Tune your vibe</h2>
-      </div>
-      <button class="gol-close" aria-label="Close" @click="emit('close')"><i class="bi bi-x-lg"></i></button>
-    </div>
+    <SheetHeader class="fs-head" eyebrow="Fits your break" title="Tune your vibe" title-class="fs-title" @close="emit('close')" />
 
     <template v-if="showCategories">
       <h3 class="fs-label">Category</h3>

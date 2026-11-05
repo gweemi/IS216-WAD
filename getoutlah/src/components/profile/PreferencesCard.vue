@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import BottomSheet from '@/components/common/BottomSheet.vue'
+import SheetHeader from '@/components/common/SheetHeader.vue'
 import PreferencesForm from '@/components/PreferencesForm.vue'
 import { useAuthStore } from '@/stores/auth'
 import { savePreferences } from '@/services/preferences'
@@ -87,13 +88,7 @@ async function onSubmit(answers) {
     </Transition>
 
     <BottomSheet :open="open" label="Edit my preferences" @close="open = false">
-      <div class="d-flex justify-content-between align-items-start mb-3">
-        <div>
-          <p class="gol-eyebrow">Change it up</p>
-          <h2 class="gol-title">My vibe</h2>
-        </div>
-        <button class="gol-close" aria-label="Close" @click="open = false"><i class="bi bi-x-lg"></i></button>
-      </div>
+      <SheetHeader class="mb-3" eyebrow="Change it up" title="My vibe" @close="open = false" />
       <div class="form-wrap">
         <PreferencesForm
           :key="formKey"

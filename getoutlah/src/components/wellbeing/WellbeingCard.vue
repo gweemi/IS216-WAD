@@ -17,13 +17,7 @@
     </div>
 
     <BottomSheet :open="showHistory" label="My wellbeing" @close="showHistory = false">
-      <div class="d-flex justify-content-between align-items-start mb-3">
-        <div>
-          <p class="gol-eyebrow">Only you can see this</p>
-          <h2 class="gol-title">My wellbeing</h2>
-        </div>
-        <button class="gol-close" aria-label="Close" @click="showHistory = false"><i class="bi bi-x-lg"></i></button>
-      </div>
+    <SheetHeader class="mb-3" eyebrow="Only you can see this" title="My wellbeing" @close="showHistory = false" />
 
       <div class="gol-card mb-3">
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -46,6 +40,7 @@
 
 <script>
 import BottomSheet from '../common/BottomSheet.vue'
+import SheetHeader from '../common/SheetHeader.vue'
 import WellbeingChart from './WellbeingChart.vue'
 import CheckInSheet from './CheckInSheet.vue'
 import {
@@ -60,7 +55,7 @@ import {
 
 export default {
   name: 'WellbeingCard',
-  components: { BottomSheet, WellbeingChart, CheckInSheet },
+  components: { BottomSheet, SheetHeader, WellbeingChart, CheckInSheet },
   data() {
     return { store: wellbeing, showHistory: false, showCheckIn: false }
   },

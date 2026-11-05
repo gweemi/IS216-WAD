@@ -1,13 +1,13 @@
 
 <template>
   <BottomSheet :open="open" label="Post-activity reflection" @close="close">
-    <div class="d-flex justify-content-between align-items-start mb-3">
-      <div class="min-w-0">
-        <p class="gol-eyebrow">{{ step === 'rate' ? 'Only you can see this' : 'Up next for you' }}</p>
-        <h2 class="gol-title sheet-title">{{ step === 'rate' ? (editing ? 'Edit reflection' : 'How did it feel?') : plan.headline }}</h2>
-      </div>
-      <button class="gol-close" aria-label="Close" @click="close"><i class="bi bi-x-lg"></i></button>
-    </div>
+    <SheetHeader
+      class="mb-3"
+      :eyebrow="step === 'rate' ? 'Only you can see this' : 'Up next for you'"
+      :title="step === 'rate' ? (editing ? 'Edit reflection' : 'How did it feel?') : plan.headline"
+      title-class="sheet-title"
+      @close="close"
+    />
 
     <div v-if="step === 'rate' && (item || editing)">
       <div class="activity-chip mb-3"><i class="bi bi-geo-alt-fill"></i> {{ (editing || item).activityTitle }}</div>
@@ -87,6 +87,7 @@
 
 <script>
 import BottomSheet from '../common/BottomSheet.vue'
+import SheetHeader from '../common/SheetHeader.vue'
 import { MOODS, reflections, saveReflection, skipReflection, updateReflection, deleteReflection } from '../../stores/reflections.js'
 import { game } from '../../stores/gamification(badges).js'
 import { suggestNext } from '../../utils/moodSuggestions.js'
@@ -95,7 +96,7 @@ import { getInterest } from '../../config/preferences.js'
 
 export default {
   name: 'ReflectionSheet',
-  components: { BottomSheet },
+  components: { BottomSheet, SheetHeader },
   props: {
     open: { type: Boolean, default: false },
     item: { type: Object, default: null }, 
@@ -103,7 +104,7 @@ export default {
     editing: { type: Object, default: null },
     activities: { type: Array, default: () => seedActivities },
   },
-  emits: ['close', 'saved', 'deleted', 'pick'],
+  emits: ['close', 'pick'],
   data() {
     return {
       moods: MOODS,
@@ -143,19 +144,16 @@ export default {
     },
     save() {
       const lastActivity = { ...this.item }
-      const entry = saveReflection(this.item, this.mood, this.note)
-      this.$emit('saved', entry)
+      saveReflection(this.item, this.mood, this.note)
       this.buildPlan(this.mood || 3, lastActivity) 
       this.step = 'suggest'
     },
     saveEdit() {
-      const entry = updateReflection(this.editing.id, this.mood, this.note)
-      this.$emit('saved', entry)
+      updateReflection(this.editing.id, this.mood, this.note)
       this.close()
     },
     removeReflection() {
       deleteReflection(this.editing.id)
-      this.$emit('deleted', this.editing.id)
       this.close()
     },
     skip() {
@@ -178,7 +176,7 @@ export default {
 
 <style scoped>
 .min-w-0 { min-width: 0; }
-.sheet-title { font-size: clamp(1.4rem, 5vw, 1.9rem); }
+:deep(.sheet-title) { font-size: clamp(1.4rem, 5vw, 1.9rem); }
 .small-muted { font-size: 0.78rem; font-weight: 600; color: var(--gol-muted); }
 .plan-message { font-size: 0.9rem; }
 

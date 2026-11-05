@@ -1,5 +1,6 @@
 <script setup>
 import BottomSheet from '@/components/common/BottomSheet.vue'
+import SheetHeader from '@/components/common/SheetHeader.vue'
 import { badgePresentation } from '@/stores/gamification(badges).js'
 
 defineProps({ open: Boolean, opportunities: { type: Array, default: () => [] }, selectedId: String })
@@ -10,7 +11,7 @@ const badgeStyle = (badge) => ({ background: badgePresentation(badge).color })
 
 <template>
   <BottomSheet :open="open" label="Choose a badge to explore" @close="emit('close')">
-    <div class="hunt-header"><div><p class="gol-eyebrow">Your next adventure</p><h2 class="gol-title">Choose a badge to explore</h2></div><button class="gol-close" type="button" aria-label="Close badge selection" @click="emit('close')"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
+    <SheetHeader class="hunt-header" eyebrow="Your next adventure" title="Choose a badge to explore" close-label="Close badge selection" @close="emit('close')" />
     <p class="hunt-copy">Select a badge to highlight activities that bring you closer to earning it. Select it again to stop tracking it.</p>
     <div class="hunt-list">
       <button v-for="badge in opportunities" :key="badge.id" class="hunt-option" :class="{ selected: selectedId === badge.id }" type="button" @click="choose(badge.id)">
@@ -22,5 +23,5 @@ const badgeStyle = (badge) => ({ background: badgePresentation(badge).color })
 </template>
 
 <style scoped>
-.hunt-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }.hunt-header .gol-title { font-size:clamp(1.35rem,5vw,1.8rem); }.hunt-header .gol-close { width:2.5rem; height:2.5rem; font-size:1rem; }.hunt-copy { margin:.65rem 0 0; color:var(--gol-muted); font-weight:650; }.hunt-list { display:grid; gap:.65rem; max-height:min(52vh,30rem); margin:1rem 0; overflow-y:auto; }.hunt-option { display:flex; position:relative; gap:.7rem; width:100%; padding:.8rem; text-align:left; border:2px solid #e8dcf6; border-radius:17px; background:#fff; color:var(--gol-ink); }.hunt-option.selected { border-color:var(--gol-purple); background:#f2eaff; }.hunt-icon { display:grid; width:2.55rem; height:2.55rem; place-items:center; flex:0 0 auto; border-radius:12px; font-size:1.25rem; }.hunt-option__body { display:grid; gap:.16rem; min-width:0; padding-right:1.5rem; font-size:.77rem; color:var(--gol-muted); }.hunt-option strong { color:var(--gol-ink); font-size:.9rem; }.hunt-option em { font-style:normal; font-weight:800; }.hunt-progress { height:6px; overflow:hidden; border-radius:99px; background:#e6deee; }.hunt-progress i { display:block; height:100%; border-radius:inherit; background:var(--gol-purple); }.hunt-check { position:absolute; right:.7rem; top:50%; transform:translateY(-50%); color:var(--gol-purple); font-size:1.3rem; }.hunt-view-all { display:flex; width:100%; min-height:2.9rem; align-items:center; justify-content:center; gap:.5rem; }
+.hunt-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }.hunt-header :deep(.gol-title) { font-size:clamp(1.35rem,5vw,1.8rem); }.hunt-header :deep(.gol-close) { width:2.5rem; height:2.5rem; font-size:1rem; }.hunt-copy { margin:.65rem 0 0; color:var(--gol-muted); font-weight:650; }.hunt-list { display:grid; gap:.65rem; max-height:min(52vh,30rem); margin:1rem 0; overflow-y:auto; }.hunt-option { display:flex; position:relative; gap:.7rem; width:100%; padding:.8rem; text-align:left; border:2px solid #e8dcf6; border-radius:17px; background:#fff; color:var(--gol-ink); }.hunt-option.selected { border-color:var(--gol-purple); background:#f2eaff; }.hunt-icon { display:grid; width:2.55rem; height:2.55rem; place-items:center; flex:0 0 auto; border-radius:12px; font-size:1.25rem; }.hunt-option__body { display:grid; gap:.16rem; min-width:0; padding-right:1.5rem; font-size:.77rem; color:var(--gol-muted); }.hunt-option strong { color:var(--gol-ink); font-size:.9rem; }.hunt-option em { font-style:normal; font-weight:800; }.hunt-progress { height:6px; overflow:hidden; border-radius:99px; background:#e6deee; }.hunt-progress i { display:block; height:100%; border-radius:inherit; background:var(--gol-purple); }.hunt-check { position:absolute; right:.7rem; top:50%; transform:translateY(-50%); color:var(--gol-purple); font-size:1.3rem; }.hunt-view-all { display:flex; width:100%; min-height:2.9rem; align-items:center; justify-content:center; gap:.5rem; }
 </style>
