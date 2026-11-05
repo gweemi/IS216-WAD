@@ -228,6 +228,8 @@ export function toActivity(jio, uid) {
     id: `jio-${jio.id}`,
     jioId: jio.id,
     title: jio.title,
+    // Full text for the details page (the card shows one line)
+    description: jio.description ?? '',
     category: jio.category,
     type: 'openJio',
     source: ACTIVITY_SOURCES.OPEN_JIO,

@@ -21,8 +21,8 @@
           <h2 class="gol-section-title mb-0">Badges</h2>
           <div class="d-flex align-items-center gap-3">
             
-            <!-- for the redeem voucher page -->
-            <RouterLink :to="{ name: 'vouchers' }" class="btn-voucher">
+            <!-- for the redeem voucher page (on phones it moves below the badges, see the copy under the grid) -->
+            <RouterLink :to="{ name: 'vouchers' }" class="btn-voucher d-none d-md-inline-flex" data-testid="redeem-voucher-top">
               <i class="bi bi-gift-fill"></i> Redeem Voucher
               <span class="voucher-spark" aria-hidden="true"></span>
             </RouterLink>
@@ -36,6 +36,14 @@
             <BadgeTile :badge="b" @select="selected = b" />
           </div>
         </TransitionGroup>
+
+        <!-- Phones: Redeem Voucher sits below the badges -->
+        <div class="d-md-none mt-4 text-center">
+          <RouterLink :to="{ name: 'vouchers' }" class="btn-voucher" data-testid="redeem-voucher-bottom">
+            <i class="bi bi-gift-fill"></i> Redeem Voucher
+            <span class="voucher-spark" aria-hidden="true"></span>
+          </RouterLink>
+        </div>
       </section>
     </div>
 

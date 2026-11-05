@@ -35,14 +35,14 @@
             <RouterLink v-if="linkToDetails" :to="detailsRoute" class="jio-title-link" data-testid="jio-details-link">{{ jio.title }}</RouterLink>
             <template v-else>{{ jio.title }}</template>
           </h3>
-          <p class="jio-meta mb-0">{{ whenText(jio) }} · {{ jio.location }}</p>
+          <p class="jio-meta mb-0" data-testid="jio-when"><i class="bi bi-calendar-event" aria-hidden="true"></i> {{ whenText(jio) }}</p>
+          <p class="jio-meta mb-0" data-testid="jio-where"><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ jio.location }}</p>
         </div>
         <span class="jio-price">{{ priceText(jio) }}</span>
       </div>
 
-      <p v-if="jio.description" class="jio-desc mt-2 mb-0">{{ jio.description }}</p>
-
-      <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+      <!-- Who's hosting / your role, and how many are going: right under the title, before the description -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mt-2" data-testid="jio-status-row">
         <span v-if="role === 'host'" class="gol-pill tag-host">You're hosting</span>
         <span v-else-if="role === 'going'" class="gol-pill gol-pill--good">
           <i class="bi bi-check-lg"></i> You're going
@@ -58,6 +58,9 @@
           <i class="bi bi-people"></i> {{ jio.participantCount ?? jio.participants.length }}/{{ jio.capacity }} going
         </span>
       </div>
+
+      <!-- One line on the card, ending in … if longer; the full text is on the activity details page -->
+      <p v-if="jio.description" class="jio-desc mt-2 mb-0" data-testid="jio-desc">{{ jio.description }}</p>
 
       <p v-if="role === 'queued'" class="queue-note mt-2 mb-0">
         If someone drops out, the spot goes to you automatically.
@@ -83,22 +86,15 @@
           {{ declining ? 'Declining…' : 'Decline' }}
         </button>
       </div>
-      <!-- Host and people going can see who else is coming: one full-width row for both -->
-      <button v-if="canSeeAttendees" type="button" class="gol-btn-soft jio-attendees w-100" :class="hasActionRow ? 'mt-2' : 'mt-3'"
-        data-testid="view-jio-attendees" @click="showAttendees = true">
-        <i class="bi bi-people" aria-hidden="true"></i> Who's going
-      </button>
       <!-- Change code is necessary: report button (hides itself for the host and for cancelled, ended or suspended jios) -->
       <!-- Always pinned to the card's bottom-right corner, however tall the card is -->
       <ReportJioButton :jio="jio" class="jio-report" />
     </div>
-    <JioParticipantsSheet :open="showAttendees" :jio="jio" @close="showAttendees = false" />
   </article>
 </template>
 
 <script>
 import JioActionButton from '@/components/openjio/JioActionButton.vue'
-import JioParticipantsSheet from '@/components/openjio/JioParticipantsSheet.vue'
 // Change code is necessary: report button
 import ReportJioButton from '@/components/reports/ReportJioButton.vue'
 import { categoryColor, categoryEmoji } from '@/utils/activityStyle'
@@ -116,7 +112,7 @@ import {
 export default {
   name: 'JioCard',
   // Change code is necessary: added ReportJioButton
-  components: { JioActionButton, JioParticipantsSheet, ReportJioButton },
+  components: { JioActionButton, ReportJioButton },
   props: {
     jio: { type: Object, required: true },
     uid: { type: String, required: true },
@@ -148,19 +144,12 @@ export default {
     canManage() {
       return this.role === 'host'
     },
-    canSeeAttendees() {
-      return this.role === 'host' || this.role === 'going'
-    },
-    // Whether a row of action buttons is shown above "Who's going" (mirrors the v-if / v-else-if above).
-    hasActionRow() {
-      return this.canManage ? !this.linkToDetails && this.canEdit : (!this.linkToDetails || this.canDecline)
-    },
     canDecline() {
       return ['invite_only', 'friends'].includes(this.jio.visibility) && this.invited && this.role === 'none' && this.status !== 'cancelled' && this.status !== 'ended' && this.status !== 'suspended' // Change code is necessary: added suspended
     },
   },
   data() {
-    return { showAttendees: false, declining: false }
+    return { declining: false }
   },
   methods: {
     statusLabel,
@@ -253,7 +242,7 @@ export default {
 .jio-meta,
 .jio-host,
 .jio-going { color: var(--gol-muted); font-weight: 700; font-size: 0.85rem; }
-.jio-desc { color: #685b76; font-weight: 600; font-size: 0.9rem; }
+.jio-desc { color: #685b76; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .jio-price {
   flex-shrink: 0;
   background: #fff0c2;
@@ -268,7 +257,7 @@ export default {
 .tag-invited { background: var(--gol-cyan); color: var(--gol-ink); }
 .queue-note { color: #b4382f; font-weight: 700; font-size: 0.8rem; }
 .jio-host-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .5rem; }
-.jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button), .jio-actions > button, .jio-attendees { min-height: 2.35rem; padding: .45rem .7rem !important; font-size: .8rem !important; line-height: 1.1; }
+.jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button), .jio-actions > button { min-height: 2.35rem; padding: .45rem .7rem !important; font-size: .8rem !important; line-height: 1.1; }
 .jio-host-actions > button, .jio-host-actions :deep(.jio-action-button), .jio-actions :deep(.jio-action-button) { display: inline-flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap; }
 .jio-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; align-items: stretch; }
 .jio-actions > :first-child { min-width: 0; }

@@ -43,6 +43,18 @@ function confirmRedeem() {
         <span class="stars" aria-hidden="true">✨</span>
       </section>
 
+      <!-- Vouchers already redeemed: shown first so the codes are easy to find -->
+      <template v-if="redeemed.length">
+        <h2 class="section-title">My Vouchers</h2>
+        <div class="d-grid gap-2 mb-5" data-testid="my-vouchers">
+          <div v-for="r in redeemed" :key="r.code" class="mine">
+            <span class="emo">{{ r.icon }}</span>
+            <div class="flex-grow-1"><strong>{{ r.name }}</strong><small>Redeemed {{ r.date }}</small></div>
+            <code>{{ r.code }}</code>
+          </div>
+        </div>
+      </template>
+
       <!-- Vouchers you can afford -->
       <h2 class="section-title">Available Vouchers</h2>
       <p v-if="!available.length" class="empty">Keep getting out to earn more points. Your first voucher is 150 pts away!</p>
@@ -73,17 +85,6 @@ function confirmRedeem() {
         </div>
       </template>
 
-      <!-- Vouchers already redeemed -->
-      <template v-if="redeemed.length">
-        <h2 class="section-title mt-5">My Vouchers</h2>
-        <div class="d-grid gap-2">
-          <div v-for="r in redeemed" :key="r.code" class="mine">
-            <span class="emo">{{ r.icon }}</span>
-            <div class="flex-grow-1"><strong>{{ r.name }}</strong><small>Redeemed {{ r.date }}</small></div>
-            <code>{{ r.code }}</code>
-          </div>
-        </div>
-      </template>
     </div>
 
     <!-- Confirm pop-up -->
@@ -121,7 +122,7 @@ function confirmRedeem() {
 <style scoped>
 .vouchers { min-height: 100vh; color: var(--gol-ink); font-family: var(--gol-font); padding-bottom: 7rem; } 
 .inner { max-width: 960px; }
-.back { display: inline-flex; gap: .5rem; align-items: center; font-weight: 800; color: var(--gol-ink); text-decoration: none; margin-bottom: 1.2rem; }
+.back { display: flex; width: fit-content; gap: .5rem; align-items: center; font-weight: 800; color: var(--gol-ink); text-decoration: none; margin-bottom: 1.2rem; }
 .back:hover { color: var(--gol-purple); }
 .title { position: relative; display: inline-flex; align-items: center; gap: .6rem; font-weight: 900; font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0; }
 .gift { font-size: .95em; }

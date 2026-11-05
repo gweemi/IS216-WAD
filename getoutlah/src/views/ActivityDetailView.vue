@@ -14,6 +14,7 @@ import JioActionButton from '@/components/openjio/JioActionButton.vue'
 import StartJioButton from '@/components/openjio/StartJioButton.vue'
 import { prefillFromActivity, myRole, statusOf } from '@/utils/openjio'
 import ReportJioButton from '@/components/reports/ReportJioButton.vue'
+import JioAttendees from '@/components/openjio/JioAttendees.vue'
 import { useOpenJioStore } from '@/stores/openjio'
 
 const route = useRoute()
@@ -48,6 +49,8 @@ const jios = useOpenJioStore()
 const jio = computed(() => (activity.value?.type === 'openJio' ? jios.all.find((j) => j.id === activity.value.jioId) ?? null : null))
 const jioSuspended = computed(() => jio.value?.status === 'suspended')
 // Same rule as JioCard: only the host can edit, and only while the jio is open or full.
+// Only the host and people going can see who's going (same rule as the server check in getJioAttendees)
+const canSeeAttendees = computed(() => !!jio.value && ['host', 'going'].includes(myRole(jio.value, jios.uid)))
 const canEditJio = computed(() => !!jio.value && myRole(jio.value, jios.uid) === 'host' && ['open', 'full'].includes(statusOf(jio.value)))
 
 watchEffect(async () => { if (activity.value) friendsDid.value = await friendsWhoDid(activity.value.id) })
@@ -156,6 +159,8 @@ const doCheckIn = async () => {
             <StartJioButton v-if="activity.type !== 'openJio'" label="OpenJio this" variant="soft"
               :prefill="prefillFromActivity(activity)" />
           </div>
+          <!-- OPENJIO: who's going, as its own sub-card under Invite friends (host and people going only) -->
+          <JioAttendees v-if="canSeeAttendees" :jio="jio" />
           <p v-if="message" class="det-msg">{{ message }}</p>
           <p v-if="earnedBadges.length" class="det-msg"><i class="bi bi-trophy-fill"></i> New badge{{ earnedBadges.length > 1 ? 's' : '' }}: {{ earnedBadges.map((badge) => badge.name).join(', ') }} · <router-link :to="{ name: 'badges' }">View Badge</router-link></p>
         </div>
