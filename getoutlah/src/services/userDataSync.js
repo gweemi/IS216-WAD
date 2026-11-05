@@ -1,7 +1,5 @@
 // =============================================================
-// Keeps the user's own data live and in sync across devices:
-//   users/{uid}                       their profile, kept fresh in the auth store
-// and private per-account data in Firestore:
+// Keeps private per-account data in Firestore so it follows the user across devices:
 //   users/{uid}/private/wellbeing    { history: [{ date, score }], updatedAt }
 //   users/{uid}/private/reflections  { pending, entries, promptsOn, dismissed, updatedAt }
 //   users/{uid}/private/gamification { completed, ledger, earnedBadges, studyBreak, pausedWeeks, redemptions, updatedAt }
