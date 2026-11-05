@@ -63,10 +63,6 @@ service cloud.firestore {
               && (d.get('description', null) == null || d.description.size() <= 1000)));
     }
 
-    match /activities/{id} {
-      allow read, write: if false;
-    }
-
     match /getoutlahPicks/{id} {
       allow read: if signedIn();
       allow create, update: if isAdmin() && validActivity(request.resource.data, 'getoutlahPicks');

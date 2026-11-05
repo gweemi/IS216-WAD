@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:unit": "vitest",
-    "test:emulator": "npm exec --yes --package=firebase-tools@15.34.2 firebase -- emulators:exec --only firestore --project getoutlah-migration-emulator \"npm exec --yes --package=vitest@4.1.11 vitest -- run src/__tests__/migrationEmulator.spec.js src/__tests__/firestoreRulesEmulator.spec.js\"",
+    "test:emulator": "npm exec --yes --package=firebase-tools@15.34.2 firebase -- emulators:exec --only firestore --project getoutlah-rules-emulator \"npm exec --yes --package=vitest@4.1.11 vitest -- run src/__tests__/firestoreRulesEmulator.spec.js\"",
     "test:e2e": "playwright test",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
