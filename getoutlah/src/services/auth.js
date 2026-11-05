@@ -57,12 +57,10 @@ export function friendlyError(err) {
   const messages = {
     'auth/popup-blocked':
       'Your browser blocked the Google pop-up. Allow pop-ups for this site, then try again.',
-    'auth/operation-not-allowed':
-      'Google sign-in is not turned on yet (Firebase console → Authentication → Sign-in method).',
-    'auth/unauthorized-domain':
-      'This website address is not allowed to use Google sign-in yet (Firebase console → Authentication → Settings → Authorized domains).',
+    'auth/operation-not-allowed': 'Google sign-in is unavailable right now. Please try again later.',
+    'auth/unauthorized-domain': "Google sign-in doesn't work on this website address. Please use the official GETOUTLAH! link.",
     'auth/account-exists-with-different-credential':
-      'This email already has an account that uses a password. Delete it in Firebase → Authentication → Users, then try again.',
+      'This email is already linked to another sign-in method. Try signing in a different way.',
     'auth/network-request-failed': 'No internet connection. Check your network and try again.',
     'auth/too-many-requests': 'Too many attempts. Please wait a few minutes and try again.',
     'permission-denied': 'Your account could not be set up. Please try again.',

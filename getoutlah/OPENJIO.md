@@ -2,7 +2,7 @@
 
 OPENJIO! lets signed-in users host, edit, join, queue for, leave, cancel, and
 manage group activities. It uses the existing Firestore `openjios` collection
-directly—there is no Cloud Functions deployment required for the feature.
+directly. There is no Cloud Functions deployment required for the feature.
 
 ## Visibility
 

@@ -32,9 +32,3 @@ export function getUniversity(email) {
   const domain = getDomain(e)
   return UNIVERSITIES.find((u) => u.domains.some((d) => domainMatches(domain, d, u))) ?? null
 }
-
-export function isSchoolEmail(email) {
-  return getUniversity(email) !== null
-}
-
-export const ALLOWED_DOMAINS_TEXT = UNIVERSITIES.flatMap((u) => u.domains).join(', ')

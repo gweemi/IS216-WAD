@@ -26,8 +26,8 @@ async function load() {
   try { reports.value = await getOpenReports() }
   catch (e) {
     loadError.value = e.code === 'permission-denied'
-      ? 'Firestore blocked reading reports. Publish the latest firestore.rules, then reload.'
-      : `Couldn't load reports: ${e.message}`
+      ? "You don't have permission to view reports."
+      : "Couldn't load reports. Please reload the page."
   }
   loading.value = false
 }

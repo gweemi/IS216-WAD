@@ -41,8 +41,7 @@ function statusText(u) {
   <div class="gol-card mt-3">
     <h2 class="gol-section-title">Banned and suspended users</h2>
     <p class="adm-help">
-      They can't start, join or report OPENJIOs. To stop a banned user signing in at all, also disable their account in
-      Firebase console → Authentication → Users.
+      They can't start, join or report OPENJIOs.
     </p>
 
     <p v-if="loadError" class="act-note act-note--warn">{{ loadError }}</p>

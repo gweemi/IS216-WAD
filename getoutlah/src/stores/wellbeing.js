@@ -39,10 +39,6 @@ export function latestCheckIn() {
   return wellbeing.history.length ? wellbeing.history[wellbeing.history.length - 1] : null
 }
 
-export function previousCheckIn() {
-  return wellbeing.history.length > 1 ? wellbeing.history[wellbeing.history.length - 2] : null
-}
-
 export function daysSinceLastCheckIn() {
   const last = latestCheckIn()
   if (!last) return Infinity

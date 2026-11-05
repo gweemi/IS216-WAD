@@ -17,11 +17,8 @@ async function toggle(id, value) {
   error.value = ''
   try {
     await savePrivacy({ [id]: value })
-  } catch (err) {
-    error.value =
-      err?.code === 'permission-denied'
-        ? 'Couldn’t save. Ask your team to publish the latest firestore.rules.'
-        : 'Couldn’t save. Check your connection and try again.'
+  } catch {
+    error.value = "Couldn't save your privacy settings. Please try again."
   } finally {
     busy.value = null
   }

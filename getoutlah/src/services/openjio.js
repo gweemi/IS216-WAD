@@ -141,7 +141,7 @@ export async function getProfiles(uids) {
   }))
 }
 
-export async function getJioAttendees(_id, { legacyParticipants = [], hostId = null } = {}) {
+export async function getJioAttendees({ legacyParticipants = [], hostId = null } = {}) {
   const uid = currentUser().user.uid
   if (uid !== hostId && !legacyParticipants.includes(uid)) throw new Error("Only people going can see who's going.")
   return getProfiles(legacyParticipants)

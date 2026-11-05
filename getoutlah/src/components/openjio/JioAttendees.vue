@@ -70,7 +70,7 @@ export default {
       try {
         const waitlist = this.jio.waitlist ?? []
         ;[this.attendees, this.queue] = await Promise.all([
-          getJioAttendees(this.jio.id, { legacyParticipants: this.jio.participants ?? [], hostId: this.jio.hostId }),
+          getJioAttendees({ legacyParticipants: this.jio.participants ?? [], hostId: this.jio.hostId }),
           this.isHost && waitlist.length ? getJioQueue(this.jio.id, { waitlist, hostId: this.jio.hostId }) : [],
         ])
       } catch (err) {

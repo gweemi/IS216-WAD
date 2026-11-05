@@ -27,11 +27,8 @@ export function startFriends(uid) {
   if (!uid) return
   friendsState.uid = uid
 
-  const onError = (err) => {
-    friendsState.error =
-      err?.code === 'permission-denied'
-        ? 'Friends could not load. Publish the latest firestore.rules in the Firebase console.'
-        : 'Friends could not load. Check your connection.'
+  const onError = () => {
+    friendsState.error = "Couldn't load your friends. Check your connection and try again."
   }
 
   unsubs.push(

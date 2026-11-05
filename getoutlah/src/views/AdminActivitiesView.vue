@@ -23,8 +23,8 @@ async function loadOrganisers() {
   try { organisers.value = await getOrganisers() }
   catch (e) {
     loadError.value = e.code === 'permission-denied'
-      ? 'Firestore blocked reading the organiser list. Publish the latest firestore.rules in the Firebase console, then reload.'
-      : `Couldn't load the organiser list: ${e.message}`
+      ? "You don't have permission to view the organiser list."
+      : "Couldn't load the organiser list. Please reload the page."
   }
 }
 onMounted(loadOrganisers) 

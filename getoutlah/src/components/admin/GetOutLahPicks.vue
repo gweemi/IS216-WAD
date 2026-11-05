@@ -89,7 +89,7 @@ const seed = () => run(async () => { await seedFirestore(); await reloadActiviti
     <p class="adm-help">Activities you pick. They show alongside Eventbrite events in Activities and on the map.</p>
 
     <p v-if="sourceErrors.firestore" class="act-note act-note--warn">
-      Couldn't read activities from Firestore ({{ sourceErrors.firestore }}). The list below is the built-in starter set, not what's saved.
+      Couldn't load saved activities. The list below shows the starter activities instead.
     </p>
 
     <form v-if="formOpen" class="adm-form" @submit.prevent="save">

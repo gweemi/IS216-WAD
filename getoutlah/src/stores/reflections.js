@@ -88,14 +88,6 @@ export function setPromptsOn(on) {
   reflections.promptsOn = Boolean(on)
 }
 
-export function resetReflections() {
-  Object.assign(reflections, emptyState())
-}
-
-export function recentReflections(n = 3) {
-  return [...reflections.entries].reverse().slice(0, n)
-}
-
 export function latestReflection() {
   return reflections.entries.length ? reflections.entries[reflections.entries.length - 1] : null
 }

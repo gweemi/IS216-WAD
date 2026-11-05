@@ -36,5 +36,3 @@ export async function getNparksRoute(activity, { retry = false } = {}) {
   }
   try { return await cache.get(activity.id) } catch (error) { cache.delete(activity.id); throw error }
 }
-
-export const clearNparksRouteCache = (id) => cache.delete(id)

@@ -36,10 +36,6 @@ export const GROUP_PREFERENCES = [
 export const MIN_INTERESTS = 1
 export const MAX_INTERESTS = INTERESTS.length
 
-export function interestLabel(id) {
-  return INTERESTS.find((i) => i.id === id)?.label ?? id
-}
-
 export function getInterest(id) {
   return INTERESTS.find((interest) => interest.id === id) ?? null
 }
