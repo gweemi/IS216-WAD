@@ -18,13 +18,28 @@
         <span v-if="person.uid === jio?.hostId" class="gol-pill tag-host">Host</span>
       </li>
     </ul>
+
+    <!-- Host only: people who choped a spot, first in line at the top -->
+    <section v-if="isHost && !loading && !error && queue.length" class="mt-3" data-testid="jio-queue">
+      <h3 class="queue-title">In the queue · {{ queue.length }}</h3>
+      <p class="muted small mb-2">They get a spot in this order if someone leaves.</p>
+      <ul class="attendee-list list-unstyled mb-0">
+        <li v-for="person in queue" :key="person.uid" class="attendee">
+          <FriendAvatar :name="person.displayName" :photo="person.photoURL" :size="42" />
+          <span class="flex-grow-1 fw-bold">{{ person.displayName }}</span>
+          <span class="gol-pill tag-queued">#{{ person.position }} in line</span>
+        </li>
+      </ul>
+    </section>
   </BottomSheet>
 </template>
 
 <script>
 import BottomSheet from '@/components/common/BottomSheet.vue'
 import FriendAvatar from '@/components/friends/FriendAvatar.vue'
-import { getJioAttendees, friendlyJioError } from '@/services/openjio'
+import { mapStores } from 'pinia'
+import { getJioAttendees, getJioQueue, friendlyJioError } from '@/services/openjio'
+import { useOpenJioStore } from '@/stores/openjio'
 
 export default {
   name: 'JioParticipantsSheet',
@@ -35,7 +50,13 @@ export default {
   },
   emits: ['close'],
   data() {
-    return { attendees: [], loading: false, error: '' }
+    return { attendees: [], queue: [], loading: false, error: '' }
+  },
+  computed: {
+    ...mapStores(useOpenJioStore),
+    isHost() {
+      return !!this.jio && this.jio.hostId === this.openJioStore.uid
+    },
   },
   watch: {
     open(isOpen) {
@@ -54,10 +75,14 @@ export default {
       this.loading = true
       this.error = ''
       try {
-        this.attendees = await getJioAttendees(this.jio.id, {
-          legacyParticipants: this.jio.participants ?? [],
-          hostId: this.jio.hostId,
-        })
+        const waitlist = this.jio.waitlist ?? []
+        ;[this.attendees, this.queue] = await Promise.all([
+          getJioAttendees(this.jio.id, {
+            legacyParticipants: this.jio.participants ?? [],
+            hostId: this.jio.hostId,
+          }),
+          this.isHost && waitlist.length ? getJioQueue(this.jio.id, { waitlist, hostId: this.jio.hostId }) : [],
+        ])
       } catch (err) {
         this.error = friendlyJioError(err)
       } finally {
@@ -73,4 +98,6 @@ export default {
 .attendee-list { display: grid; gap: .55rem; }
 .attendee { display: flex; align-items: center; gap: .7rem; padding: .65rem .75rem; border: 2px solid var(--gol-card-edge); border-radius: 16px; background: #fff; }
 .tag-host { background: var(--gol-purple-soft); color: var(--gol-purple); }
+.tag-queued { background: #ffe1de; color: #b4382f; }
+.queue-title { font-size: 1rem; font-weight: 900; margin: 0 0 .2rem; }
 </style>
